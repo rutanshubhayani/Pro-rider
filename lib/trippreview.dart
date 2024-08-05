@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:travel/book.dart';
 import 'package:travel/drive.dart';
 import 'package:travel/home.dart';
 
@@ -66,17 +67,20 @@ class _TrippreviewState extends State<Trippreview> {
                   SizedBox(height: 15,),
                   Row(
                     children: [
-                      Text(
-                        'Brampton',
-                        style: TextStyle(
-                          fontSize: 16,
+                      Expanded(
+                        child: Text(
+                          'Brampton',
+                          style: TextStyle(
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                      SizedBox(width: 105,),
-                      Text(
-                        formattedDate,
-                        style: TextStyle(
-                          fontSize: 16,
+                      Expanded(
+                        child: Text(
+                          formattedDate,
+                          style: TextStyle(
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ],
@@ -118,41 +122,20 @@ class _TrippreviewState extends State<Trippreview> {
             Column(
               children: [
                 Divider(),
-                IntrinsicHeight(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 1,
-                        child: Text(
-                          '3 Seats left',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        height: 40,
-                        child: VerticalDivider(),
-                      ),
-        
-                      Expanded(
-                        flex: 1,
-                        child: Text(
-                          textAlign: TextAlign.center,
-                          ' Rs500 per seat',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.blue,
-                          ),
-                        ),
-                      ),
-                    ],
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Text(
+                    '3 Seats left',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                    ),
                   ),
                 ),
+
                 Divider(),
                 Padding(
-                  padding: const EdgeInsets.only(right: 207.0),
+                  padding: const EdgeInsets.only(top: 10,bottom: 13),
                   child: Text(
                     '"Brampton to Windsor"',
                     style: TextStyle(
@@ -161,7 +144,6 @@ class _TrippreviewState extends State<Trippreview> {
                     ),
                   ),
                 ),
-                SizedBox(height: 20,),
                 Divider(
                   thickness: 15,
                   color: Colors.black12,
@@ -287,7 +269,7 @@ class _TrippreviewState extends State<Trippreview> {
               color: Colors.black12,
             ),
             Padding(
-              padding: const EdgeInsets.only(right: 150.0),
+              padding: const EdgeInsets.only(right: 150.0,bottom: 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
@@ -336,13 +318,13 @@ class _TrippreviewState extends State<Trippreview> {
         children: [
           Positioned(
             right: 82.0 ,/*+ MediaQuery.of(context).size.width * 0.2 + 16.0, // Right position of second FAB*/
-            bottom: 16.0,
+            bottom: 0,
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.7, // 80% of screen width
               child: FloatingActionButton(
                 backgroundColor: Color(0xFFff4400),
                 onPressed: () {
-                  // Add onPressed functionality
+                  Get.to(Book());// Add onPressed functionality
                 },
                 child: Row(
                   children: [
@@ -363,7 +345,7 @@ class _TrippreviewState extends State<Trippreview> {
           ),
           Positioned(
             right: 0.0,
-            bottom: 16.0,
+            bottom: 0.0,
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.15, // 20% of screen width
               child: FloatingActionButton(

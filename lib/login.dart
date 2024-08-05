@@ -145,8 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         keyboardType: TextInputType.visiblePassword,
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: Colors
-                              .transparent, // Make the text field transparent
+                          fillColor: Colors.transparent, // Make the text field transparent
                           labelText: 'Password',
                           prefixIcon: Icon(Icons.lock),
                           suffixIcon: IconButton(

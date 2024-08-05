@@ -17,6 +17,8 @@ class _FindScreenState extends State<FindScreen> {
   FocusNode destinationFocusNode = FocusNode();
   FocusNode dateFocusNode = FocusNode();
 
+  List<String> recentSearches = []; // List to store recent searches
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +43,109 @@ class _FindScreenState extends State<FindScreen> {
   void handleClearClick(TextEditingController controller) {
     setState(() {
       controller.clear();
+    });
+  }
+
+  void _swapLocations() {
+    setState(() {
+      String temp = departureController.text;
+      departureController.text = destinationController.text;
+      destinationController.text = temp;
+    });
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        dateController.text = picked.toString().split(" ")[0];
+      });
+    }
+  }
+
+  void _showAlert(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Input Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _performSearch() {
+    String departure = departureController.text;
+    String destination = destinationController.text;
+    String date = dateController.text;
+
+    if (departure.isEmpty && destination.isEmpty && date.isEmpty) {
+      _showAlert('Please provide details ');
+    } else if (departure.isEmpty) {
+      _showAlert('Please enter departure location.');
+    } else if (destination.isEmpty && date.isEmpty) {
+      _showAlert('Please enter destination and date.');
+    } else if (destination.isEmpty) {
+      _showAlert('Please enter destination.');
+    } else if (date.isEmpty) {
+      _showAlert('Please enter date.');
+    } else {
+      // Save the search to recent searches
+      String searchQuery = "$departure To $destination on $date";
+      if (!recentSearches.contains(searchQuery)) {
+        setState(() {
+          recentSearches.insert(0, searchQuery); // Add to the top of the list
+          if (recentSearches.length > 5) {
+            recentSearches.removeLast(); // Maintain a maximum of 5 recent searches
+          }
+        });
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => Searchresult()),
+      );
+    }
+  }
+
+  void _selectRecentSearch(String search) {
+    // Parse the search string and populate the text fields
+    List<String> parts = search.split(' on ');
+    if (parts.length == 2) {
+      List<String> locations = parts[0].split(' -> ');
+      if (locations.length == 2) {
+        setState(() {
+          departureController.text = locations[0];
+          destinationController.text = locations[1];
+        });
+        dateController.text = parts[1];
+      }
+    }
+  }
+
+  void _removeSearch(int index) {
+    setState(() {
+      recentSearches.removeAt(index);
+    });
+  }
+
+  void _clearAllSearches() {
+    setState(() {
+      recentSearches.clear();
     });
   }
 
@@ -101,12 +206,7 @@ class _FindScreenState extends State<FindScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => Searchresult()),
-                  );
-                },
+                onPressed: _performSearch,
                 child: Text(
                   'Search',
                   style: TextStyle(
@@ -122,6 +222,45 @@ class _FindScreenState extends State<FindScreen> {
                 ),
               ),
             ),
+            SizedBox(height: 20),
+            if (recentSearches.isNotEmpty) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Searches:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _clearAllSearches,
+                    child: Text(
+                      'Clear All',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              ListView.builder(
+                shrinkWrap: true,
+                itemCount: recentSearches.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(recentSearches[index]),
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete,),
+                      onPressed: () => _removeSearch(index),
+                    ),
+                    onTap: () => _selectRecentSearch(recentSearches[index]),
+                  );
+                },
+              ),
+            ],
           ],
         ),
       ),
@@ -191,33 +330,6 @@ class _FindScreenState extends State<FindScreen> {
       ),
       readOnly: true,
       onTap: () => _selectDate(context),
-      onChanged: (text) {
-        setState(() {
-          // Trigger rebuild to update suffixIcon visibility
-        });
-      },
     );
-  }
-
-  void _swapLocations() {
-    setState(() {
-      String temp = departureController.text;
-      departureController.text = destinationController.text;
-      destinationController.text = temp;
-    });
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() {
-        dateController.text = picked.toString().split(" ")[0];
-      });
-    }
   }
 }

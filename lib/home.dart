@@ -7,7 +7,7 @@ import 'package:travel/profilesetting.dart';
 import 'package:get/get.dart';
 import 'package:travel/trips.dart';
 import 'package:travel/userinfo.dart';
-import 'package:travel/verify.dart';
+import 'package:travel/verifylicenese.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -58,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 40,
             child: GestureDetector(
               onTap: () {
-                Get.to(UserProfile());
+                Get.to(UserProfile(),transition: Transition.leftToRight);
               },
               child: Image.asset(
                 'images/blogo.png',
