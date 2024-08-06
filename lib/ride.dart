@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart'; // Make sure to import GetX if you use Get.to
 import 'package:travel/postrequest.dart';
-import 'package:travel/drive.dart';
+import 'package:travel/posttrip.dart';
 import 'package:travel/find.dart';
 import 'home.dart';
 
@@ -72,7 +72,7 @@ class _RideScreenState extends State<RideScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => drive()),
+                      MaterialPageRoute(builder: (context) => PostTrip()),
                     );
                   },
                   child: Padding(

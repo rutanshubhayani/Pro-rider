@@ -659,7 +659,6 @@ class RecentScreen extends StatelessWidget {
                   ),
                 ),
                 child: SizedBox(
-                  height: 230,
                   width: double.infinity, // Adjust dimensions as needed
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -689,29 +688,37 @@ class RecentScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13.0, left: 15),
-                        child: RichText(
-                          text: TextSpan(
-                            children: [
-                              // TextSpan for 'Brampton' in bold black color
-                              TextSpan(
-                                text: 'Brampton',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 13.0, left: 15),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  // TextSpan for 'Brampton' in bold black color
+                                  TextSpan(
+                                    text: 'Brampton',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  // TextSpan for ' windston' in grey color
+                                  TextSpan(
+                                    text: '  Brampton, ON, Canada',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              // TextSpan for ' windston' in grey color
-                              TextSpan(
-                                text: '  Brampton, ON, Canada',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 13.0,left: 35),
+                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
+                          ),
+                        ],
                       ),
                       Padding(
                         padding: EdgeInsets.only(top: 13,left: 15),
@@ -735,13 +742,10 @@ class RecentScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13.0,left: 30),
-                        child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                      ),
+
 
                       Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15),
+                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
                         child: Row(
                           children: [
                             Container(
@@ -790,7 +794,6 @@ class RecentScreen extends StatelessWidget {
                   ),
                 ),
                 child: SizedBox(
-                  height: 230,
                   width: double.infinity, // Adjust dimensions as needed
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -820,29 +823,37 @@ class RecentScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13.0, left: 15),
-                        child: RichText(
-                          text: TextSpan(
-                            children: [
-                              // TextSpan for 'Brampton' in bold black color
-                              TextSpan(
-                                text: 'Brampton',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 13.0, left: 15),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  // TextSpan for 'Brampton' in bold black color
+                                  TextSpan(
+                                    text: 'Brampton',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  // TextSpan for ' windston' in grey color
+                                  TextSpan(
+                                    text: '  Brampton, ON, Canada',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              // TextSpan for ' windston' in grey color
-                              TextSpan(
-                                text: '  Brampton, ON, Canada',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 13.0,left: 35),
+                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
+                          ),
+                        ],
                       ),
                       Padding(
                         padding: EdgeInsets.only(top: 13,left: 15),
@@ -866,13 +877,10 @@ class RecentScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13.0,left: 30),
-                        child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                      ),
+
 
                       Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15),
+                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
                         child: Row(
                           children: [
                             Container(
@@ -921,7 +929,6 @@ class RecentScreen extends StatelessWidget {
                   ),
                 ),
                 child: SizedBox(
-                  height: 230,
                   width: double.infinity, // Adjust dimensions as needed
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -951,29 +958,37 @@ class RecentScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13.0, left: 15),
-                        child: RichText(
-                          text: TextSpan(
-                            children: [
-                              // TextSpan for 'Brampton' in bold black color
-                              TextSpan(
-                                text: 'Brampton',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 13.0, left: 15),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  // TextSpan for 'Brampton' in bold black color
+                                  TextSpan(
+                                    text: 'Brampton',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  // TextSpan for ' windston' in grey color
+                                  TextSpan(
+                                    text: '  Brampton, ON, Canada',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              // TextSpan for ' windston' in grey color
-                              TextSpan(
-                                text: '  Brampton, ON, Canada',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 13.0,left: 35),
+                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
+                          ),
+                        ],
                       ),
                       Padding(
                         padding: EdgeInsets.only(top: 13,left: 15),
@@ -997,13 +1012,10 @@ class RecentScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13.0,left: 30),
-                        child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                      ),
+
 
                       Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15),
+                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
                         child: Row(
                           children: [
                             Container(
@@ -1073,7 +1085,6 @@ class CancelScreen extends StatelessWidget {
                   ),
                 ),
                 child: SizedBox(
-                  height: 230,
                   width: double.infinity, // Adjust dimensions as needed
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1103,29 +1114,37 @@ class CancelScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13.0, left: 15),
-                        child: RichText(
-                          text: TextSpan(
-                            children: [
-                              // TextSpan for 'Brampton' in bold black color
-                              TextSpan(
-                                text: 'Brampton',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 13.0, left: 15),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  // TextSpan for 'Brampton' in bold black color
+                                  TextSpan(
+                                    text: 'Brampton',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  // TextSpan for ' windston' in grey color
+                                  TextSpan(
+                                    text: '  Brampton, ON, Canada',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              // TextSpan for ' windston' in grey color
-                              TextSpan(
-                                text: '  Brampton, ON, Canada',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 13.0,left: 35),
+                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
+                          ),
+                        ],
                       ),
                       Padding(
                         padding: EdgeInsets.only(top: 13,left: 15),
@@ -1149,13 +1168,10 @@ class CancelScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13.0,left: 30),
-                        child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                      ),
+
 
                       Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15),
+                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
                         child: Row(
                           children: [
                             Container(
@@ -1204,7 +1220,6 @@ class CancelScreen extends StatelessWidget {
                   ),
                 ),
                 child: SizedBox(
-                  height: 230,
                   width: double.infinity, // Adjust dimensions as needed
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1234,29 +1249,37 @@ class CancelScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13.0, left: 15),
-                        child: RichText(
-                          text: TextSpan(
-                            children: [
-                              // TextSpan for 'Brampton' in bold black color
-                              TextSpan(
-                                text: 'Brampton',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 13.0, left: 15),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  // TextSpan for 'Brampton' in bold black color
+                                  TextSpan(
+                                    text: 'Brampton',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  // TextSpan for ' windston' in grey color
+                                  TextSpan(
+                                    text: '  Brampton, ON, Canada',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              // TextSpan for ' windston' in grey color
-                              TextSpan(
-                                text: '  Brampton, ON, Canada',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 13.0,left: 35),
+                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
+                          ),
+                        ],
                       ),
                       Padding(
                         padding: EdgeInsets.only(top: 13,left: 15),
@@ -1280,13 +1303,10 @@ class CancelScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13.0,left: 30),
-                        child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                      ),
+
 
                       Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15),
+                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
                         child: Row(
                           children: [
                             Container(
@@ -1320,6 +1340,7 @@ class CancelScreen extends StatelessWidget {
                 ),
               ),
             ),
+
 
 
           ],

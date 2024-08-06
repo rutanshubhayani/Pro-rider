@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:travel/login.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+
 class RegisterScreen extends StatefulWidget {
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -10,25 +11,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _obsecureText = true;
 
-  TextEditingController _namecontroller = TextEditingController();
-  TextEditingController _emailcontroller = TextEditingController();
-  TextEditingController _numbercontroller = TextEditingController();
-  TextEditingController _passwordcontroller = TextEditingController();
-  TextEditingController _confirmpasswordcontroller = TextEditingController();
+  final TextEditingController _namecontroller = TextEditingController();
+  final TextEditingController _emailcontroller = TextEditingController();
+  final TextEditingController _numbercontroller = TextEditingController();
+  final TextEditingController _passwordcontroller = TextEditingController();
+  final TextEditingController _confirmpasswordcontroller = TextEditingController();
 
-  FocusNode _nameFocusNode = FocusNode();
-  FocusNode _emailFocusNode = FocusNode();
-  FocusNode _numberFocusNode = FocusNode();
-  FocusNode _passwordFocusNode = FocusNode();
-  FocusNode _confirmpasswordFocusNode = FocusNode();
+  final FocusNode _nameFocusNode = FocusNode();
+  final FocusNode _emailFocusNode = FocusNode();
+  final FocusNode _numberFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
+  final FocusNode _confirmpasswordFocusNode = FocusNode();
 
   // Handle Form Submission
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        behavior: SnackBarBehavior.floating,
-        content: Text('Registration complete'),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Registration complete'),
+        ),
+      );
     }
   }
 
@@ -108,7 +111,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Lets join in',
+                        'Let\'s join in',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -134,7 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           border: OutlineInputBorder(
                             borderSide: BorderSide(
                               color: Color(0xFF51737A),
-                              width: 20.0,
+                              width: 1.0,
                             ),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
@@ -173,16 +176,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         onFieldSubmitted: (mail) {
                           FocusScope.of(context).requestFocus(_numberFocusNode);
                           print("Email ========================================== $mail");
-
-
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter your mail';
+                            return 'Please enter your email';
                           }
                           final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
                           if (!emailRegex.hasMatch(value)) {
-                            return 'Please enter valid mail address';
+                            return 'Please enter a valid email address';
                           }
                           return null;
                         },
@@ -209,19 +210,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         textInputAction: TextInputAction.next,
                         onSubmitted: (number) {
                           FocusScope.of(context).requestFocus(_passwordFocusNode);
-                          print("Phone Number ------------------------------------------- $number");
+                          print("Phone Number ------------------------------------------- ${number}");
                         },
+
                         validator: (value) {
-                          if (value == null || value.number.isEmpty) {
+                          if (value == null || value.number == null || value.number.isEmpty) {
                             return 'Please enter your phone number';
                           }
-                          if (value.number.length != 10) {
+                          if (value.number.length < 10) {
                             return 'Phone number must be at least 10 digits long';
                           }
                           return null;
                         },
                       ),
-
                       SizedBox(height: 16),
                       TextFormField(
                         controller: _passwordcontroller,
@@ -279,14 +280,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           border: OutlineInputBorder(
                             borderSide: BorderSide(
                               color: Colors.black,
-                              width: 20.0,
+                              width: 1.0,
                             ),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
+                            return 'Please confirm your password';
                           }
                           if (value != _passwordcontroller.text) {
                             return 'Passwords do not match';

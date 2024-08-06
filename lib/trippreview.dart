@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:travel/book.dart';
-import 'package:travel/drive.dart';
+import 'package:travel/posttrip.dart';
 import 'package:travel/home.dart';
 
 class Trippreview extends StatefulWidget {
@@ -151,7 +151,7 @@ class _TrippreviewState extends State<Trippreview> {
                 GestureDetector(
                   onTap: (){
                     Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => drive()));
+                    MaterialPageRoute(builder: (context) => PostTrip()));
                   },
                   child: Padding(
                     padding: const EdgeInsets.only(top: 5.0,bottom: 5),
@@ -324,7 +324,7 @@ class _TrippreviewState extends State<Trippreview> {
               child: FloatingActionButton(
                 backgroundColor: Color(0xFFff4400),
                 onPressed: () {
-                  Get.to(Book());// Add onPressed functionality
+                  Get.to(Book(),transition: Transition.fade);// Add onPressed functionality
                 },
                 child: Row(
                   children: [

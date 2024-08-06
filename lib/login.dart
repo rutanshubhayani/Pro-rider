@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:travel/home.dart';
 import 'package:travel/register.dart';
 import 'package:travel/ride.dart';
@@ -175,19 +176,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },*/
                       ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => ForgotPassword()),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 218.0),
-                          child: Text(
-                            'Forgot Password?',
-                            style: TextStyle(color: Color(0xFF51737A)),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 1.0),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              Get.to(ForgotPassword());
+                            },
+                            child: Text(
+                              'Forgot Password?',
+                              style: TextStyle(color: Color(0xFF51737A)),
+                            ),
                           ),
                         ),
                       ),

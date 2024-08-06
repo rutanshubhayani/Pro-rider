@@ -190,7 +190,7 @@ class _BookState extends State<Book> {
           onTap: () {
             if (_isSwitchOn) {
               print('Next tapped');
-              Get.to(ReviewTrip());
+              Get.to(ReviewTrip(),transition: Transition.fade);
             } else {
               print('Switch is off');
               // Optionally, you can show a message or indication to the user
@@ -351,7 +351,7 @@ class _ReviewTripState extends State<ReviewTrip> {
       bottomNavigationBar: BottomAppBar(
         child: GestureDetector(
           onTap: () {
-            Get.to(MeetDriver());
+            Get.to(MeetDriver(),transition: Transition.fade);
           },
           child: Center(
             child: Text(
@@ -504,7 +504,7 @@ class MeetDriver extends StatelessWidget {
       bottomNavigationBar: BottomAppBar(
         child: GestureDetector(
           onTap: (){
-            Get.to(EmailVerify());
+            Get.to(EmailVerify(),transition: Transition.fade);
           },
           child: Center(
             child: Text(
