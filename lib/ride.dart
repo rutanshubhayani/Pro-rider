@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart'; // Make sure to import GetX if you use Get.to
+import 'package:travel/notification.dart';
 import 'package:travel/postrequest.dart';
 import 'package:travel/posttrip.dart';
 import 'package:travel/find.dart';
+import 'Userprofile.dart';
 import 'home.dart';
 
 class RideScreen extends StatefulWidget {
@@ -35,7 +37,7 @@ class _RideScreenState extends State<RideScreen> {
             width: 40,
             child: GestureDetector(
               onTap: () {
-                Get.to(UserProfile(), transition: Transition.leftToRight);
+               // Get.to(UserProfile(userName1: '', usermail: '', unumber: '', ), transition: Transition.leftToRight);
               },
               child: Image.asset(
                 'images/blogo.png',
@@ -44,7 +46,11 @@ class _RideScreenState extends State<RideScreen> {
           ),
         ),
         actions: [
-          OutlinedButton.icon(
+          IconButton(onPressed: (){
+            Get.to(NotificationScreen());
+          },
+              icon:Icon(Icons.notifications_active)),
+          /*OutlinedButton.icon(
             icon: Icon(Icons.search, color: Colors.black),
             onPressed: () {
               Navigator.push(
@@ -56,7 +62,7 @@ class _RideScreenState extends State<RideScreen> {
               'Find',
               style: TextStyle(color: Colors.black),
             ),
-          ),
+          ),*/
           SizedBox(width: 15),
         ],
       ),
@@ -187,13 +193,34 @@ class _RideScreenState extends State<RideScreen> {
             Expanded(
               child: InkWell(
                 onTap: () {
+                  Get.to(() => PostTrip()); // Navigate to HomeScreen
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.directions_car,size: 20,),
+                    Text('Driver',style: TextStyle(fontSize: 14),),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 10.0,bottom: 10),
+              child: VerticalDivider(
+                width: 1,
+                color: Colors.grey, // Color of the divider
+              ),
+            ),
+            Expanded(
+              child: InkWell(
+                onTap: () {
                   Get.to(() => HomeScreen()); // Navigate to HomeScreen
                 },
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.inbox),
-                    Text('Inbox'),
+                    Icon(Icons.inbox,size: 20,),
+                    Text('Inbox',style: TextStyle(fontSize: 14),),
                   ],
                 ),
               ),
@@ -213,8 +240,29 @@ class _RideScreenState extends State<RideScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.trip_origin),
-                    Text('Trips'),
+                    Icon(Icons.trip_origin,size: 20,),
+                    Text('Trips',style: TextStyle(fontSize: 14),),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 10.0,bottom: 10),
+              child: VerticalDivider(
+                width: 1,
+                color: Colors.grey, // Color of the divider
+              ),
+            ),
+            Expanded(
+              child: InkWell(
+                onTap: () {
+                  Get.to(Postrequest());
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.person,size: 20,),
+                    Text('Passenger',style: TextStyle(fontSize: 14),),
                   ],
                 ),
               ),

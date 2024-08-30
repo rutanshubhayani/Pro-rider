@@ -1,192 +1,20 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:travel/Inbox.dart';
-import 'package:travel/find.dart';
-import 'package:travel/login.dart';
-import 'package:travel/postrequest.dart';
-import 'package:travel/posttrip.dart';
 import 'package:travel/profilesetting.dart';
-import 'package:get/get.dart';
-import 'package:travel/trips.dart';
-import 'Userprofile.dart';
+import 'package:travel/userinfo.dart';
+import 'package:travel/vechiledetails.dart';
+import 'login.dart';
+import 'new.dart';
+import 'package:http/http.dart' as http;
 
-class HomeScreen extends StatefulWidget {
-  final int initialIndex;
-
-  HomeScreen({this.initialIndex = 0});
-
-  @override
-  _HomeScreenState createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
-  final PageController _pageController = PageController();
-
-  @override
-  void initState() {
-    super.initState();
-    _currentIndex = widget.initialIndex; // Set initial index if provided
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _pageController.jumpToPage(_currentIndex);
-    });
-  }
-
-  void _onPageChanged(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-  }
-
-  void _onNavBarItemTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-      _pageController.animateToPage(index,
-        duration: Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 20.0),
-          child: Container(
-            height: 40,
-            width: 40,
-            child: GestureDetector(
-              onTap: () {
-               // Get.to(UserProfile(userName: '',),transition: Transition.leftToRight);
-              },
-              child: Image.asset(
-                'images/blogo.png',
-              ),
-            ),
-          ),
-        ),
-        actions: [
-          OutlinedButton.icon(
-            icon: Icon(Icons.search, color: Colors.black),
-            onPressed: () {
-              // Navigator.push(
-              //   context
-              //  // MaterialPageRoute(builder: (context) => FindScreen(userName: '',)),
-              // );
-            },
-            label: Text(
-              'Find',
-              style: TextStyle(color: Colors.black),
-            ),
-          ),
-          SizedBox(width: 15),
-        ],
-      ),
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: _onPageChanged,
-        children: [
-          Inbox1(), // Index 0
-          Trips(), // Index 1
-          // UserProfile(), // Index 2
-        ],
-      ),
-      bottomNavigationBar: Container(
-        color: Colors.white, // Background color of the bottom navigation bar
-        height: kBottomNavigationBarHeight,
-        child: Row(
-          children: [
-            Expanded(
-              child: InkWell(
-                onTap: () {
-                  Get.to(() => PostTrip()); // Navigate to HomeScreen
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.directions_car,size: 20,),
-                    Text('Driver',style: TextStyle(fontSize: 14),),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 15.0,bottom: 15),
-              child: VerticalDivider(
-                width: 1,
-                color: Colors.grey, // Color of the divider
-              ),
-            ),
-            Expanded(
-              child: InkWell(
-                onTap: () {
-                  Get.to(() => Inbox1()); // Navigate to HomeScreen
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.inbox,size: 20,),
-                    Text('Inbox',style: TextStyle(fontSize: 14),),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 15.0,bottom: 15),
-              child: VerticalDivider(
-                width: 1,
-                color: Colors.grey, // Color of the divider
-              ),
-            ),
-            Expanded(
-              child: InkWell(
-                onTap: () {
-                  _currentIndex = 2; // Set index for Trips screen
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.trip_origin,size: 20,),
-                    Text('Trips',style: TextStyle(fontSize: 14),),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 15.0,bottom: 15),
-              child: VerticalDivider(
-                width: 1,
-                color: Colors.grey, // Color of the divider
-              ),
-            ),
-            Expanded(
-              child: InkWell(
-                onTap: () {
-                  Get.to(Postrequest());
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.person,size: 20,),
-                    Text('Passenger',style: TextStyle(fontSize: 14),),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
-/*
 class UserProfile extends StatefulWidget {
-  const UserProfile({Key? key}) : super(key: key);
+  final String userName1; // UserName passed from the previous screen
+  final String usermail; // Usermail passed from the previous screen
+  final String unumber; // Usermail passed from the previous screen
+  final String uaddress; // Usermail passed from the previous screen
+
+  const UserProfile({Key? key, required this.userName1, required this.usermail, required this.unumber, required this.uaddress}) : super(key: key);
 
   @override
   State<UserProfile> createState() => _UserProfileState();
@@ -195,6 +23,7 @@ class UserProfile extends StatefulWidget {
 class _UserProfileState extends State<UserProfile> {
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
+
 
   void _removeImage() {
     setState(() {
@@ -287,6 +116,12 @@ class _UserProfileState extends State<UserProfile> {
     );
   }
 
+  String get userName => widget.userName1; // Getter for userName
+  String get usermail => widget.usermail; // Getter for usermail
+  String get unumber => widget.unumber; // Getter for usermail
+  String get uaddress => widget.uaddress; // Getter for usermail
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -300,7 +135,7 @@ class _UserProfileState extends State<UserProfile> {
         backgroundColor: Colors.transparent,
       ),
       body: Padding(
-        padding: const EdgeInsets.only(top: 80.0,left: 16,right: 16,bottom: 10),
+        padding: const EdgeInsets.only(top: 80.0, left: 16, right: 16, bottom: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -336,14 +171,14 @@ class _UserProfileState extends State<UserProfile> {
             ),
             SizedBox(height: 10),
             Text(
-              'User Name',
+              userName, // Use the getter here
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
-              'abc@gmail.com',
+              usermail,
               style: TextStyle(
                 color: Colors.grey,
               ),
@@ -357,8 +192,25 @@ class _UserProfileState extends State<UserProfile> {
                     leadingIcon: Icons.info_outline_rounded,
                     title: 'Profile Information',
                     onTap: () {
+                      final String uname = userName; // Use the getter here
+                      final String umail = usermail;
+                      final String umobilenumber = unumber;
+                      final String useraddress = uaddress ;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserInfo(uname: uname, usermail: umail, umobilenumber: umobilenumber, uaddress: useraddress,),
+                        ),
+                      );
+                    },
+                  ),
+                  SizedBox(height: 10),
+                  CylindricalTile(
+                    leadingIcon: Icons.directions_car,
+                    title: 'Vehicle details',
+                    onTap: () {
                       Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => UserInfo()));
+                          MaterialPageRoute(builder: (context) => VehicleDetails()));
                     },
                   ),
                   SizedBox(height: 10,),
@@ -430,4 +282,3 @@ Widget CylindricalTile({
     ),
   );
 }
-*/

@@ -1,9 +1,11 @@
-import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/gestures.dart';
+import 'package:travel/api.dart';
 import 'package:travel/searchresult.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -14,11 +16,24 @@ class PostTrip extends StatefulWidget {
 
 class _PostTripState extends State<PostTrip> {
   final _formKey = GlobalKey<FormState>();
+  TextEditingController departureController = TextEditingController();
+  TextEditingController destinationController = TextEditingController();
+  TextEditingController stopsController = TextEditingController();
+  bool showDepartureContainer = false;
+  bool showDestinationContainer = false;
+  bool showStopsContainer = false;
+  List<dynamic> departureSuggestions = [];
+  List<dynamic> destinationSuggestions = [];
+  List<dynamic> stopsSuggestions = [];
+  late TextEditingController activeController; // Keep track of the active controller
+  TextEditingController priceController = TextEditingController();
   TextEditingController dateController = TextEditingController();
   TextEditingController timeController = TextEditingController();
   FocusNode departureFocusNode = FocusNode();
-  FocusNode desinationFocusNode = FocusNode();
+  FocusNode destinationFocusNode = FocusNode();
   FocusNode stopsFocusNode = FocusNode();
+  FocusNode priceFocusNode = FocusNode();
+  List<Map<String, String>> stopsAndPrices = [];
   FocusNode dateFocusNode = FocusNode();
   FocusNode timeFocusNode = FocusNode();
   FocusNode modelFocusNode = FocusNode();
@@ -27,12 +42,15 @@ class _PostTripState extends State<PostTrip> {
   FocusNode yearFocusNode = FocusNode();
   FocusNode licenseFocusNode = FocusNode();
   TimeOfDay? selectedTime;
-  List<bool> isSelected = [true, false];
-  List<bool> isSelected1 = [true, false, false, false];
+  List<bool> isSelectedTrip = [true, false];
+  List<bool> isSelectedPeople = [true, false];
+  List<bool> isSelected1 = [true, false, false];
   List<String> choices = ['Winter tires', 'Bikes', 'Skis & snowboards', 'Pets'];
   List<IconData> icons = [Icons.ac_unit, Icons.directions_bike, Icons.downhill_skiing, Icons.pets];
   List<bool> isSelected2 = [false, false, false, false];
+
   int _selectedChoice = 1;
+  int selectedSeats = 1;
   bool _isChecked = false;
   _launchURL(String url) async {
     if (await canLaunch(url)) {
@@ -41,8 +59,164 @@ class _PostTripState extends State<PostTrip> {
       throw 'Could not launch $url';
     }
   }
+
+  Future<void> _postTrip() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      final url = Uri.parse('${API.api1}/post-a-trip');
+
+      final Map<String, dynamic> body = {
+        'departure': departureController.text,
+        'destination': destinationController.text,
+        'ride_shedule': isSelectedTrip[0] ? 'One-time trip' : 'Recurring trip',
+        'leaving_date_time': '${dateController.text} ${timeController.text}',
+        'luggage': isSelected1.indexWhere((element) => element),
+        'back_row_sitiing': isSelectedPeople[0] ? 'Max 2 people' : '3 people',
+        'other_items': choices
+            .asMap()
+            .entries
+            .where((entry) => isSelected2[entry.key])
+            .map((entry) => entry.value)
+            .join(', '),
+        'empty_seats': selectedSeats,
+        'stops': stopsAndPrices.map((stopAndPrice) => {
+          'name': stopAndPrice['stop'],
+          'price': stopAndPrice['price'],
+        }).toList(),
+      };
+      print('Sending data: $body');
+
+      try {
+        final response = await http.post(
+          url,
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: jsonEncode(body),
+        );
+
+        if (response.statusCode == 201) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Trip posted successfully!')),
+          );
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => SearchResult(initialTabIndex: 1, results: [], selectedCities: [],)));
+
+          // Navigate to search results or another page if needed
+        } else {
+          print('Failed to post trip: ${response.body}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to post trip: ${response.body}')),
+          );
+        }
+      } catch (e) {
+        print('Error: $e');
+        _showErrorSnackbar('An error occurred. Please try again.');
+      }
+    } else {
+      _focusFirstEmptyField();
+    }
+  }
+
+
+
+
+
+  void _showErrorSnackbar(String message) {
+    final snackBar = SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.red, // Set the background color to red to indicate an error
+      behavior: SnackBarBehavior.floating, // Make the snackbar float
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+
+  // Fetch cities from API
+  Future<List<dynamic>> fetchCities(String query) async {
+    try {
+      final response = await http.get(Uri.parse('${API.api1}/cities')); // Replace with your API URL
+
+      if (response.statusCode == 200) {
+        final List<dynamic> cities = json.decode(response.body);
+        return cities.where((city) {
+          final cityName = city['city']?.toLowerCase() ?? '';
+          final provinceName = city['pname']?.toLowerCase() ?? '';
+          final searchQuery = query.toLowerCase();
+          return cityName.contains(searchQuery) || provinceName.contains(searchQuery);
+        }).toList();
+      } else {
+        throw Exception('Failed to load cities: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching cities: $e');
+      return []; // Return an empty list in case of an error
+    }
+  }
+
+  void _updateSuggestions(String pattern, TextEditingController controller) async {
+    if (pattern.isNotEmpty) {
+      setState(() {
+        if (controller == departureController) {
+          showDepartureContainer = true;
+        } else if (controller == destinationController) {
+          showDestinationContainer = true;
+        } else if (controller == stopsController) {
+          showStopsContainer = true;
+        }
+      });
+      try {
+        if (controller == departureController) {
+          departureSuggestions = await fetchCities(pattern);
+        } else if (controller == destinationController) {
+          destinationSuggestions = await fetchCities(pattern);
+        } else if (controller == stopsController) {
+          stopsSuggestions = await fetchCities(pattern);
+        }
+        setState(() {}); // Update the UI with new suggestions
+      } catch (e) {
+        print('Error updating suggestions: $e');
+      }
+    } else {
+      setState(() {
+        if (controller == departureController) {
+          showDepartureContainer = false;
+        } else if (controller == destinationController) {
+          showDestinationContainer = false;
+        } else if (controller == stopsController) {
+          showStopsContainer = false;
+        }
+      });
+    }
+  }
+
+  void handleClearClick(TextEditingController controller) {
+    setState(() {
+      controller.clear();
+    });
+  }
+
+  void addStopAndPrice() {
+    final stop = stopsController.text;
+    final price = priceController.text;
+
+    if (stop.isNotEmpty && price.isNotEmpty) {
+      setState(() {
+        stopsAndPrices.add({
+          'stop': stop,
+          'price': price,
+        });
+      });
+
+      // Clear the input fields
+      stopsController.clear();
+      priceController.clear();
+      FocusScope.of(context).requestFocus(stopsFocusNode);
+    }
+  }
+
   // Image selection state and methods
-  File? _selectedImage;
+  /* File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
   void _removeImage() {
@@ -62,19 +236,21 @@ class _PostTripState extends State<PostTrip> {
       print("Error picking image: $e");
     }
   }
+*/
 
   @override
   void dispose() {
     departureFocusNode.dispose();
-    desinationFocusNode.dispose();
+    destinationFocusNode.dispose();
     stopsFocusNode.dispose();
+    priceFocusNode.dispose();
     dateFocusNode.dispose();
     timeFocusNode.dispose();
-    modelFocusNode.dispose();
+    /* modelFocusNode.dispose();
     cartypeFocusNode.dispose();
     colorFocusNode.dispose();
     yearFocusNode.dispose();
-    licenseFocusNode.dispose();
+    licenseFocusNode.dispose();*/
     super.dispose();
   }
   @override
@@ -82,14 +258,14 @@ class _PostTripState extends State<PostTrip> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text('Post a trip'),
+        title: const Text('Post a trip'),
       ),
       body: Material(
         child: Padding(
           padding: const EdgeInsets.only(top: 30.0, left: 16, right: 16),
           child: SingleChildScrollView(
             child: Form(
-          key: _formKey ,
+              key: _formKey ,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,8 +273,8 @@ class _PostTripState extends State<PostTrip> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0, left: 3),
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 8.0, left: 3),
                         child: Text(
                           'Find your travel partner!',
                           style: TextStyle(
@@ -108,8 +284,8 @@ class _PostTripState extends State<PostTrip> {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(
+                      const Padding(
+                        padding: EdgeInsets.only(
                             top: 5, left: 3.0, bottom: 10),
                         child: Text(
                           'Enter your departure, destination, and stops you are taking along the way',
@@ -118,8 +294,8 @@ class _PostTripState extends State<PostTrip> {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 3.0, bottom: 7),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 3.0, bottom: 7),
                         child: Text(
                           'Departure',
                           style: TextStyle(
@@ -128,31 +304,61 @@ class _PostTripState extends State<PostTrip> {
                           ),
                         ),
                       ),
+
+
                       TextFormField(
+                        controller: departureController,
                         focusNode: departureFocusNode,
                         decoration: InputDecoration(
                           filled: true,
                           prefixIcon: Icon(Icons.location_on),
                           hintText: 'Departure Location',
+                          suffixIcon: departureController.text.isNotEmpty
+                              ? IconButton(
+                            icon: Icon(Icons.close_rounded),
+                            onPressed: () => handleClearClick(departureController),
+                          )
+                              : null, // Only show the clear icon if there's text in the field
                           border: OutlineInputBorder(
                             borderSide: BorderSide.none,
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         textInputAction: TextInputAction.next,
-                        onFieldSubmitted: (_){
-                          FocusScope.of(context).requestFocus(desinationFocusNode);
-                      },
-                        validator: (value){
+                        onChanged: (value) {
+                          activeController = departureController;
+                          _updateSuggestions(value, departureController);
+                        },
+                        validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter departure location';
                           }
                           return null;
                         },
                       ),
+                      if (showDepartureContainer)
+                        Card(
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: departureSuggestions.length,
+                            itemBuilder: (context, index) {
+                              final suggestion = departureSuggestions[index];
+                              return ListTile(
+                                leading: Icon(Icons.location_on),
+                                title: Text('${suggestion['city']}, ${suggestion['pname']}'),
+                                onTap: () {
+                                  departureController.text = '${suggestion['city']}, ${suggestion['pname']}';
+                                  setState(() {
+                                    showDepartureContainer = false; // Hide the suggestions after selection
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        ),
                       SizedBox(height: 25),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 3.0, bottom: 7),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 3.0, bottom: 7),
                         child: Text(
                           'Destination',
                           style: TextStyle(
@@ -162,27 +368,59 @@ class _PostTripState extends State<PostTrip> {
                         ),
                       ),
                       TextFormField(
-                        focusNode: desinationFocusNode,
+                        controller: destinationController,
+                        focusNode: destinationFocusNode,
                         decoration: InputDecoration(
                           filled: true,
-                          prefixIcon: Icon(Icons.location_on),
+                          prefixIcon: const Icon(Icons.location_on),
                           hintText: 'Destination Location',
+                          suffixIcon: destinationController.text.isNotEmpty
+                              ? IconButton(
+                            icon: Icon(Icons.close_rounded),
+                            onPressed: () => handleClearClick(destinationController),
+                          )
+                              : null, // Only show the clear icon if there's text in the field
                           border: OutlineInputBorder(
                             borderSide: BorderSide.none,
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         textInputAction: TextInputAction.next,
-                        onFieldSubmitted: (_){
-                          FocusScope.of(context).requestFocus(stopsFocusNode);
+                        onChanged: (value) {
+                          activeController = destinationController;
+                          _updateSuggestions(value, destinationController);
                         },
-                        validator: (value){
+                        validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter destination location';
                           }
                           return null;
                         },
                       ),
+                      if (showDestinationContainer)
+                       /* Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Color(0XFFe6e0e9),
+                          ),*/Card(
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: destinationSuggestions.length,
+                            itemBuilder: (context, index) {
+                              final suggestion = destinationSuggestions[index];
+                              return ListTile(
+                                leading: const Icon(Icons.location_on),
+                                title: Text('${suggestion['city']}, ${suggestion['pname']}'),
+                                onTap: () {
+                                  destinationController.text = '${suggestion['city']}, ${suggestion['pname']}';
+                                  setState(() {
+                                    showDestinationContainer = false; // Hide the suggestions after selection
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        ),
                       SizedBox(height: 20),
                       Divider(
                         height: 4,
@@ -190,8 +428,8 @@ class _PostTripState extends State<PostTrip> {
                         color: Colors.black26,
                       ),
                       SizedBox(height: 20),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 3.0, bottom: 7),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 3.0, bottom: 7),
                         child: Text(
                           'Stops',
                           style: TextStyle(
@@ -200,23 +438,127 @@ class _PostTripState extends State<PostTrip> {
                           ),
                         ),
                       ),
-                      TextFormField(
-                        focusNode: stopsFocusNode,
-                        decoration: InputDecoration(
-                          filled: true,
-                          prefixIcon: Icon(Icons.add_location_alt_sharp),
-                          hintText: 'Add stops',
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide.none,
-                            borderRadius: BorderRadius.circular(10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: TextFormField(
+                                  controller: stopsController,
+                                  focusNode: stopsFocusNode,
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    prefixIcon: Icon(Icons.add_location_alt_sharp),
+                                    hintText: 'Stops Location',
+                                    suffixIcon: stopsController.text.isNotEmpty
+                                        ? IconButton(
+                                      icon: Icon(Icons.close_rounded),
+                                      onPressed: () => handleClearClick(stopsController),
+                                    )
+                                        : null, // Only show the clear icon if there's text in the field
+                                    border: OutlineInputBorder(
+                                      borderSide: BorderSide.none,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  textInputAction: TextInputAction.next,
+                                  onChanged: (value) {
+                                    _updateSuggestions(value, stopsController);
+                                  },
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: TextFormField(
+                                  focusNode: priceFocusNode,
+                                  controller: priceController,
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    hintText: 'Enter price',
+                                    border: OutlineInputBorder(
+                                      borderSide: BorderSide.none,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  textInputAction: TextInputAction.next,
+                                  onFieldSubmitted: (_) {
+                                    FocusScope.of(context).requestFocus(dateFocusNode);
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        textInputAction: TextInputAction.next,
-                        onFieldSubmitted: (_){
-                          FocusScope.of(context).requestFocus(dateFocusNode);
-                        },
+                          // Container for suggestions
+                          if (showStopsContainer)
+                           Card(
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                physics: NeverScrollableScrollPhysics(), // Prevent scrolling within the Container
+                                itemCount: stopsSuggestions.length,
+                                itemBuilder: (context, index) {
+                                  final suggestion = stopsSuggestions[index];
+                                  return ListTile(
+                                    leading: Icon(Icons.location_on),
+                                    title: Text('${suggestion['city']}, ${suggestion['pname']}'),
+                                    onTap: () {
+                                      stopsController.text = '${suggestion['city']}, ${suggestion['pname']}';
+                                      setState(() {
+                                        showStopsContainer = false; // Hide the suggestions after selection
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: ElevatedButton(
+                              style: ButtonStyle(
+                                shape: MaterialStateProperty.all(
+                                  RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12.0), // Adjust the radius as needed
+                                  ),
+                                ),
+                                elevation: MaterialStateProperty.all(5.0), // Adjust the elevation as needed
+                              ),
+                              onPressed: addStopAndPrice,
+                              child: Text(
+                                'Add',
+                                style: TextStyle(color: Colors.black),
+                              ),
+                            )
+
+                          ),
+                          SizedBox(height: 20), // Optional: Add space between fields and list
+                          ...stopsAndPrices.map((item) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 5),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Use space between to separate text and delete icon
+                                children: [
+                                  Expanded(
+                                    child: Text('${item['stop']} - ${item['price']}'),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.delete),
+                                    onPressed: () {
+                                      setState(() {
+                                        stopsAndPrices.remove(item);
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ],
                       ),
-                      SizedBox(height: 40),
+
+
+                      SizedBox(height: 20),
                       Divider(
                         endIndent: 100,
                         height: 4,
@@ -260,17 +602,17 @@ class _PostTripState extends State<PostTrip> {
                           onPressed: (int index) {
                             setState(() {
                               for (int buttonIndex = 0;
-                              buttonIndex < isSelected.length;
+                              buttonIndex < isSelectedTrip.length;
                               buttonIndex++) {
                                 if (buttonIndex == index) {
-                                  isSelected[buttonIndex] = true;
+                                  isSelectedTrip[buttonIndex] = true;
                                 } else {
-                                  isSelected[buttonIndex] = false;
+                                  isSelectedTrip[buttonIndex] = false;
                                 }
                               }
                             });
                           },
-                          isSelected: isSelected,
+                          isSelected: isSelectedTrip,
                         ),
                       ),
                       Padding(
@@ -378,7 +720,7 @@ class _PostTripState extends State<PostTrip> {
                       SizedBox(
                         height: 40,
                       ),
-                      Padding(
+                      /* Padding(
                         padding: const EdgeInsets.only(left: 3.0, bottom: 7),
                         child: Text(
                           'Vehicle details',
@@ -688,22 +1030,22 @@ class _PostTripState extends State<PostTrip> {
                       ),
                       SizedBox(
                         height: 40,
-                      ),
+                      ),*/
                       Padding(
                         padding: const EdgeInsets.only(left: 3.0,bottom: 7),
                         child: Text(
                           'Trip prefrences',
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                            color: Colors.black
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                              color: Colors.black
                           ),
                         ),
                       ),
                       Padding(
                         padding: const EdgeInsets.only(left: 3.0,bottom: 15),
                         child: Text(
-                            'This informs passengers of how much space you have for their luggage and extras before they book.',
+                          'This informs passengers of how much space you have for their luggage and extras before they book.',
                           style: TextStyle(
                             color: Colors.black54,
                           ),
@@ -729,7 +1071,7 @@ class _PostTripState extends State<PostTrip> {
                           selectedColor: Colors.white,
                           fillColor: Colors.black,
                           color: Colors.black,
-                          constraints: BoxConstraints(minHeight: 33.0, minWidth: 70.0),
+                          constraints: BoxConstraints(minHeight: 33.0, minWidth: 110.0),
                           children: <Widget>[
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -747,7 +1089,7 @@ class _PostTripState extends State<PostTrip> {
                               children: [
                                 Icon(Icons.work),
                                 SizedBox(width: 6,),
-                                Text('S'),
+                                Text('Backpack'),
                               ],
                             ),
                             Row(
@@ -755,15 +1097,7 @@ class _PostTripState extends State<PostTrip> {
                               children: [
                                 Icon(Icons.work),
                                 SizedBox(width: 6,),
-                                Text('M'),
-                              ],
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.work),
-                                SizedBox(width: 6,),
-                                Text('L'),
+                                Text('Cabin Bag'),
                               ],
                             ),
                           ],
@@ -781,15 +1115,22 @@ class _PostTripState extends State<PostTrip> {
                           isSelected: isSelected1,
                         ),
                       ),
+                      Text(
+                        'Note: Cabin bag must contain maximum of 23kg',
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                       Padding(
                         padding: const EdgeInsets.only(left: 3.0,top: 15,bottom: 10),
                         child: Text(
-                            'Back row sitting',
+                          'Back row sitting',
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
                           ),
-                            ),
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.only(left: 3.0),
@@ -822,25 +1163,25 @@ class _PostTripState extends State<PostTrip> {
                             ),
                             Row(
                               children: [
-                              Icon(Icons.group),
+                                Icon(Icons.group),
                                 SizedBox(width: 7,),
-                              Text('3 pepple'),],
+                                Text('3 pepple'),],
                             ),
                           ],
                           onPressed: (int index) {
                             setState(() {
                               for (int buttonIndex = 0;
-                              buttonIndex < isSelected.length;
+                              buttonIndex < isSelectedPeople.length;
                               buttonIndex++) {
                                 if (buttonIndex == index) {
-                                  isSelected[buttonIndex] = true;
+                                  isSelectedPeople[buttonIndex] = true;
                                 } else {
-                                  isSelected[buttonIndex] = false;
+                                  isSelectedPeople[buttonIndex] = false;
                                 }
                               }
                             });
                           },
-                          isSelected: isSelected,
+                          isSelected: isSelectedPeople,
                         ),
                       ),
                       SizedBox(height: 20,),
@@ -850,10 +1191,10 @@ class _PostTripState extends State<PostTrip> {
                           Padding(
                             padding: const EdgeInsets.only(left: 3.0),
                             child: Text(
-                              'Other',
-                              style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold)),),
+                                'Other',
+                                style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold)),),
                           SizedBox(height: 10),
                           Wrap(
                             spacing: 10, // Spacing between chips
@@ -901,59 +1242,51 @@ class _PostTripState extends State<PostTrip> {
                         height: 40,
                       ),
                       Padding(
-                          padding: EdgeInsets.only(left: 3,top: 15,bottom: 35),
+                        padding: EdgeInsets.only(left: 3,top: 15),
                         child: Text(
-                          'Empty seats',
+                          'Select Empty seats',
                           style: TextStyle(
                             fontSize:20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      Container(
-                        padding: EdgeInsets.all(10.0),
-                        decoration: BoxDecoration(
-                          color: Color(0xFFe0e8ea),
-                          border: Border.all(
-                            color: Color(0xFF51737A),
-                            width: 2.0,
-                          ),
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(8.0),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              'As a new driver, you can offer 3 seats and it increases to 7 once you\'ve driven 10 people.',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16.0,
-                              ),
-                            ),
-                            SizedBox(height: 8.0),
-                            Text(
-                              'Also, we recommend putting a maximum of 2 people per row to ensure everyone\'s comfort.',
-                              style: TextStyle(
-                                fontSize: 16.0,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 45,),
                       Padding(
-                        padding: const EdgeInsets.only(left: 3.0,bottom: 15),
-                        child: Text(
-                          'Select number',
+                        padding: const EdgeInsets.only(top: 15.0,bottom: 15),
+                        child: Text('Note: You can select maximum 7 seats',
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
+                              color: Colors.black54,
+                              fontSize: 16,
+                              fontStyle: FontStyle.italic
+                          ),),
                       ),
+
                       Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.remove,size: 30,),
+                            onPressed: () {
+                              setState(() {
+                                if (selectedSeats > 1) selectedSeats--;
+                              });
+                            },
+                          ),
+
+                          Text('$selectedSeats',
+                            style: TextStyle(
+                                fontSize: 17
+                            ),),
+                          IconButton(
+                            icon: Icon(Icons.add,size: 30,),
+                            onPressed: () {
+                              setState(() {
+                                if (selectedSeats < 7) selectedSeats++;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      /* Row(
                         children: List.generate(3, (index) {
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 3.0),
@@ -983,7 +1316,7 @@ class _PostTripState extends State<PostTrip> {
                             ),
                           );
                         }),
-                      ),
+                      ),*/
                       SizedBox(
                         height: 40,
                       ),
@@ -997,7 +1330,7 @@ class _PostTripState extends State<PostTrip> {
                         height: 40,
                       ),
                       Padding(
-                          padding: EdgeInsets.only(left: 3,bottom: 15,top: 15),
+                        padding: EdgeInsets.only(left: 3,bottom: 15,top: 15),
                         child: Text(
                           'Rules when posting a trip',
                           style: TextStyle(
@@ -1140,7 +1473,7 @@ class _PostTripState extends State<PostTrip> {
 
 
 
-              SizedBox(height: 70.0),
+                      SizedBox(height: 70.0),
                     ],
                   ),
                 ],
@@ -1155,8 +1488,11 @@ class _PostTripState extends State<PostTrip> {
           onTap: () {
             print('Post trip tapped');
             if (_formKey.currentState?.validate() ?? false) {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => Searchresult(initialTabIndex: 1,)));
+              _postTrip();
+
+            }
+            else {
+              _focusFirstEmptyField();
             }
 
           },
@@ -1182,6 +1518,28 @@ class _PostTripState extends State<PostTrip> {
   }
 
 
+  void _focusFirstEmptyField(){
+    if (departureController.text.isEmpty) {
+      FocusScope.of(context).requestFocus(departureFocusNode);
+      return;
+    }
+
+    if (destinationController.text.isEmpty) {
+      FocusScope.of(context).requestFocus(destinationFocusNode);
+      return;
+    }
+
+    /* if (dateController == null) {
+      FocusScope.of(context).requestFocus(dateFocusNode);
+      return;
+    }
+
+    if (timeController == null) {
+      FocusScope.of(context).requestFocus(timeFocusNode);
+      return;
+    }*/
+  }
+
 
   Future<void> _selectDate() async {
     DateTime? picked = await showDatePicker(
@@ -1197,3 +1555,5 @@ class _PostTripState extends State<PostTrip> {
     }
   }
 }
+
+

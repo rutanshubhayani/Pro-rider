@@ -5,6 +5,8 @@ import 'package:travel/book.dart';
 import 'package:travel/posttrip.dart';
 import 'package:travel/home.dart';
 
+import 'Inbox.dart';
+
 class Trippreview extends StatefulWidget {
   const Trippreview({super.key});
 

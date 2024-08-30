@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:travel/first.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 void main() {
   runApp(MyApp());
 }
@@ -15,8 +16,8 @@ class MyApp extends StatelessWidget {
       ),
       debugShowCheckedModeBanner: false,
       home: First(),
-
     );
   }
 }
+
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:travel/home.dart';
 import 'package:travel/verifyemail.dart';
 
 

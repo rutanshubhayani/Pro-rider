@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:travel/login.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'api.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   @override
@@ -24,15 +28,90 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final FocusNode _confirmpasswordFocusNode = FocusNode();
 
   // Handle Form Submission
-  void _submitForm() {
+  void _submitForm() async {
+    // Validate the form fields
     if (_formKey.currentState!.validate()) {
+      // Prepare the data to be sent to the API
+      final data = {
+        'uname': _namecontroller.text,
+        'umail': _emailcontroller.text,
+        'umobilenumber': _numbercontroller.text,
+        'upassword': _passwordcontroller.text,
+        'uconfirmpassword': _confirmpasswordcontroller.text,
+        // Assuming you want to include the phone number as well:
+      };
+
+      // Show a loading indicator while waiting for the response
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text('Registration complete'),
+          content: Text('Registering...'),
+          duration: Duration(seconds: 1),
         ),
       );
+
+      try {
+        // Make the POST request
+        final response = await http.post(
+          Uri.parse('${API.api1}/register'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(data),
+        );
+
+        // Handle the response
+        if (response.statusCode == 201) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text('User registered successfully'),
+            ),
+          );
+          // Navigate to the login screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => LoginScreen()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text('Registration failed: ${response.body}'),
+            ),
+          );
+        }
+      } catch (error) {
+        // Handle network or other errors
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Error: $error'),
+          ),
+        );
+      }
+    } else {
+      // If form validation fails, set focus to the first empty field
+      FocusScope.of(context).requestFocus(_getFirstEmptyFocusNode());
     }
+  }
+
+  // Helper method to get the first empty FocusNode
+  FocusNode _getFirstEmptyFocusNode() {
+    if (_namecontroller.text.isEmpty) {
+      return _nameFocusNode;
+    }
+    if (_emailcontroller.text.isEmpty) {
+      return _emailFocusNode;
+    }
+    if (_numbercontroller.text.isEmpty) {
+      return _numberFocusNode;
+    }
+    if (_passwordcontroller.text.isEmpty) {
+      return _passwordFocusNode;
+    }
+    if (_confirmpasswordcontroller.text.isEmpty) {
+      return _confirmpasswordFocusNode;
+    }
+    // If no fields are empty, return a default focus node (could be null or a dummy node)
+    return FocusNode();
   }
 
   @override
@@ -118,7 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       Text(
-                        'Next Trip.',
+                        'Prorider',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -212,13 +291,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           FocusScope.of(context).requestFocus(_passwordFocusNode);
                           print("Phone Number ------------------------------------------- ${number}");
                         },
-
                         validator: (value) {
                           if (value == null || value.number == null || value.number.isEmpty) {
                             return 'Please enter your phone number';
                           }
-                          if (value.number.length < 10) {
-                            return 'Phone number must be at least 10 digits long';
+                          if (value.number.length < 10 || value.number.length > 10) {
+                            return 'Phone number must be 10 digits long';
                           }
                           return null;
                         },
@@ -263,8 +341,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           if (value.length < 8) {
                             return 'Password must be at least 8 characters long';
                           }
+                          if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                            return 'Password must contain at least one uppercase letter';
+                          }
+                          if (!RegExp(r'[a-z]').hasMatch(value)) {
+                            return 'Password must contain at least one lowercase letter';
+                          }
+                          if (!RegExp(r'[0-9]').hasMatch(value)) {
+                            return 'Password must contain at least one digit';
+                          }
+                          if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                            return 'Password must contain at least one special character';
+                          }
                           return null;
                         },
+
                       ),
                       SizedBox(height: 16),
                       TextFormField(

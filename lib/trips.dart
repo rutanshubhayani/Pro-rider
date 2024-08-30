@@ -1,7 +1,7 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:travel/ride.dart';
 import 'package:travel/trippreview.dart';
 
 
@@ -36,7 +36,7 @@ class Trips extends StatelessWidget {
                   ),
                   child: const TabBar(
                     indicatorSize: TabBarIndicatorSize.tab,
-                    dividerColor: Colors.transparent,
+                    dividerColor: Colors.transparent, // underline of tabbar
                     indicator: BoxDecoration(
                       color: Color(0xFFece9ec),
                       borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -54,11 +54,11 @@ class Trips extends StatelessWidget {
             ),
           ),
         ),
-        body: const TabBarView(
+        body: TabBarView(
           children: [
-            ActiveScreen(),
+             ActiveScreen(),
             RecentScreen(),
-            CancelScreen(),
+             CancelScreen(),
           ],
         ),
       ),
@@ -102,6 +102,36 @@ class ActiveScreen extends StatelessWidget {
                       Row(
                         children: [
                           Padding(
+                            padding: const EdgeInsets.only(left: 15.0,top: 10,bottom: 10),
+                            child: Row(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white, // You can set a background color if needed
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Color(0xFF51737A),
+                                      width: 3,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage: NetworkImage('https://picsum.photos/200/300'),
+                                  ),
+                                ),
+                                SizedBox(width: 10,),
+                                Icon(Icons.verified,color: Colors.blue,),
+                                SizedBox(width: 10,),
+                                Text('Chandeep',// Add user id here
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                         /* Padding(
                             padding: const EdgeInsets.only(top: 13.0, left: 15),
                             child: Text(
                               formattedDate,
@@ -110,24 +140,30 @@ class ActiveScreen extends StatelessWidget {
                                   fontWeight: FontWeight.bold
                               ),
                             ),
-                          ),
+                          ),*/
                           SizedBox(width: 60,),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0),
-                            child: Text(
-                              '$index seats left', // Display the number of seats left
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                          Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 35,bottom: 10.0),
+                                child: Text(
+                                  '$index seats left', // Display the number of seats left
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
+                              Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
+
+                            ],
                           ),
                         ],
                       ),
                       Row(
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
+                            padding: const EdgeInsets.only(left: 15),
                             child: RichText(
                               text: TextSpan(
                                 children: [
@@ -150,10 +186,10 @@ class ActiveScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0,left: 35),
-                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                          ),
+                          /*Padding(
+                            padding: const EdgeInsets.only(left: 35),
+                            child: Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
+                          ),*/
                         ],
                       ),
                       Padding(
@@ -181,41 +217,478 @@ class ActiveScreen extends StatelessWidget {
 
 
                       Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
-                        child: Row(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white, // You can set a background color if needed
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Color(0xFF51737A),
-                                  width: 3,
-                                ),
-                              ),
-                              child: CircleAvatar(
-                                radius: 30,
-                                backgroundImage: NetworkImage('https://picsum.photos/200/300'),
-                              ),
-                            ),
-                            SizedBox(width: 10,),
-                            Icon(Icons.verified,color: Colors.blue,),
-                            SizedBox(width: 10,),
-                            Text('Chandeep',// Add user id here
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ],
+                        padding: const EdgeInsets.only(top: 13.0, left: 15),
+                        child: Text(
+                          formattedDate,
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold
+                          ),
                         ),
                       ),
+                      SizedBox(height: 10,)
                     ],
                   ),
                 ),
               ),
             ),
             SizedBox(height: 8,),
+            GestureDetector(
+              onTap: (){
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => Trippreview()));
+              },
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(
+                    color: Color(0xFF51737A),
+                    width: 1.5,
+                  ),
+                ),
+                child: SizedBox(
+                  width: double.infinity, // Adjust dimensions as needed
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 15.0,top: 10,bottom: 10),
+                            child: Row(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white, // You can set a background color if needed
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Color(0xFF51737A),
+                                      width: 3,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage: NetworkImage('https://picsum.photos/200/300'),
+                                  ),
+                                ),
+                                SizedBox(width: 10,),
+                                Icon(Icons.verified,color: Colors.blue,),
+                                SizedBox(width: 10,),
+                                Text('Chandeep',// Add user id here
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          /* Padding(
+                            padding: const EdgeInsets.only(top: 13.0, left: 15),
+                            child: Text(
+                              formattedDate,
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold
+                              ),
+                            ),
+                          ),*/
+                          SizedBox(width: 60,),
+                          Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 35,bottom: 10.0),
+                                child: Text(
+                                  '$index seats left', // Display the number of seats left
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
+
+                            ],
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 15),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  // TextSpan for 'Brampton' in bold black color
+                                  TextSpan(
+                                    text: 'Brampton',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  // TextSpan for ' windston' in grey color
+                                  TextSpan(
+                                    text: '  Brampton, ON, Canada',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          /*Padding(
+                            padding: const EdgeInsets.only(left: 35),
+                            child: Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
+                          ),*/
+                        ],
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(top: 13,left: 15),
+                        child: RichText(
+                          text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Windsor',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                TextSpan(
+                                    text: '  Windsor, ON, Canada',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    )
+                                )
+                              ]
+                          ),
+                        ),
+                      ),
+
+
+                      Padding(
+                        padding: const EdgeInsets.only(top: 13.0, left: 15),
+                        child: Text(
+                          formattedDate,
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10,)
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 8,),
+            GestureDetector(
+              onTap: (){
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => Trippreview()));
+              },
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(
+                    color: Color(0xFF51737A),
+                    width: 1.5,
+                  ),
+                ),
+                child: SizedBox(
+                  width: double.infinity, // Adjust dimensions as needed
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 15.0,top: 10,bottom: 10),
+                            child: Row(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white, // You can set a background color if needed
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Color(0xFF51737A),
+                                      width: 3,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage: NetworkImage('https://picsum.photos/200/300'),
+                                  ),
+                                ),
+                                SizedBox(width: 10,),
+                                Icon(Icons.verified,color: Colors.blue,),
+                                SizedBox(width: 10,),
+                                Text('Chandeep',// Add user id here
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          /* Padding(
+                            padding: const EdgeInsets.only(top: 13.0, left: 15),
+                            child: Text(
+                              formattedDate,
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold
+                              ),
+                            ),
+                          ),*/
+                          SizedBox(width: 60,),
+                          Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 35,bottom: 10.0),
+                                child: Text(
+                                  '$index seats left', // Display the number of seats left
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
+
+                            ],
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 15),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  // TextSpan for 'Brampton' in bold black color
+                                  TextSpan(
+                                    text: 'Brampton',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  // TextSpan for ' windston' in grey color
+                                  TextSpan(
+                                    text: '  Brampton, ON, Canada',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          /*Padding(
+                            padding: const EdgeInsets.only(left: 35),
+                            child: Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
+                          ),*/
+                        ],
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(top: 13,left: 15),
+                        child: RichText(
+                          text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Windsor',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                TextSpan(
+                                    text: '  Windsor, ON, Canada',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    )
+                                )
+                              ]
+                          ),
+                        ),
+                      ),
+
+
+                      Padding(
+                        padding: const EdgeInsets.only(top: 13.0, left: 15),
+                        child: Text(
+                          formattedDate,
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10,)
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 8,),
+            GestureDetector(
+              onTap: (){
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => Trippreview()));
+              },
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(
+                    color: Color(0xFF51737A),
+                    width: 1.5,
+                  ),
+                ),
+                child: SizedBox(
+                  width: double.infinity, // Adjust dimensions as needed
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 15.0,top: 10,bottom: 10),
+                            child: Row(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white, // You can set a background color if needed
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Color(0xFF51737A),
+                                      width: 3,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage: NetworkImage('https://picsum.photos/200/300'),
+                                  ),
+                                ),
+                                SizedBox(width: 10,),
+                                Icon(Icons.verified,color: Colors.blue,),
+                                SizedBox(width: 10,),
+                                Text('Chandeep',// Add user id here
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          /* Padding(
+                            padding: const EdgeInsets.only(top: 13.0, left: 15),
+                            child: Text(
+                              formattedDate,
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold
+                              ),
+                            ),
+                          ),*/
+                          SizedBox(width: 60,),
+                          Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 35,bottom: 10.0),
+                                child: Text(
+                                  '$index seats left', // Display the number of seats left
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
+
+                            ],
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 15),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  // TextSpan for 'Brampton' in bold black color
+                                  TextSpan(
+                                    text: 'Brampton',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  // TextSpan for ' windston' in grey color
+                                  TextSpan(
+                                    text: '  Brampton, ON, Canada',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          /*Padding(
+                            padding: const EdgeInsets.only(left: 35),
+                            child: Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
+                          ),*/
+                        ],
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(top: 13,left: 15),
+                        child: RichText(
+                          text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Windsor',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                TextSpan(
+                                    text: '  Windsor, ON, Canada',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    )
+                                )
+                              ]
+                          ),
+                        ),
+                      ),
+
+
+                      Padding(
+                        padding: const EdgeInsets.only(top: 13.0, left: 15),
+                        child: Text(
+                          formattedDate,
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10,)
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            /* Old card details
             GestureDetector(
               onTap: (){
                 Navigator.push(context,
@@ -349,277 +822,7 @@ class ActiveScreen extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-            SizedBox(height: 8,),
-            GestureDetector(
-              onTap: (){
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => Trippreview()));
-              },
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(
-                    color: Color(0xFF51737A),
-                    width: 1.5,
-                  ),
-                ),
-                child: SizedBox(
-                  width: double.infinity, // Adjust dimensions as needed
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
-                            child: Text(
-                              formattedDate,
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 60,),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0),
-                            child: Text(
-                              '$index seats left', // Display the number of seats left
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  // TextSpan for 'Brampton' in bold black color
-                                  TextSpan(
-                                    text: 'Brampton',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  // TextSpan for ' windston' in grey color
-                                  TextSpan(
-                                    text: '  Brampton, ON, Canada',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0,left: 35),
-                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 13,left: 15),
-                        child: RichText(
-                          text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'Windsor',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                TextSpan(
-                                    text: '  Windsor, ON, Canada',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                    )
-                                )
-                              ]
-                          ),
-                        ),
-                      ),
-
-
-                      Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
-                        child: Row(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white, // You can set a background color if needed
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Color(0xFF51737A),
-                                  width: 3,
-                                ),
-                              ),
-                              child: CircleAvatar(
-                                radius: 30,
-                                backgroundImage: NetworkImage('https://picsum.photos/200/300'),
-                              ),
-                            ),
-                            SizedBox(width: 10,),
-                            Icon(Icons.verified,color: Colors.blue,),
-                            SizedBox(width: 10,),
-                            Text('Chandeep',// Add user id here
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 8,),
-            GestureDetector(
-              onTap: (){
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => Trippreview()));
-              },
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(
-                    color: Color(0xFF51737A),
-                    width: 1.5,
-                  ),
-                ),
-                child: SizedBox(
-                  width: double.infinity, // Adjust dimensions as needed
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
-                            child: Text(
-                              formattedDate,
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 60,),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0),
-                            child: Text(
-                              '$index seats left', // Display the number of seats left
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  // TextSpan for 'Brampton' in bold black color
-                                  TextSpan(
-                                    text: 'Brampton',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  // TextSpan for ' windston' in grey color
-                                  TextSpan(
-                                    text: '  Brampton, ON, Canada',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0,left: 35),
-                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 13,left: 15),
-                        child: RichText(
-                          text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'Windsor',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                TextSpan(
-                                    text: '  Windsor, ON, Canada',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                    )
-                                )
-                              ]
-                          ),
-                        ),
-                      ),
-
-
-                      Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
-                        child: Row(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white, // You can set a background color if needed
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Color(0xFF51737A),
-                                  width: 3,
-                                ),
-                              ),
-                              child: CircleAvatar(
-                                radius: 30,
-                                backgroundImage: NetworkImage('https://picsum.photos/200/300'),
-                              ),
-                            ),
-                            SizedBox(width: 10,),
-                            Icon(Icons.verified,color: Colors.blue,),
-                            SizedBox(width: 10,),
-                            Text('Chandeep',// Add user id here
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            ),*/
 
 
 
@@ -631,430 +834,207 @@ class ActiveScreen extends StatelessWidget {
   }
 }
 
-class RecentScreen extends StatelessWidget {
-  final int index = 3;
-  const RecentScreen({super.key});
+class RecentScreen extends StatefulWidget {
+  @override
+  _RecentScreenState createState() => _RecentScreenState();
+}
+
+class _RecentScreenState extends State<RecentScreen> {
+  List<Map<String, dynamic>> trips = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchTrips();
+  }
+
+  Future<void> fetchTrips() async {
+    final response = await http.get(Uri.parse('http://202.21.32.153:8081/get-trips'));
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+
+      setState(() {
+        trips = data.map((trip) {
+          return {
+            'userName': 'Driver Name', // Placeholder for driver's name
+            'userImage': 'https://picsum.photos/200/300', // Placeholder for driver's image
+            'seatsLeft': trip['empty_seats'],
+            'departure': trip['departure'],
+            'destination': trip['destination'],
+            'date': DateTime.parse(trip['leaving_date_time']),
+          };
+        }).toList();
+      });
+    } else {
+      // Handle the error
+      print('Failed to load trips');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    DateTime now = DateTime.now();
-    String formattedDate = DateFormat('E, MMM d \'at\' h:mma').format(now);
+    DateFormat dateFormat = DateFormat('E, MMM d \'at\' h:mma');
+
     return Padding(
-      padding: const EdgeInsets.only(left: 13.0,right: 13,top: 13),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: (){
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => Trippreview()));
-              },
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(
-                    color: Color(0xFF51737A),
-                    width: 1.5,
-                  ),
+      padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 13),
+      child: ListView.builder(
+        itemCount: trips.length,
+        itemBuilder: (context, index) {
+          final trip = trips[index];
+          String formattedDate = dateFormat.format(trip['date']);
+
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Trippreview()),
+              );
+            },
+            child: Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                side: BorderSide(
+                  color: Color(0xFF51737A),
+                  width: 1.5,
                 ),
-                child: SizedBox(
-                  width: double.infinity, // Adjust dimensions as needed
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
-                            child: Text(
-                              formattedDate,
-                              style: TextStyle(
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 15.0, vertical: 10),
+                          child: Row(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Color(0xFF51737A),
+                                    width: 3,
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 30,
+                                  backgroundImage: NetworkImage(
+                                      trip['userImage']),
+                                ),
+                              ),
+                              SizedBox(width: 5),
+                              Icon(Icons.verified, color: Colors.blue),
+                              SizedBox(width: 5),
+                              Text(
+                                trip['userName'],
+                                style: TextStyle(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.bold
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Spacer(),
+                        Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                  top: 35, bottom: 10.0, right: 20),
+                              child: Text(
+                                '${trip['seatsLeft']} seats left',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          SizedBox(width: 60,),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0),
-                            child: Text(
-                              '$index seats left', // Display the number of seats left
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Image.asset(
+                              'images/smallbag.png',
+                              height: 25,
+                              width: 25,
+                              color: Color(0XFF2196f3),
                             ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  // TextSpan for 'Brampton' in bold black color
-                                  TextSpan(
-                                    text: 'Brampton',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  // TextSpan for ' windston' in grey color
-                                  TextSpan(
-                                    text: '  Brampton, ON, Canada',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0,left: 35),
-                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 13,left: 15),
-                        child: RichText(
-                          text: TextSpan(
+                          ],
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 15),
+                          child: RichText(
+                            text: TextSpan(
                               children: [
-                                TextSpan(
-                                  text: 'Windsor',
+                                /*TextSpan(
+                                  text: 'Brampton',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black,
                                   ),
-                                ),
+                                ),*/
                                 TextSpan(
-                                    text: '  Windsor, ON, Canada',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                    )
-                                )
-                              ]
+                                  text: '  ${trip['departure']}',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-
-
-                      Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
-                        child: Row(
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 13, left: 15),
+                      child: RichText(
+                        text: TextSpan(
                           children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white, // You can set a background color if needed
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Color(0xFF51737A),
-                                  width: 3,
-                                ),
-                              ),
-                              child: CircleAvatar(
-                                radius: 30,
-                                backgroundImage: NetworkImage('https://picsum.photos/200/300'),
-                              ),
-                            ),
-                            SizedBox(width: 10,),
-                            Icon(Icons.verified,color: Colors.blue,),
-                            SizedBox(width: 10,),
-                            Text('Chandeep',// Add user id here
+                            /* TextSpan(
+                              text: 'Windsor',
                               style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),*/
+                            TextSpan(
+                              text: '  ${trip['destination']}',
+                              style: TextStyle(
+                                color: Colors.black,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 13.0, left: 15),
+                      child: Text(
+                        formattedDate,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                  ],
                 ),
               ),
             ),
-            SizedBox(height: 8,),
-            GestureDetector(
-              onTap: (){
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => Trippreview()));
-              },
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(
-                    color: Color(0xFF51737A),
-                    width: 1.5,
-                  ),
-                ),
-                child: SizedBox(
-                  width: double.infinity, // Adjust dimensions as needed
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
-                            child: Text(
-                              formattedDate,
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 60,),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0),
-                            child: Text(
-                              '$index seats left', // Display the number of seats left
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  // TextSpan for 'Brampton' in bold black color
-                                  TextSpan(
-                                    text: 'Brampton',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  // TextSpan for ' windston' in grey color
-                                  TextSpan(
-                                    text: '  Brampton, ON, Canada',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0,left: 35),
-                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 13,left: 15),
-                        child: RichText(
-                          text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'Windsor',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                TextSpan(
-                                    text: '  Windsor, ON, Canada',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                    )
-                                )
-                              ]
-                          ),
-                        ),
-                      ),
-
-
-                      Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
-                        child: Row(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white, // You can set a background color if needed
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Color(0xFF51737A),
-                                  width: 3,
-                                ),
-                              ),
-                              child: CircleAvatar(
-                                radius: 30,
-                                backgroundImage: NetworkImage('https://picsum.photos/200/300'),
-                              ),
-                            ),
-                            SizedBox(width: 10,),
-                            Icon(Icons.verified,color: Colors.blue,),
-                            SizedBox(width: 10,),
-                            Text('Chandeep',// Add user id here
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 8,),
-            GestureDetector(
-              onTap: (){
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => Trippreview()));
-              },
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(
-                    color: Color(0xFF51737A),
-                    width: 1.5,
-                  ),
-                ),
-                child: SizedBox(
-                  width: double.infinity, // Adjust dimensions as needed
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
-                            child: Text(
-                              formattedDate,
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 60,),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0),
-                            child: Text(
-                              '$index seats left', // Display the number of seats left
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  // TextSpan for 'Brampton' in bold black color
-                                  TextSpan(
-                                    text: 'Brampton',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  // TextSpan for ' windston' in grey color
-                                  TextSpan(
-                                    text: '  Brampton, ON, Canada',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0,left: 35),
-                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 13,left: 15),
-                        child: RichText(
-                          text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'Windsor',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                TextSpan(
-                                    text: '  Windsor, ON, Canada',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                    )
-                                )
-                              ]
-                          ),
-                        ),
-                      ),
-
-
-                      Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
-                        child: Row(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white, // You can set a background color if needed
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Color(0xFF51737A),
-                                  width: 3,
-                                ),
-                              ),
-                              child: CircleAvatar(
-                                radius: 30,
-                                backgroundImage: NetworkImage('https://picsum.photos/200/300'),
-                              ),
-                            ),
-                            SizedBox(width: 10,),
-                            Icon(Icons.verified,color: Colors.blue,),
-                            SizedBox(width: 10,),
-                            Text('Chandeep',// Add user id here
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 }
+
+
+
 
 class CancelScreen extends StatelessWidget {
   final int index = 3; // Replace with your actual variable or logic
@@ -1092,6 +1072,36 @@ class CancelScreen extends StatelessWidget {
                       Row(
                         children: [
                           Padding(
+                            padding: const EdgeInsets.only(left: 15.0,top: 10,bottom: 10),
+                            child: Row(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white, // You can set a background color if needed
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Color(0xFF51737A),
+                                      width: 3,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage: NetworkImage('https://picsum.photos/200/300'),
+                                  ),
+                                ),
+                                SizedBox(width: 10,),
+                                Icon(Icons.verified,color: Colors.blue,),
+                                SizedBox(width: 10,),
+                                Text('Chandeep',// Add user id here
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          /* Padding(
                             padding: const EdgeInsets.only(top: 13.0, left: 15),
                             child: Text(
                               formattedDate,
@@ -1100,24 +1110,30 @@ class CancelScreen extends StatelessWidget {
                                   fontWeight: FontWeight.bold
                               ),
                             ),
-                          ),
+                          ),*/
                           SizedBox(width: 60,),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0),
-                            child: Text(
-                              '$index seats left', // Display the number of seats left
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                          Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 35,bottom: 10.0),
+                                child: Text(
+                                  '$index seats left', // Display the number of seats left
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
+                              Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
+
+                            ],
                           ),
                         ],
                       ),
                       Row(
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
+                            padding: const EdgeInsets.only(left: 15),
                             child: RichText(
                               text: TextSpan(
                                 children: [
@@ -1140,10 +1156,10 @@ class CancelScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0,left: 35),
-                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                          ),
+                          /*Padding(
+                            padding: const EdgeInsets.only(left: 35),
+                            child: Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
+                          ),*/
                         ],
                       ),
                       Padding(
@@ -1171,35 +1187,16 @@ class CancelScreen extends StatelessWidget {
 
 
                       Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
-                        child: Row(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white, // You can set a background color if needed
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Color(0xFF51737A),
-                                  width: 3,
-                                ),
-                              ),
-                              child: CircleAvatar(
-                                radius: 30,
-                                backgroundImage: NetworkImage('https://picsum.photos/200/300'),
-                              ),
-                            ),
-                            SizedBox(width: 10,),
-                            Icon(Icons.verified,color: Colors.blue,),
-                            SizedBox(width: 10,),
-                            Text('Chandeep',// Add user id here
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ],
+                        padding: const EdgeInsets.only(top: 13.0, left: 15),
+                        child: Text(
+                          formattedDate,
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold
+                          ),
                         ),
                       ),
+                      SizedBox(height: 10,)
                     ],
                   ),
                 ),
@@ -1227,6 +1224,36 @@ class CancelScreen extends StatelessWidget {
                       Row(
                         children: [
                           Padding(
+                            padding: const EdgeInsets.only(left: 15.0,top: 10,bottom: 10),
+                            child: Row(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white, // You can set a background color if needed
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Color(0xFF51737A),
+                                      width: 3,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage: NetworkImage('https://picsum.photos/200/300'),
+                                  ),
+                                ),
+                                SizedBox(width: 10,),
+                                Icon(Icons.verified,color: Colors.blue,),
+                                SizedBox(width: 10,),
+                                Text('Chandeep',// Add user id here
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          /* Padding(
                             padding: const EdgeInsets.only(top: 13.0, left: 15),
                             child: Text(
                               formattedDate,
@@ -1235,24 +1262,30 @@ class CancelScreen extends StatelessWidget {
                                   fontWeight: FontWeight.bold
                               ),
                             ),
-                          ),
+                          ),*/
                           SizedBox(width: 60,),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0),
-                            child: Text(
-                              '$index seats left', // Display the number of seats left
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                          Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 35,bottom: 10.0),
+                                child: Text(
+                                  '$index seats left', // Display the number of seats left
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
+                              Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
+
+                            ],
                           ),
                         ],
                       ),
                       Row(
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
+                            padding: const EdgeInsets.only(left: 15),
                             child: RichText(
                               text: TextSpan(
                                 children: [
@@ -1275,10 +1308,10 @@ class CancelScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 13.0,left: 35),
-                            child: Image.asset('images/smallbag.png',height: 25,width: 25,),
-                          ),
+                          /*Padding(
+                            padding: const EdgeInsets.only(left: 35),
+                            child: Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
+                          ),*/
                         ],
                       ),
                       Padding(
@@ -1306,35 +1339,16 @@ class CancelScreen extends StatelessWidget {
 
 
                       Padding(
-                        padding: const EdgeInsets.only(left: 15.0,top: 15,bottom: 15),
-                        child: Row(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white, // You can set a background color if needed
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Color(0xFF51737A),
-                                  width: 3,
-                                ),
-                              ),
-                              child: CircleAvatar(
-                                radius: 30,
-                                backgroundImage: NetworkImage('https://picsum.photos/200/300'),
-                              ),
-                            ),
-                            SizedBox(width: 10,),
-                            Icon(Icons.verified,color: Colors.blue,),
-                            SizedBox(width: 10,),
-                            Text('Chandeep',// Add user id here
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ],
+                        padding: const EdgeInsets.only(top: 13.0, left: 15),
+                        child: Text(
+                          formattedDate,
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold
+                          ),
                         ),
                       ),
+                      SizedBox(height: 10,)
                     ],
                   ),
                 ),

@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/src/routes/transitions_type.dart';
+import 'package:travel/postrequest.dart';
+import 'package:travel/posttrip.dart';
+import 'find.dart';
+import 'home.dart';
 
 class Message {
   String text;
@@ -9,6 +16,272 @@ class Message {
     required this.text,
     required this.isSentByMe,
   });
+}
+
+class Inbox1 extends StatelessWidget {
+  const Inbox1({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 20.0),
+          child: Container(
+            height: 40,
+            width: 40,
+            child: GestureDetector(
+              onTap: () {
+               // Get.to(UserProfile(userName: ,),transition: Transition.leftToRight);
+              },
+              child: Image.asset(
+                'images/blogo.png',
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          OutlinedButton.icon(
+            icon: Icon(Icons.search, color: Colors.black),
+            onPressed: () {
+             /* Navigator.push(
+                context,
+               MaterialPageRoute(builder: (context) => FindScreen(userName: '', usermail: '',)),
+              );*/
+            },
+            label: Text(
+              'Find',
+              style: TextStyle(color: Colors.black),
+            ),
+          ),
+          SizedBox(width: 15),
+        ],
+      ),
+      body: InboxMain(),
+    );
+  }
+}
+
+
+class InboxMain extends StatefulWidget {
+  @override
+  State<InboxMain> createState() => _InboxMainState();
+}
+
+class _InboxMainState extends State<InboxMain> {
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+      if (index == 1) { // Navigate to Trips screen
+        Get.to(() => HomeScreen(initialIndex: 1));
+      }
+    });
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Text(
+              'Inbox',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 134.0),
+              child: TextButton(
+                onPressed: () {},
+                child: Row(
+                  children: [
+                    Icon(Icons.archive_outlined, size: 25, color: Colors.black,),
+                    SizedBox(width: 2,),
+                    Text(
+                      'Archived',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.only(right: 5.0),
+        child: Scrollbar(
+          controller: ScrollController(),
+          trackVisibility: true,
+          thickness: 2,
+          radius: Radius.circular(20),
+          child: ListView.builder(
+            controller: ScrollController(),
+            itemCount: 3,
+            itemBuilder: (context, index) {
+              return GestureDetector(
+                onTap: () {
+                  Get.to(() => InboxScreen(),
+                    transition: Transition.rightToLeft,
+                  );
+                },
+                child: Inbox(),
+              );
+            },
+          ),
+        ),
+      ),
+      bottomNavigationBar: Container(
+        color: Colors.white, // Background color of the bottom navigation bar
+        height: kBottomNavigationBarHeight,
+        child: Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () {
+                  Get.to(() => PostTrip()); // Navigate to HomeScreen
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.directions_car,size: 20,),
+                    Text('Driver',style: TextStyle(fontSize: 14),),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 15.0,bottom: 15),
+              child: VerticalDivider(
+                width: 1,
+                color: Colors.grey, // Color of the divider
+              ),
+            ),
+            Expanded(
+              child: InkWell(
+                onTap: () {
+                  Get.to(() => InboxMain()); // Navigate to HomeScreen
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.inbox,size: 20,),
+                    Text('Inbox',style: TextStyle(fontSize: 14),),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 15.0,bottom: 15),
+              child: VerticalDivider(
+                width: 1,
+                color: Colors.grey, // Color of the divider
+              ),
+            ),
+            Expanded(
+              child: InkWell(
+                onTap: () {
+                  _onItemTapped(1); // Set index for Trips screen
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.trip_origin,size: 20,),
+                    Text('Trips',style: TextStyle(fontSize: 14),),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 15.0,bottom: 15),
+              child: VerticalDivider(
+                width: 1,
+                color: Colors.grey, // Color of the divider
+              ),
+            ),
+            Expanded(
+              child: InkWell(
+                onTap: () {
+                  Get.to(Postrequest());
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.person,size: 20,),
+                    Text('Passenger',style: TextStyle(fontSize: 14),),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class Inbox extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 15.0),
+          child: Row(
+            children: [
+              SizedBox(width: 17,),
+              CircleAvatar(
+                radius: 30,
+                backgroundImage: NetworkImage('https://picsum.photos/seed/${DateTime.now().millisecondsSinceEpoch}/200/300'),
+              ),
+              SizedBox(width: 10,),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Smiely',
+                        style: TextStyle(fontSize: 15),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5.0, right: 5),
+                        child: Icon(Icons.circle, size: 6,),
+                      ),
+                      Text(
+                        'Inquiry',
+                        style: TextStyle(fontSize: 15),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        'Brampton to Windsor',
+                        style: TextStyle(fontSize: 15),
+                      ),
+                      Text(
+                        ' on ',
+                        style: TextStyle(fontSize: 15),
+                      ),
+                      Text(
+                        'Fri, Jul 5',
+                        style: TextStyle(fontSize: 15),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class InboxScreen extends StatefulWidget {

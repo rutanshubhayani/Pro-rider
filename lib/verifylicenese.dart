@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:travel/Licenese.dart';
 
 class VerifyLicense extends StatefulWidget {
   const VerifyLicense({Key? key}) : super(key: key);
@@ -210,25 +211,13 @@ class _VerifyLicenseState extends State<VerifyLicense> {
                     : ElevatedButton(
                   onPressed: () {
                     if (_photoUploaded) {
-                      // Show the snackbar with "Photo Submitted" message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Photo Submitted',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              Icon(
-                                Icons.check_circle,
-                                color: Colors.white,
-                              ),
-                            ],
+                      // Navigate to the ImageScreen when form is submitted
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => License(
+                            imageFile: _selectedImage!,
                           ),
-                          backgroundColor: Color(0xFF2e2c2f),
-                          behavior: SnackBarBehavior.floating,
                         ),
                       );
                       setState(() {
