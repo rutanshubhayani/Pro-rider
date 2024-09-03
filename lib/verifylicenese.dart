@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:travel/Licenese.dart';
 
 class VerifyLicense extends StatefulWidget {
   const VerifyLicense({Key? key}) : super(key: key);
@@ -13,14 +12,14 @@ class VerifyLicense extends StatefulWidget {
 class _VerifyLicenseState extends State<VerifyLicense> {
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
-  bool _photoUploaded = false; // Flag to track if photo is uploaded
-  double _rotationAngle = 0; // Track rotation angle
-  bool _submitted = false; // Flag to track if form is submitted
+  bool _photoUploaded = false;
+  double _rotationAngle = 0;
+  bool _submitted = false;
 
   void _removeImage() {
     setState(() {
       _selectedImage = null;
-      _photoUploaded = false; // Reset flag when image is removed
+      _photoUploaded = false;
     });
   }
 
@@ -28,10 +27,13 @@ class _VerifyLicenseState extends State<VerifyLicense> {
     try {
       final pickedImage = await _picker.pickImage(source: source);
       if (pickedImage != null) {
+        print("Picked image path: ${pickedImage.path}");
+        final imageFile = File(pickedImage.path);
+        print("File exists: ${await imageFile.exists()}");
         setState(() {
-          _selectedImage = File(pickedImage.path);
-          _photoUploaded = true; // Set flag when image is selected
-          _rotationAngle = 0; // Reset rotation angle when new image is selected
+          _selectedImage = imageFile;
+          _photoUploaded = true;
+          _rotationAngle = 0;
         });
       }
     } catch (e) {
@@ -114,7 +116,7 @@ class _VerifyLicenseState extends State<VerifyLicense> {
         padding: const EdgeInsets.only(top: 20.0),
         child: Column(
           children: [
-            if (!_submitted) // Show image selection only if form is not submitted
+            if (!_submitted)
               GestureDetector(
                 onTap: () async {
                   showModalBottomSheet(
@@ -207,24 +209,27 @@ class _VerifyLicenseState extends State<VerifyLicense> {
               child: SizedBox(
                 width: double.infinity,
                 child: _submitted
-                    ? SizedBox.shrink() // Hide submit button if form is submitted
+                    ? SizedBox.shrink()
                     : ElevatedButton(
                   onPressed: () {
                     if (_photoUploaded) {
-                      // Navigate to the ImageScreen when form is submitted
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => License(
-                            imageFile: _selectedImage!,
-                          ),
-                        ),
-                      );
+                      print("Photo uploaded, navigating to License screen");
                       setState(() {
-                        _submitted = true; // Mark form as submitted
+                        _submitted = true;
+                      });
+
+                      Future.delayed(Duration(milliseconds: 100), () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => License(
+                              imageFile: _selectedImage!,
+                            ),
+                          ),
+                        );
                       });
                     } else {
-                      // Show the snackbar with "Upload a photo first" message
+                      print("No photo uploaded");
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -253,7 +258,6 @@ class _VerifyLicenseState extends State<VerifyLicense> {
                 ),
               ),
             ),
-            // Display the uploaded image if _photoUploaded is true and form is submitted
             if (_submitted && _photoUploaded && _selectedImage != null)
               Container(
                 padding: EdgeInsets.all(10),
@@ -269,3 +273,25 @@ class _VerifyLicenseState extends State<VerifyLicense> {
     );
   }
 }
+
+class License extends StatelessWidget {
+  final File imageFile;
+
+  const License({Key? key, required this.imageFile}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    print("Received image file: ${imageFile.path}");
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Image Preview'),
+      ),
+      body: Center(
+        child: imageFile.existsSync()
+            ? Image.file(imageFile, fit: BoxFit.cover)
+            : Text("File not found"),
+      ),
+    );
+  }
+}
+

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:travel/license1.dart';
 import 'package:travel/profilesetting.dart';
 import 'package:travel/userinfo.dart';
 import 'package:travel/vechiledetails.dart';
@@ -147,7 +148,7 @@ class _UserProfileState extends State<UserProfile> {
                     radius: 50,
                     backgroundImage: _selectedImage != null
                         ? FileImage(_selectedImage!)
-                        : AssetImage('assets/Poparide.jpg') as ImageProvider,
+                        : AssetImage('images/Userpfp.png') as ImageProvider,
                     child: _selectedImage == null
                         ? CircleAvatar(
                       radius: 50,
@@ -226,11 +227,17 @@ class _UserProfileState extends State<UserProfile> {
                   CylindricalTile(
                     leadingIcon: Icons.credit_card,
                     title: 'Verify license',
-                    onTap: (){
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => VerifyLicense()));
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PhotoPickerScreen(fetchImageOnStart: true),
+                        ),
+                      );
                     },
                   ),
+
+
                   SizedBox(height: 10,),
                   CylindricalTile(
                     leadingIcon: Icons.help_center_outlined,

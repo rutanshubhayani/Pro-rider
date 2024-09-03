@@ -4,30 +4,119 @@ import 'package:intl/intl.dart';
 import 'package:travel/book.dart';
 import 'package:travel/posttrip.dart';
 import 'package:travel/home.dart';
-
 import 'Inbox.dart';
 
-class Trippreview extends StatefulWidget {
-  const Trippreview({super.key});
+class TripPreview extends StatefulWidget {
+  final Map<String, dynamic> tripData;
+
+  const TripPreview({Key? key, required this.tripData}) : super(key: key);
 
   @override
-  _TrippreviewState createState() => _TrippreviewState();
+  _TripPreviewState createState() => _TripPreviewState();
 }
 
-class _TrippreviewState extends State<Trippreview> {
-  DateTime now = DateTime.now();
-  final index = 3;
+class _TripPreviewState extends State<TripPreview> {
+  String formattedDate = '';
 
-  String formattedDate = DateFormat('E, MMM d \'at\' h:mma').format(DateTime.now());
-  bool seat1Selected = false;
-  bool seat2Selected = false;
-  bool seat3Selected = false;
-  List<String> choices = ['Small luggage', 'No Bikes', 'No Skis/snowboards', ' No Pets','No witner tires'];
-  List<IconData> icons = [Icons.work, Icons.directions_bike, Icons.downhill_skiing, Icons.pets, Icons.ac_unit];
-  List<bool> isSelected2 = [false, false, false, false, false];
+  List<String> otherItems = []; // List to hold other items
+
+  @override
+  void initState() {
+    super.initState();
+    _printStops();
+
+    // Format date and time from API
+    String dateString = widget.tripData['leaving_date_time'] ?? '';
+    if (dateString.isNotEmpty) {
+      try {
+        DateTime date = DateTime.parse(dateString);
+        formattedDate = DateFormat('E, MMM d \'at\' h:mma').format(date);
+      } catch (e) {
+        print('Date parsing error: $e');
+      }
+    } else {
+      formattedDate = 'Date not available';
+    }
+
+    // Process other items
+    String otherItemsString = widget.tripData['other_items'] ?? '';
+    if (otherItemsString.isNotEmpty) {
+      otherItems =
+          otherItemsString.split(',').map((item) => item.trim()).toList();
+    }
+  }
+
+  void _printStops() {
+    // Extract and print stops
+    var stopsData = widget.tripData['stops'] as List<dynamic>? ?? [];
+    for (var stop in stopsData) {
+      print('Stop ID: ${stop['stop_id']}');
+      print('Stop Name: ${stop['stop_name']}');
+      print('Stop Price: ${stop['stop_price']}');
+      print('Stop Insert Date: ${stop['insdatetime']}');
+      print('Stop Update Date: ${stop['updatetime']}');
+      print('Post A Trip ID: ${stop['post_a_trip_id']}');
+      print('---');
+    }
+  }
+
+  // Function to map luggage code to its corresponding string
+  String getLuggageLabel(String luggageCode) {
+    switch (luggageCode) {
+      case '0':
+        return 'No luggage';
+      case '1':
+        return 'Backpack';
+      case '2':
+        return 'Cabin bag (max. 23 kg)';
+      default:
+        return 'Unknown luggage type';
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
+    String departureCityFirstName = widget.tripData['departure']?.split(' ').first ?? 'Unknown';
+    String departureCity = widget.tripData['departure'] ?? 'Unknown Departure';
+    String destinationCityFirstName = widget.tripData['destination']?.split(' ').first ?? 'Unknown';
+    String destinationCity = widget.tripData['destination'] ?? 'Unknown Destination';
+    String userName = widget.tripData['uname'] ?? 'Unknown';
+    String price = widget.tripData['price'].toString() ?? 'Can\'t fetch price';
+    String luggageCode = widget.tripData['luggage'].toString();
+    // Get the luggage label from the code
+    String luggage = getLuggageLabel(luggageCode);
+
+    // Ensure description is set correctly, falling back to a default value if needed
+    String description = widget.tripData['description']?.isNotEmpty == true
+        ? widget.tripData['description']
+        : '$departureCity to $destinationCity';
+
+    String ride_schedule = widget.tripData['ride_schedule'] ?? 'Unknown';
+    int seatsLeft = widget.tripData['empty_seats'] ?? 0;
+    String userImage = widget.tripData['userImage'] ?? 'images/Userpfp.png';
+
+    // Extract and parse additional items from the API response
+    String otherItemsStr = widget.tripData['other_items'] ?? '';
+    List<String> additionalItems = otherItemsStr.split(',').map((item) => item.trim()).toList();
+
+    // Define a map for luggage icons
+    final Map<String, IconData> luggageIcons = {
+      'No luggage': Icons.cancel,
+      'Backpack': Icons.backpack,
+      'Cabin bag (max. 23 kg)': Icons.luggage,
+    };
+    final Map<String, IconData> itemsIcons = {
+      'Winter tires': Icons.ac_unit,
+      'Skis & snowboards': Icons.downhill_skiing,
+      'Pets': Icons.pets,
+      'Bikes': Icons.directions_bike,
+    };
+    // Extract stops data from tripData
+    var stopsData = widget.tripData['stops'] as List<dynamic>? ?? [];
+
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Trip Preview'),
@@ -36,7 +125,7 @@ class _TrippreviewState extends State<Trippreview> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            SizedBox(height: 15,),
+            SizedBox(height: 15),
             Padding(
               padding: const EdgeInsets.only(left: 20.0),
               child: Column(
@@ -44,302 +133,292 @@ class _TrippreviewState extends State<Trippreview> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        'Brampton',
-                        style: TextStyle(
-                          fontSize: 16,
-                        ),
-                      ),
-                      SizedBox(width: 105,),
-                      Text(
-                        formattedDate,
-                        style: TextStyle(
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    'Brampton, ON, Canada',
-                    style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.black54
-                    ),
-                  ),
-                  SizedBox(height: 15,),
-                  Row(
-                    children: [
                       Expanded(
                         child: Text(
-                          'Brampton',
-                          style: TextStyle(
-                            fontSize: 16,
-                          ),
+                          departureCityFirstName,
+                          style: TextStyle(fontSize: 16),
                         ),
                       ),
                       Expanded(
                         child: Text(
                           formattedDate,
-                          style: TextStyle(
-                            fontSize: 16,
-                          ),
+                          style: TextStyle(fontSize: 16),
                         ),
                       ),
                     ],
                   ),
                   Text(
-                    'Brampton, ON, Canada',
-                    style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.black54
+                    departureCity,
+                    style: TextStyle(fontSize: 15, color: Colors.black54),
+                  ),
+                  SizedBox(height: 15),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          destinationCityFirstName,
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          formattedDate,
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    destinationCity,
+                    style: TextStyle(fontSize: 15, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+            Divider(),
+            SizedBox(height: 10),
+            IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      textAlign: TextAlign.center,
+                      ride_schedule,
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                  VerticalDivider(),
+                  Expanded(
+                    child: Text(
+                      textAlign: TextAlign.center,
+                        '\$' + price,
+                      style: TextStyle(
+                          fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 20,),
-            Divider(),
-            SizedBox(height: 10,),
-            Row(
-              children: [
-                SizedBox(width: 15,),
-                Icon(Icons.keyboard_return_rounded),
-                Text(
-                  '  Returning',
-                  style: TextStyle(
-                    fontSize: 16,
-                  ),
-                ),
-                Text(
-                  ' Wed, Jul 10 at 4:00pm',
-                  style: TextStyle(
-                    fontSize: 16,
-                  ),
-                ),
-                SizedBox(width: 65,),
-                Icon(Icons.arrow_forward_ios_rounded),
-              ],
-            ),
-            SizedBox(height: 10,),
+            SizedBox(height: 10),
             Column(
               children: [
                 Divider(),
                 Padding(
                   padding: const EdgeInsets.all(10.0),
                   child: Text(
-                    '3 Seats left',
+                    '$seatsLeft Seats left',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(fontSize: 15),
                   ),
                 ),
-
                 Divider(),
                 Padding(
-                  padding: const EdgeInsets.only(top: 10,bottom: 13),
+                  padding: const EdgeInsets.only(top: 10, bottom: 13),
                   child: Text(
-                    '"Brampton to Windsor"',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 15,
-                    ),
+                    description,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 15),
                   ),
                 ),
-                Divider(
-                  thickness: 15,
-                  color: Colors.black12,
-                ),
-                GestureDetector(
-                  onTap: (){
-                    Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => PostTrip()));
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 5.0,bottom: 5),
-                    child: Row(
-                      children: [
-                        SizedBox(width: 20,),
-                        Text(
-                          'Booked:',
-                          style: TextStyle(
-                            fontSize: 15,
-                          ),
+                Divider(thickness: 15, color: Colors.black12),
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text('Luggage: '),
+                      SizedBox(width: 20),
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.grey, width: 1),
                         ),
-                        SizedBox(width: 10), // Adjust the space between text and icons as needed
-        
-                        // Integrated SeatSelectionWidget here
-                        SeatSelectionWidget(
-                          onSeatSelected: (int seatIndex, bool isSelected) {
-                            setState(() {
-                              // Update selected state based on seatIndex
-                              switch (seatIndex) {
-                                case 1:
-                                  seat1Selected = isSelected;
-                                  break;
-                                case 2:
-                                  seat2Selected = isSelected;
-                                  break;
-                                case 3:
-                                  seat3Selected = isSelected;
-                                  break;
-                              }
-                            });
-                          },
-                          seat1Selected: seat1Selected,
-                          seat2Selected: seat2Selected,
-                          seat3Selected: seat3Selected,
+                        child: Row(
+                          children: [
+                            Icon(
+                              luggageIcons[luggage] ?? Icons.help,
+                              color: Colors.black,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              luggage,
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ],
                         ),
-        
-        
-                        Padding(
-                          padding: const EdgeInsets.only(left: 155.0),
-                          child: Icon(Icons.arrow_forward_ios_rounded),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-                Divider(
-                  thickness: 15,
-                  color: Colors.black12,
-                ),
+                Divider(thickness: 15, color: Colors.black12),
               ],
             ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Row(
-            children: [
-              // Profile picture with border
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Color(0xFF51737A),
-                    width: 3,
-                  ),
-                ),
-                child: CircleAvatar(
-                  radius: 24,
-                  backgroundImage: NetworkImage('https://picsum.photos/200/300'), // Replace with your image URL
-                ),
-              ),
-              SizedBox(width: 12),
-              // User details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Chandeep',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Color(0xFF51737A),
+                        width: 3,
                       ),
                     ),
-                    SizedBox(height: 4),
-                    Row(
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundImage: NetworkImage(userImage),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.verified,
-                          color: Colors.blue,
-                          size: 20,
-                        ),
-                        SizedBox(width: 4),
                         Text(
-                          'Driver\'s license verified',
+                          userName,
                           style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
+                        ),
+                        SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.verified,
+                              color: Colors.blue,
+                              size: 20,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Driver\'s license verified',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
+                  Icon(Icons.arrow_forward_ios_rounded),
+                ],
+              ),
+            ),
+            SizedBox(height: 5),
+            Divider(thickness: 15, color: Colors.black12),
+            if (stopsData.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Stops:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
               ),
-              // Arrow icon
-              Icon(
-                Icons.arrow_forward_ios_rounded,
+              ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(), // Disable scrolling
+                itemCount: stopsData.length,
+                itemBuilder: (context, index) {
+                  var stop = stopsData[index];
+                  return ListTile(
+                    title: Text(stop['stop_name']),
+                    subtitle: Text('Price: \$${stop['stop_price']}'),
+                  );
+                },
               ),
             ],
-          ),
-        ),
-            SizedBox(height: 5,),
-            Divider(
-              thickness: 15,
-              color: Colors.black12,
-            ),
+            Divider(thickness: 15, color: Colors.black12),
+
+            // Assuming otherItems is a list of strings
             Padding(
-              padding: const EdgeInsets.only(right: 150.0,bottom: 100),
+              padding: const EdgeInsets.only(right: 150.0, bottom: 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Wrap(
-                    direction: Axis.vertical, // Display chips vertically
-                    alignment: WrapAlignment.start, // Justify chips from the start (left)
-                    children: List<Widget>.generate(
-                      choices.length,
-                          (int index) {
-                        return ChoiceChip(
-                          avatar: Icon(
-                            icons[index],
-                            color: isSelected2[index] ? Colors.white : Colors.black,
-                          ),
-                          label: Text(choices[index]),
-                          selected: isSelected2[index],
-                          selectedColor: Colors.black,
-                          onSelected: (bool selected) {
-                            setState(() {
-                              isSelected2[index] = selected;
-                            });
-                          },
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.0),
-                            side: BorderSide(
-                              color: isSelected2[index] ? Colors.black : Colors.grey,
+                  // "Other" label at the top
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      'Other:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
+                      ),
+                    ),
+                  ),
+                  // List of items
+                  Padding(
+                    padding: const EdgeInsets.only(left: 25.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: otherItems.map((item) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.grey, width: 1),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  itemsIcons[item] ?? Icons.help,
+                                  color: Colors.black,
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  item,
+                                  style: TextStyle(fontSize: 15),
+                                ),
+                              ],
                             ),
                           ),
-                          labelStyle: TextStyle(
-                            color: isSelected2[index] ? Colors.white : Colors.black,
-                          ),
                         );
-                      },
-                    ).toList(),
+                      }).toList(),
+                    ),
                   ),
                 ],
               ),
             ),
-        
+
+
           ],
         ),
       ),
-      floatingActionButton:
-      Stack(
+      floatingActionButton: Stack(
         children: [
           Positioned(
-            right: 82.0 ,/*+ MediaQuery.of(context).size.width * 0.2 + 16.0, // Right position of second FAB*/
+            right: 82.0,
             bottom: 0,
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.7, // 80% of screen width
               child: FloatingActionButton(
                 backgroundColor: Color(0xFFff4400),
                 onPressed: () {
-                  Get.to(Book(),transition: Transition.fade);// Add onPressed functionality
+                  Get.to(Book(), transition: Transition.fade);
                 },
                 child: Row(
                   children: [
-                    SizedBox(width: 25,),
+                    SizedBox(width: 25),
                     Text(
-                        'Request to book',
+                      'Request to book',
                       style: TextStyle(
                         fontSize: 17,
                         color: Colors.white,
                       ),
                     ),
-                    SizedBox(width: 80,),
-                    Icon(Icons.arrow_forward_ios_rounded,color: Colors.white,),
+                    SizedBox(width: 80),
+                    Icon(Icons.arrow_forward_ios_rounded, color: Colors.white),
                   ],
                 ),
               ),
@@ -351,16 +430,15 @@ class _TrippreviewState extends State<Trippreview> {
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.15, // 20% of screen width
               child: FloatingActionButton(
-               // heroTag: "btn1", if error = (There are multiple heroes that share the same tag within a subtree).
                 backgroundColor: Color(0xFF2e2c2f),
                 shape: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(60),
-                  borderSide: BorderSide.none
+                  borderSide: BorderSide.none,
                 ),
                 onPressed: () {
-                  Get.to(InboxMain(),transition: Transition.leftToRight);// Add onPressed functionality
+                  Get.to(InboxMain(), transition: Transition.leftToRight);
                 },
-                child: Icon(Icons.message,color: Colors.white,size: 30,),
+                child: Icon(Icons.message, color: Colors.white, size: 30),
               ),
             ),
           ),
@@ -369,78 +447,3 @@ class _TrippreviewState extends State<Trippreview> {
     );
   }
 }
-
-class SeatSelectionWidget extends StatelessWidget {
-  final Function(int, bool) onSeatSelected;
-  final bool seat1Selected;
-  final bool seat2Selected;
-  final bool seat3Selected;
-
-  SeatSelectionWidget({
-    required this.onSeatSelected,
-    required this.seat1Selected,
-    required this.seat2Selected,
-    required this.seat3Selected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        // First car seat icon
-        GestureDetector(
-          onTap: () {
-            onSeatSelected(1, !seat1Selected);
-          },
-          child: Container(
-            padding: EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: seat1Selected ? Colors.black : Colors.transparent,
-            ),
-            child: Icon(Icons.event_seat,
-                color: seat1Selected ? Colors.white : Colors.black),
-          ),
-        ),
-
-        SizedBox(width: 5), // Adjust spacing between icons if needed
-
-        // Second car seat icon
-        GestureDetector(
-          onTap: () {
-            onSeatSelected(2, !seat2Selected);
-          },
-          child: Container(
-            padding: EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: seat2Selected ? Colors.black : Colors.transparent,
-            ),
-            child: Icon(Icons.event_seat,
-                color: seat2Selected ? Colors.white : Colors.black),
-          ),
-        ),
-
-        SizedBox(width: 5), // Adjust spacing between icons if needed
-
-        // Third car seat icon
-        GestureDetector(
-          onTap: () {
-            onSeatSelected(3, !seat3Selected);
-          },
-          child: Container(
-            padding: EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: seat3Selected ? Colors.black : Colors.transparent,
-            ),
-            child: Icon(Icons.event_seat,
-                color: seat3Selected ? Colors.white : Colors.black),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-

@@ -210,7 +210,7 @@ class _FindScreenState extends State<FindScreen> {
       // Perform API request
       try {
         final response = await http.get(Uri.parse(
-            'http://202.21.32.153:8081/find-trip?departure=$departure&destination=$destination&leaving_date=$date'));
+            '${API.api1}/find-trip?departure=$departure&destination=$destination&leaving_date=$date'));
 
         if (response.statusCode == 200) {
           final List<dynamic> resultsJson = json.decode(response.body);

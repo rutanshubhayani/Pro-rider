@@ -151,7 +151,7 @@ class AllScreen extends StatelessWidget {
 
           int seatsLeft = trip['empty_seats'] ?? 0;
           String userImage = trip['userImage'] ?? '';
-          String userName = trip['userName'] ?? 'Unknown';
+          String userName = trip['uname'] ?? 'Unknown'; // Updated to use 'uname' field
 
           // Extract first name of the city from departure and destination
           String getFirstCityName(String city) {
@@ -167,9 +167,10 @@ class AllScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => Trippreview(), // Pass the trip to Trippreview
+                  builder: (context) => TripPreview(tripData: trip),
                 ),
               );
+
             },
             child: Card(
               shape: RoundedRectangleBorder(
@@ -232,12 +233,6 @@ class AllScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                           /* Image.asset(
-                              'images/smallbag.png',
-                              height: 25,
-                              width: 25,
-                              color: Color(0XFF2196f3),
-                            ),*/
                           ],
                         ),
                       ],
@@ -252,8 +247,8 @@ class AllScreen extends StatelessWidget {
                                 TextSpan(
                                   text: departureCityFirstName, // Display first name of departure city
                                   style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold
                                   ),
                                 ),
                                 TextSpan(
@@ -276,7 +271,7 @@ class AllScreen extends StatelessWidget {
                             TextSpan(
                               text: destinationCityFirstName, // Display first name of departure city
                               style: TextStyle(
-                                color: Colors.black,
+                                  color: Colors.black,
                                   fontWeight: FontWeight.bold
                               ),
                             ),
@@ -318,6 +313,8 @@ class AllScreen extends StatelessWidget {
 
 
 
+
+
 class TripsScreen extends StatefulWidget {
   @override
   _TripsScreenState createState() => _TripsScreenState();
@@ -337,11 +334,12 @@ class _TripsScreenState extends State<TripsScreen> {
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
+      print(response.body);
 
       setState(() {
         trips = data.map((trip) {
           return {
-            'userName': 'Driver Name', // Placeholder for driver's name
+            'userName': trip['uname'], // Extract and use the actual user name
             'userImage': 'https://picsum.photos/200/300', // Placeholder for driver's image
             'seatsLeft': trip['empty_seats'],
             'departure': trip['departure'],
@@ -356,6 +354,12 @@ class _TripsScreenState extends State<TripsScreen> {
     }
   }
 
+
+  String getFirstNameOfCity(String city) {
+    // Split the city name by spaces and return the first part
+    return city.split(' ').first;
+  }
+
   @override
   Widget build(BuildContext context) {
     DateFormat dateFormat = DateFormat('E, MMM d \'at\' h:mma');
@@ -367,13 +371,15 @@ class _TripsScreenState extends State<TripsScreen> {
         itemBuilder: (context, index) {
           final trip = trips[index];
           String formattedDate = dateFormat.format(trip['date']);
+          String departureFirstName = getFirstNameOfCity(trip['departure']);
+          String destinationFirstName = getFirstNameOfCity(trip['destination']);
 
           return GestureDetector(
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => Trippreview()),
-              );
+                MaterialPageRoute(builder: (context) => TripPreview(tripData: trip),
+              ));
             },
             child: Card(
               shape: RoundedRectangleBorder(
@@ -454,17 +460,17 @@ class _TripsScreenState extends State<TripsScreen> {
                           child: RichText(
                             text: TextSpan(
                               children: [
-                                /*TextSpan(
-                                  text: 'Brampton',
+                                TextSpan(
+                                  text: getFirstNameOfCity(trip['departure']),
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black,
                                   ),
-                                ),*/
+                                ),
                                 TextSpan(
                                   text: '  ${trip['departure']}',
                                   style: TextStyle(
-                                    color: Colors.black,
+                                    color: Colors.black54,
                                   ),
                                 ),
                               ],
@@ -478,17 +484,17 @@ class _TripsScreenState extends State<TripsScreen> {
                       child: RichText(
                         text: TextSpan(
                           children: [
-                           /* TextSpan(
-                              text: 'Windsor',
+                            TextSpan(
+                              text: getFirstNameOfCity(trip['destination']),
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black,
                               ),
-                            ),*/
+                            ),
                             TextSpan(
                               text: '  ${trip['destination']}',
                               style: TextStyle(
-                                color: Colors.black,
+                                color: Colors.black54,
                               ),
                             ),
                           ],
@@ -519,6 +525,7 @@ class _TripsScreenState extends State<TripsScreen> {
 
 
 
+
 class RequestsScreen extends StatelessWidget {
   final int index = 3; // Replace with your actual variable or logic
   @override
@@ -534,8 +541,8 @@ class RequestsScreen extends StatelessWidget {
           children: [
             GestureDetector(
               onTap: (){
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => Trippreview()));
+                /*Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => Trippreview()));*/
               },
               child: Card(
                 shape: RoundedRectangleBorder(
@@ -684,157 +691,7 @@ class RequestsScreen extends StatelessWidget {
               ),
             ),
             SizedBox(height: 8,),
-            GestureDetector(
-              onTap: (){
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => Trippreview()));
-              },
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(
-                    color: Color(0xFF51737A),
-                    width: 1.5,
-                  ),
-                ),
-                child: SizedBox(
-                  width: double.infinity, // Adjust dimensions as needed
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 15.0,top: 10,bottom: 10),
-                            child: Row(
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white, // You can set a background color if needed
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Color(0xFF51737A),
-                                      width: 3,
-                                    ),
-                                  ),
-                                  child: CircleAvatar(
-                                    radius: 30,
-                                    backgroundImage: NetworkImage('https://picsum.photos/200/300'),
-                                  ),
-                                ),
-                                SizedBox(width: 10,),
-                                Icon(Icons.verified,color: Colors.blue,),
-                                SizedBox(width: 10,),
-                                Text('Chandeep',// Add user id here
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          /* Padding(
-                            padding: const EdgeInsets.only(top: 13.0, left: 15),
-                            child: Text(
-                              formattedDate,
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                          ),*/
-                          SizedBox(width: 60,),
-                          Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(top: 35,bottom: 10.0),
-                                child: Text(
-                                  '$index seats left', // Display the number of seats left
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
 
-                            ],
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 15),
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  // TextSpan for 'Brampton' in bold black color
-                                  TextSpan(
-                                    text: 'Brampton',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  // TextSpan for ' windston' in grey color
-                                  TextSpan(
-                                    text: '  Brampton, ON, Canada',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          /*Padding(
-                            padding: const EdgeInsets.only(left: 35),
-                            child: Image.asset('images/smallbag.png',height: 25,width: 25,color: Color(0XFF2196f3),),
-                          ),*/
-                        ],
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 13,left: 15),
-                        child: RichText(
-                          text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'Windsor',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                TextSpan(
-                                    text: '  Windsor, ON, Canada',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                    )
-                                )
-                              ]
-                          ),
-                        ),
-                      ),
-
-
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13.0, left: 15),
-                        child: Text(
-                          formattedDate,
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 10,)
-                    ],
-                  ),
-                ),
-              ),
-            ),
 
 
 

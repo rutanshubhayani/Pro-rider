@@ -5,7 +5,6 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/routes/transitions_type.dart';
 import 'package:travel/postrequest.dart';
 import 'package:travel/posttrip.dart';
-import 'find.dart';
 import 'home.dart';
 
 class Message {

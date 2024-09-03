@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:travel/verifyotp.dart'; // For converting response to JSON
 
@@ -74,6 +75,9 @@ class _UserInfoState extends State<UserInfo> {
   }
 
   void submitChanges() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken') ?? '';
+
     if (_formKey.currentState!.validate()) {
       Map<String, dynamic> updatedUserData = {
         'uname': _nameController.text,
@@ -90,7 +94,7 @@ class _UserInfoState extends State<UserInfo> {
           Uri.parse('http://202.21.32.153:8081/updateUser'),
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer YOUR_ACCESS_TOKEN',  // Ensure this is correct
+            'Authorization': 'Bearer $token',  // Ensure this is correct
           },
           body: json.encode(updatedUserData),
         );

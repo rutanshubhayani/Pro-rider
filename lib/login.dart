@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Userprofile.dart';
 import 'package:travel/find.dart';
 import 'package:travel/register.dart';
@@ -52,9 +53,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        if (responseData.containsKey('user')) {
+        if (responseData.containsKey('token')) {
+          final token = responseData['token'];
           final user = responseData['user'];
           print('$user');
+          print('Token : $token');
           if (user.containsKey('uid')) {
             final uid = user['uid'];
             print('$uid');
@@ -80,6 +83,10 @@ class _LoginScreenState extends State<LoginScreen> {
           String umobilenumber = user['umobilenumber'].toString() ?? 'User';
           String uaddress = user['uaddress'] ?? 'User';
 
+          // Store token in SharedPreferences
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('authToken', token);
+
           Get.snackbar('Success', 'Login successful', snackPosition: SnackPosition.BOTTOM);
           Get.to(() => UserProfile(userName1: uname, usermail : umail, unumber : umobilenumber, uaddress : uaddress)); // Pass details to UserProfile
           Get.to(() => FindScreen(userName: uname, usermail: umail,unumber : umobilenumber, uaddress : uaddress)); // Pass details to FindScreen
@@ -97,9 +104,6 @@ class _LoginScreenState extends State<LoginScreen> {
       print(error);
     }
   }
-
-
-
 
   @override
   Widget build(BuildContext context) {
