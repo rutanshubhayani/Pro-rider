@@ -3,7 +3,9 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:travel/api.dart';
-import 'package:travel/trippreview.dart';
+import 'package:travel/Findtrippreview.dart';
+
+import 'gettrippreview.dart';
 
 
 
@@ -57,7 +59,7 @@ class Trips extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-             ActiveScreen(),
+             ActieScreen(),
             RecentScreen(),
              CancelScreen(),
           ],
@@ -67,16 +69,19 @@ class Trips extends StatelessWidget {
   }
 }
 
-class ActiveScreen extends StatefulWidget {
 
 
-  const ActiveScreen({super.key});
 
+
+
+
+
+class ActieScreen extends StatefulWidget {
   @override
-  State<ActiveScreen> createState() => _ActiveScreenState();
+  _ActieScreenState createState() => _ActieScreenState();
 }
 
-class _ActiveScreenState extends State<ActiveScreen> {
+class _ActieScreenState extends State<ActieScreen> {
   List<Map<String, dynamic>> trips = [];
 
   @override
@@ -86,33 +91,44 @@ class _ActiveScreenState extends State<ActiveScreen> {
   }
 
   Future<void> fetchTrips() async {
-    final response = await http.get(Uri.parse('${API.api1}/get-trips'));
+    final response = await http.get(Uri.parse('http://202.21.32.153:8081/get-trips'));
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
       print(response.body);
 
-
       setState(() {
         trips = data.map((trip) {
+          final leavingDateTime = DateTime.tryParse(trip['leaving_date_time']) ?? DateTime.now();
+          print('Original date: ${trip['leaving_date_time']}'); // Debugging line
+          print('Parsed date: $leavingDateTime'); // Debugging line
+
           return {
-            'userName': trip['uname'], // Placeholder for driver's name
-            'userImage': 'https://picsum.photos/200/300', // Placeholder for driver's image
-            'seatsLeft': trip['empty_seats'],
-            'departure': trip['departure'],
-            'destination': trip['destination'],
-            'date': DateTime.parse(trip['leaving_date_time']),
+            'userName': (trip['uname'] ?? '').trim(),
+            'userImage': trip['profile_photo'] ?? '',
+            'seatsLeft': trip['empty_seats'] ?? 0,
+            'departure': trip['departure'] ?? '',
+            'destination': trip['destination'] ?? '',
+            'date': leavingDateTime,
+            'rideSchedule': trip['ride_schedule'] ?? '',
+            'luggage': trip['luggage'] ?? '',
+            'description': trip['description'] ?? '',
+            'price': trip['price'] ?? 0,
+            'stops': trip['stops'] ?? [],
+            'otherItems': trip['other_items'] ?? '',
+            'backRowSitting': trip['back_row_sitting'] ?? 'Not specified',
           };
         }).toList();
       });
     } else {
-      // Handle the error
       print('Failed to load trips');
     }
   }
 
+
+
+
   String getFirstNameOfCity(String city) {
-    // Split the city name by spaces and return the first part
     return city.split(' ').first;
   }
 
@@ -134,7 +150,11 @@ class _ActiveScreenState extends State<ActiveScreen> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => TripPreview(tripData: trip)),
+                MaterialPageRoute(
+                  builder: (context) => GetTripPreview(
+                    tripData: trip,
+                  ),
+                ),
               );
             },
             child: Card(
@@ -153,8 +173,7 @@ class _ActiveScreenState extends State<ActiveScreen> {
                     Row(
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 15.0, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
                           child: Row(
                             children: [
                               Container(
@@ -168,8 +187,9 @@ class _ActiveScreenState extends State<ActiveScreen> {
                                 ),
                                 child: CircleAvatar(
                                   radius: 30,
-                                  backgroundImage: NetworkImage(
-                                      trip['userImage']),
+                                  backgroundImage: trip['userImage'] != null && trip['userImage'].isNotEmpty
+                                      ? NetworkImage(trip['userImage'])
+                                      : AssetImage('images/Userpfp.png') as ImageProvider,
                                 ),
                               ),
                               SizedBox(width: 5),
@@ -186,26 +206,15 @@ class _ActiveScreenState extends State<ActiveScreen> {
                           ),
                         ),
                         Spacer(),
-                        Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  top: 35, bottom: 10.0, right: 20),
-                              child: Text(
-                                '${trip['seatsLeft']} seats left',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 35, bottom: 10.0, right: 20),
+                          child: Text(
+                            '${trip['seatsLeft']} seats left',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
-                            Image.asset(
-                              'images/smallbag.png',
-                              height: 25,
-                              width: 25,
-                              color: Color(0XFF2196f3),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
@@ -217,7 +226,7 @@ class _ActiveScreenState extends State<ActiveScreen> {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: getFirstNameOfCity(trip['departure']),
+                                  text: departureFirstName,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black,
@@ -241,7 +250,7 @@ class _ActiveScreenState extends State<ActiveScreen> {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: getFirstNameOfCity(trip['destination']),
+                              text: destinationFirstName,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black,
@@ -278,6 +287,18 @@ class _ActiveScreenState extends State<ActiveScreen> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class RecentScreen extends StatefulWidget {
@@ -318,6 +339,8 @@ class _RecentScreenState extends State<RecentScreen> {
     }
   }
 
+
+
   String getFirstNameOfCity(String city) {
     // Split the city name by spaces and return the first part
     return city.split(' ').first;
@@ -339,10 +362,10 @@ class _RecentScreenState extends State<RecentScreen> {
 
           return GestureDetector(
             onTap: () {
-              Navigator.push(
+             /* Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => TripPreview(tripData: trip)),
-              );
+                MaterialPageRoute(builder: (context) => GetTripPreview()),
+              );*/
             },
             child: Card(
               shape: RoundedRectangleBorder(
@@ -508,7 +531,7 @@ class CancelScreen extends StatelessWidget {
             GestureDetector(
               onTap: (){
                 Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => TripPreview(tripData: {},)));
+                    MaterialPageRoute(builder: (context) => FindTripPreview(tripData: {},)));
               },
               child: Card(
                 shape: RoundedRectangleBorder(

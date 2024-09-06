@@ -4,14 +4,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-class VerifyLicense extends StatefulWidget {
-  const VerifyLicense({Key? key}) : super(key: key);
+class VerifyRotateLicense extends StatefulWidget {
+  const VerifyRotateLicense({Key? key}) : super(key: key);
 
   @override
-  State<VerifyLicense> createState() => _VerifyLicenseState();
+  State<VerifyRotateLicense> createState() => _VerifyRotateLicenseState();
 }
 
-class _VerifyLicenseState extends State<VerifyLicense> {
+class _VerifyRotateLicenseState extends State<VerifyRotateLicense> {
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
   bool _photoUploaded = false; // Flag to track if photo is uploaded

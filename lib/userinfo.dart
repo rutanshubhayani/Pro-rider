@@ -1,25 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travel/Userprofile.dart';
+import 'package:travel/api.dart';
+import 'package:travel/profilesetting.dart';
 import 'dart:convert';
 import 'package:travel/verifyotp.dart'; // For converting response to JSON
 
 
 
-
 class UserInfo extends StatefulWidget {
-  final String uname;
-  final String usermail;
-  final String umobilenumber;
-  final String uaddress;
-
-  const UserInfo({
-    super.key,
-    required this.uname,
-    required this.usermail,
-    required this.umobilenumber,
-    required this.uaddress,
-  });
+  const UserInfo({super.key});
 
   @override
   State<UserInfo> createState() => _UserInfoState();
@@ -27,16 +22,16 @@ class UserInfo extends StatefulWidget {
 
 class _UserInfoState extends State<UserInfo> {
   bool isEditing = false;
-  late TextEditingController _nameController;
-  late TextEditingController _emailController;
-  late TextEditingController _phoneController;
-  late TextEditingController _addressController;
+  TextEditingController _nameController = TextEditingController();
+  TextEditingController _emailController = TextEditingController();
+  TextEditingController _phoneController = TextEditingController();
+  TextEditingController _addressController = TextEditingController();
 
   // FocusNodes for each text field
-  final FocusNode _nameFocusNode = FocusNode();
-  final FocusNode _emailFocusNode = FocusNode();
-  final FocusNode _phoneFocusNode = FocusNode();
-  final FocusNode _addressFocusNode = FocusNode();
+  FocusNode _nameFocusNode = FocusNode();
+  FocusNode _emailFocusNode = FocusNode();
+  FocusNode _phoneFocusNode = FocusNode();
+  FocusNode _addressFocusNode = FocusNode();
 
   // Key for the form
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -44,23 +39,55 @@ class _UserInfoState extends State<UserInfo> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.uname);
-    _emailController = TextEditingController(text: widget.usermail);
-    _phoneController = TextEditingController(text: widget.umobilenumber);
-    _addressController = TextEditingController(text: widget.uaddress);
+    _fetchUserData();
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
     _nameFocusNode.dispose();
     _emailFocusNode.dispose();
     _phoneFocusNode.dispose();
     _addressFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken') ?? '';
+
+    if (token.isEmpty) {
+      print('No auth token found');
+      return;
+    }
+
+    const apiUrl = 'http://202.21.32.153:8081/user';
+
+    try {
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: {
+          HttpHeaders.authorizationHeader: 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // Log the full response for debugging
+        print('User data: $data');
+
+        setState(() {
+          _nameController.text = data['uname'] ?? '';
+          _emailController.text = data['umail'] ?? '';
+          _phoneController.text = data['umobilenumber'].toString() ?? '';  // Ensure this matches the key in API response
+          _addressController.text = data['uaddress'] ?? '';      // Ensure this matches the key in API response
+        });
+      } else {
+        print('Failed to load user data: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching user data: $e');
+    }
   }
 
   void toggleEditing() {
@@ -87,9 +114,6 @@ class _UserInfoState extends State<UserInfo> {
       };
 
       try {
-        // Print the request body for debugging
-        print('Request Body: ${json.encode(updatedUserData)}');
-
         final response = await http.put(
           Uri.parse('http://202.21.32.153:8081/updateUser'),
           headers: {
@@ -125,8 +149,6 @@ class _UserInfoState extends State<UserInfo> {
       FocusScope.of(context).requestFocus(_nameFocusNode);
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -302,6 +324,8 @@ class _UserInfoState extends State<UserInfo> {
 
 
 
+
+
 class ChangePassword extends StatefulWidget {
   const ChangePassword({super.key});
 
@@ -318,6 +342,7 @@ class _ChangePasswordState extends State<ChangePassword> {
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
+  bool _isCurrentPasswordVisible = false;
   bool _isNewPasswordVisible = false;
 
   String? _validatePassword(String? value) {
@@ -337,77 +362,70 @@ class _ChangePasswordState extends State<ChangePassword> {
     if (value != _newPasswordController.text) {
       return 'Passwords do not match';
     }
+    if (value == _currentPasswordController.text) {
+      return 'New password cannot be the same as current password';
+    }
     return null;
   }
 
-  void _changePassword() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      final Map<String, String> requestBody = {
-        'currentPassword': _currentPasswordController.text,
-        'newPassword': _newPasswordController.text,
-        'confirmPassword': _confirmPasswordController.text,
-      };
+  String? _validateAllPasswords(String? value) {
+    final currentPassword = _currentPasswordController.text;
+    final newPassword = _newPasswordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (currentPassword == newPassword || currentPassword == confirmPassword) {
+      return 'All passwords cannot be the same';
+    }
+    return null;
+  }
+
+  Future<void> _changePassword() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken') ?? '';
+
+    if (_formKey.currentState!.validate()) {
+      final currentPassword = _currentPasswordController.text;
+      final newPassword = _newPasswordController.text;
+      final confirmPassword = _confirmPasswordController.text;
 
       try {
         final response = await http.post(
           Uri.parse('http://202.21.32.153:8081/changepassword'),
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': '01000100100', // Include any required authorization headers
+            'Authorization': 'Bearer $token',
           },
-          body: jsonEncode(requestBody),
+          body: jsonEncode({
+            'currentPassword': currentPassword,
+            'newPassword': newPassword,
+            'confirmPassword': confirmPassword,
+          }),
         );
-
-        print('Response status: ${response.statusCode}');
-        print('Response body: ${response.body}');
 
         if (response.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Password changed successfully'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
+            SnackBar(content: Text('Password changed successfully')),
           );
-
-          _currentPasswordController.clear();
           _newPasswordController.clear();
+          _currentPasswordController.clear();
           _confirmPasswordController.clear();
-
-          FocusScope.of(context).requestFocus(currentPasswordFocusNode);
+          Get.to(UserProfile());
         } else {
-          // Handle non-200 status codes
-          String errorMessage = 'Failed to change password. Please try again.';
-          try {
-            final responseBody = jsonDecode(response.body);
-            errorMessage = responseBody['error'] ?? errorMessage;
-          } catch (e) {
-            // Use raw body if JSON parsing fails
-            errorMessage = response.body;
-          }
-
+          final responseBody = jsonDecode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 2),
-            ),
+            SnackBar(content: Text('Error: ${responseBody['message'] ?? 'Unknown error'}')),
           );
+          print(responseBody);
         }
       } catch (e) {
+        // Handle any exceptions
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('An error occurred. Please check your connection and try again. Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
+          SnackBar(content: Text('Exception: $e')),
         );
+        print(e);
       }
     }
   }
-
-
-
 
   @override
   void dispose() {
@@ -436,12 +454,22 @@ class _ChangePasswordState extends State<ChangePassword> {
                 focusNode: currentPasswordFocusNode,
                 controller: _currentPasswordController,
                 keyboardType: TextInputType.visiblePassword,
-                obscureText: true,
+                obscureText: !_isCurrentPasswordVisible,
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.transparent,
                   labelText: 'Current Password',
                   prefixIcon: Icon(Icons.lock_open),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isCurrentPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isCurrentPasswordVisible = !_isCurrentPasswordVisible;
+                      });
+                    },
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -516,7 +544,13 @@ class _ChangePasswordState extends State<ChangePassword> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                validator: _validateConfirmPassword,
+                validator: (value) {
+                  final confirmValidation = _validateConfirmPassword(value);
+                  if (confirmValidation != null) {
+                    return confirmValidation;
+                  }
+                  return _validateAllPasswords(value);
+                },
                 onEditingComplete: () {
                   _changePassword();
                 },
@@ -549,6 +583,8 @@ class _ChangePasswordState extends State<ChangePassword> {
     );
   }
 }
+
+
 
 
 

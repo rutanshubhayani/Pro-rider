@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
@@ -15,13 +16,9 @@ import 'home.dart';
 import 'notification.dart';
 
 class FindScreen extends StatefulWidget {
-  final String userName; // Add userName parameter
-  final String usermail; // Usermail passed from the previous screen
-  final String unumber; // Usermail passed from the previous screen
-  final String uaddress; // Usermail passed from the previous screen
 
 
-  const FindScreen({Key? key, required this.userName,required this.usermail, required this.unumber, required this.uaddress}) : super(key: key);
+  const FindScreen({Key? key,}) : super(key: key);
 
   @override
   State<FindScreen> createState() => _FindScreenState();
@@ -44,10 +41,6 @@ class _FindScreenState extends State<FindScreen> {
 
   int _selectedIndex = 0;
 
-  get username => widget.userName;
-  get usermail => widget.usermail;
-  get unumber => widget.unumber ;
-  get uaddress => widget.uaddress ;
 
   void _onItemTapped(int index) {
     setState(() {
@@ -247,6 +240,27 @@ class _FindScreenState extends State<FindScreen> {
   }
 
 
+  Future<bool> _showExitPrompt() async {
+    return await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Exit App'),
+        content: Text('Are you sure you want to exit the app?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false), // Do not exit
+            child: Text('No'),
+          ),
+          TextButton(
+            onPressed: () {
+              SystemNavigator.pop(); // Close the app
+            },
+            child: Text('Yes'),
+          ),
+        ],
+      ),
+    ) ?? false; // In case the user dismisses the dialog by tapping outside
+  }
 
 
 
@@ -284,7 +298,10 @@ class _FindScreenState extends State<FindScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+        onWillPop: _showExitPrompt,
+    child:
+     Scaffold(
       appBar: AppBar(
         leading: Padding(
           padding: const EdgeInsets.only(left: 20.0),
@@ -293,7 +310,7 @@ class _FindScreenState extends State<FindScreen> {
             width: 40,
             child: GestureDetector(
               onTap: () {
-                Get.to(() => UserProfile(userName1: username, usermail: usermail, unumber: unumber,uaddress: uaddress,),transition: Transition.leftToRight);
+                Get.to(() => UserProfile(),transition: Transition.leftToRight);
               },
               child: Image.asset(
                 'images/blogo.png',
@@ -319,7 +336,7 @@ class _FindScreenState extends State<FindScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Welcome, ${widget.userName}', // Use the user's name here
+                    Text('Find your ride!', // Use the user's name here
                       style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold
@@ -597,6 +614,7 @@ class _FindScreenState extends State<FindScreen> {
           ],
         ),
       ),
+     ),
     );
   }
 

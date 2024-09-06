@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'trippreview.dart';
+import 'Findtrippreview.dart';
+import 'gettrippreview.dart';
 
 class SearchResult extends StatefulWidget {
   final int initialTabIndex;
@@ -167,7 +168,7 @@ class AllScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => TripPreview(tripData: trip),
+                  builder: (context) => FindTripPreview(tripData: trip),
                 ),
               );
 
@@ -202,8 +203,8 @@ class AllScreen extends StatelessWidget {
                                 ),
                                 child: CircleAvatar(
                                   radius: 30,
-                                  backgroundImage: userImage.isNotEmpty
-                                      ? NetworkImage(userImage)
+                                  backgroundImage: trip['profile_photo'] != null && trip['profile_photo'].isNotEmpty
+                                      ? NetworkImage(trip['profile_photo'])
                                       : AssetImage('images/Userpfp.png') as ImageProvider,
                                 ),
                               ),
@@ -313,8 +314,6 @@ class AllScreen extends StatelessWidget {
 
 
 
-
-
 class TripsScreen extends StatefulWidget {
   @override
   _TripsScreenState createState() => _TripsScreenState();
@@ -334,29 +333,31 @@ class _TripsScreenState extends State<TripsScreen> {
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
-      print(response.body);
-
       setState(() {
         trips = data.map((trip) {
           return {
-            'userName': trip['uname'], // Extract and use the actual user name
-            'userImage': 'https://picsum.photos/200/300', // Placeholder for driver's image
-            'seatsLeft': trip['empty_seats'],
-            'departure': trip['departure'],
-            'destination': trip['destination'],
-            'date': DateTime.parse(trip['leaving_date_time']),
+            'userName': (trip['uname'] ?? '').trim(),
+            'userImage': trip['profile_photo'] ?? '', // Use the URL directly
+            'seatsLeft': trip['empty_seats'] ?? 0,
+            'departure': trip['departure'] ?? '',
+            'destination': trip['destination'] ?? '',
+            'date': DateTime.tryParse(trip['leaving_date_time']) ?? DateTime.now(),
+            'rideSchedule': trip['ride_schedule'] ?? '',
+            'luggage': trip['luggage'] ?? '',
+            'description': trip['description'] ?? '',
+            'price': trip['price'] ?? 0,
+            'stops': trip['stops'] ?? [],
+            'otherItems': trip['other_items'] ?? '',
           };
         }).toList();
       });
     } else {
-      // Handle the error
       print('Failed to load trips');
     }
   }
 
 
   String getFirstNameOfCity(String city) {
-    // Split the city name by spaces and return the first part
     return city.split(' ').first;
   }
 
@@ -376,10 +377,14 @@ class _TripsScreenState extends State<TripsScreen> {
 
           return GestureDetector(
             onTap: () {
-              Navigator.push(
+             /* Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => TripPreview(tripData: trip),
-              ));
+                MaterialPageRoute(
+                  builder: (context) => GetTripPreview(
+                    tripData: trip,
+                  ),
+                ),
+              );*/
             },
             child: Card(
               shape: RoundedRectangleBorder(
@@ -397,8 +402,7 @@ class _TripsScreenState extends State<TripsScreen> {
                     Row(
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 15.0, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
                           child: Row(
                             children: [
                               Container(
@@ -412,8 +416,9 @@ class _TripsScreenState extends State<TripsScreen> {
                                 ),
                                 child: CircleAvatar(
                                   radius: 30,
-                                  backgroundImage: NetworkImage(
-                                      trip['userImage']),
+                                  backgroundImage: trip['userImage'] != null && trip['userImage'].isNotEmpty
+                                      ? NetworkImage(trip['userImage'])
+                                      : AssetImage('images/Userpfp.png') as ImageProvider,
                                 ),
                               ),
                               SizedBox(width: 5),
@@ -433,8 +438,7 @@ class _TripsScreenState extends State<TripsScreen> {
                         Column(
                           children: [
                             Padding(
-                              padding: const EdgeInsets.only(
-                                  top: 35, bottom: 10.0, right: 20),
+                              padding: const EdgeInsets.only(top: 35, bottom: 10.0, right: 20),
                               child: Text(
                                 '${trip['seatsLeft']} seats left',
                                 style: TextStyle(
@@ -461,7 +465,7 @@ class _TripsScreenState extends State<TripsScreen> {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: getFirstNameOfCity(trip['departure']),
+                                  text: departureFirstName,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black,
@@ -485,7 +489,7 @@ class _TripsScreenState extends State<TripsScreen> {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: getFirstNameOfCity(trip['destination']),
+                              text: destinationFirstName,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black,

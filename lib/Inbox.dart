@@ -5,6 +5,8 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/routes/transitions_type.dart';
 import 'package:travel/postrequest.dart';
 import 'package:travel/posttrip.dart';
+import 'Userprofile.dart';
+import 'find.dart';
 import 'home.dart';
 
 class Message {
@@ -31,7 +33,7 @@ class Inbox1 extends StatelessWidget {
             width: 40,
             child: GestureDetector(
               onTap: () {
-               // Get.to(UserProfile(userName: ,),transition: Transition.leftToRight);
+               Get.to(UserProfile(),transition: Transition.leftToRight);
               },
               child: Image.asset(
                 'images/blogo.png',
@@ -43,10 +45,10 @@ class Inbox1 extends StatelessWidget {
           OutlinedButton.icon(
             icon: Icon(Icons.search, color: Colors.black),
             onPressed: () {
-             /* Navigator.push(
+              Navigator.push(
                 context,
-               MaterialPageRoute(builder: (context) => FindScreen(userName: '', usermail: '',)),
-              );*/
+               MaterialPageRoute(builder: (context) => FindScreen()),
+              );
             },
             label: Text(
               'Find',

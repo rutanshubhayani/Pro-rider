@@ -1,297 +1,356 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+import 'package:image/image.dart' as img;
+import 'api.dart';
 
 class VerifyLicense extends StatefulWidget {
-  const VerifyLicense({Key? key}) : super(key: key);
+  final bool fetchImageOnStart;
+
+  VerifyLicense({this.fetchImageOnStart = true});
 
   @override
-  State<VerifyLicense> createState() => _VerifyLicenseState();
+  _VerifyLicenseState createState() => _VerifyLicenseState();
 }
 
 class _VerifyLicenseState extends State<VerifyLicense> {
-  File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
-  bool _photoUploaded = false;
-  double _rotationAngle = 0;
-  bool _submitted = false;
+  XFile? _image;
+  late Future<void> _fetchImageFuture;
+  bool _isUploading = false; // Variable to track upload state
 
-  void _removeImage() {
-    setState(() {
-      _selectedImage = null;
-      _photoUploaded = false;
-    });
-  }
-
-  Future<void> _getImage(ImageSource source) async {
-    try {
-      final pickedImage = await _picker.pickImage(source: source);
-      if (pickedImage != null) {
-        print("Picked image path: ${pickedImage.path}");
-        final imageFile = File(pickedImage.path);
-        print("File exists: ${await imageFile.exists()}");
-        setState(() {
-          _selectedImage = imageFile;
-          _photoUploaded = true;
-          _rotationAngle = 0;
-        });
-      }
-    } catch (e) {
-      print("Error picking image: $e");
+  @override
+  void initState() {
+    super.initState();
+    if (widget.fetchImageOnStart) {
+      _fetchImageFuture = _fetchUploadedImage();
     }
   }
 
-  void _rotateImage() {
+  Future<void> _fetchUploadedImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken') ?? '';
+
+    final directory = await getApplicationDocumentsDirectory();
+
+    // Generate a unique filename using UUID
+    final uniqueFilename = '${Uuid().v4()}.jpg';
+    final imagePath = path.join(directory.path, uniqueFilename);
+    final File imageFile = File(imagePath);
+
+    try {
+      final response = await http.get(
+        Uri.parse('${API.api1}/images'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        await imageFile.writeAsBytes(response.bodyBytes);
+        Get.snackbar(
+          'Success',
+          'Image fetched from database and saved to $imagePath',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+
+        if (mounted) {
+          setState(() {
+            _image = XFile(imageFile.path);
+          });
+        }
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to load image from server',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        Get.snackbar(
+          'Error',
+          'An error occurred: $error',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
+  }
+
+  Future<void> _submitImage() async {
+    if (_image == null) return;
+
     setState(() {
-      _rotationAngle += 90;
+      _isUploading = true; // Set loading state to true
+    });
+
+    try {
+      // Compress the image before uploading
+      final originalFile = File(_image!.path);
+      final compressedFile = await _compressImage(originalFile);
+
+      // Get the size of the compressed file
+      final imageSize = compressedFile.lengthSync(); // Size in bytes
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken') ?? '';
+
+      final url = Uri.parse('${API.api1}/upload');
+      final stream = http.ByteStream(compressedFile.openRead().cast());
+      final length = await compressedFile.length();
+
+      final request = http.MultipartRequest('POST', url);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.fields['filename'] = 'license';
+      request.fields['status'] = '0';
+      request.files.add(http.MultipartFile('image', stream, length, filename: path.basename(compressedFile.path)));
+
+      final response = await request.send();
+      final responseString = await response.stream.bytesToString();
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Get.snackbar(
+          'Success',
+          'Image uploaded successfully: ${path.basename(compressedFile.path)}\nSize: ${imageSize / 1024} KB',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PhotoDisplayScreen(imagePath: compressedFile.path),
+          ),
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to upload image: $responseString',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (error) {
+      Get.snackbar(
+        'Error',
+        'An error occurred: $error',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      print(error);
+    } finally {
+      setState(() {
+        _isUploading = false; // Set loading state to false
+      });
+    }
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _image = image;
+      });
+    }
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+    if (image != null) {
+      setState(() {
+        _image = image;
+      });
+    }
+  }
+
+  void _deleteImage() {
+    setState(() {
+      _image = null;
     });
   }
 
-  Widget _buildRotatedImage() {
-    return Stack(
-      children: [
-        Container(
-          height: 200,
-          width: 300,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey, width: 1.0),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: _selectedImage != null
-              ? ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Transform.rotate(
-              angle: _rotationAngle * (3.14 / 180),
-              child: Image.file(
-                _selectedImage!,
-                fit: BoxFit.cover,
+  void _showImageSourceBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: Icon(Icons.camera),
+                title: Text('Take a Photo'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImageFromCamera();
+                },
               ),
-            ),
-          )
-              : Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.credit_card,
-                  color: Colors.grey,
-                  size: 50,
-                ),
-                Text(
-                  'Add Photo',
-                  style: TextStyle(color: Colors.black54),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (_photoUploaded && _submitted)
-          Positioned(
-            top: 8,
-            right: 8,
-            child: Container(
-              padding: EdgeInsets.all(1),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
+              ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImageFromGallery();
+                },
               ),
-              child: Icon(
-                Icons.verified,
-                color: Colors.green,
-                size: 20,
-              ),
-            ),
+            ],
           ),
-      ],
+        );
+      },
     );
   }
 
+  Future<File> _compressImage(File file) async {
+    // Read the image file
+    final image = img.decodeImage(file.readAsBytesSync());
+
+    // Resize the image (example: to a width of 800px while maintaining aspect ratio)
+    final resizedImage = img.copyResize(image!, width: 800);
+
+    // Encode the image as JPEG and write it to a new file
+    final directory = await getTemporaryDirectory();
+    final compressedFile = File('${directory.path}/${Uuid().v4()}.jpg')
+      ..writeAsBytesSync(img.encodeJpg(resizedImage, quality: 85));
+
+    return compressedFile;
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Verify License'),
+        title: Text('Photo Picker'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.only(top: 20.0),
-        child: Column(
-          children: [
-            if (!_submitted)
-              GestureDetector(
-                onTap: () async {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return SafeArea(
-                        child: Wrap(
-                          children: <Widget>[
-                            ListTile(
-                              leading: Icon(Icons.photo_camera),
-                              title: Text("Camera"),
-                              onTap: () {
-                                _getImage(ImageSource.camera);
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                            ListTile(
-                              leading: Icon(Icons.photo_library),
-                              title: Text("Gallery"),
-                              onTap: () {
-                                _getImage(ImageSource.gallery);
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-                child: Center(
-                  child: Stack(
-                    children: [
-                      Container(
-                        height: 200,
-                        width: 300,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey, width: 2.0),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: _buildRotatedImage(),
-                      ),
-                      if (_selectedImage != null)
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: GestureDetector(
-                            onTap: _removeImage,
-                            child: Container(
-                              padding: EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.black54,
-                              ),
-                              child: Icon(
-                                Icons.delete,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (_selectedImage != null)
-                        Positioned(
-                          top: 8,
-                          left: 8,
-                          child: GestureDetector(
-                            onTap: _rotateImage,
-                            child: Container(
-                              padding: EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.black54,
-                              ),
-                              child: Icon(
-                                Icons.rotate_left,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            SizedBox(
-              height: 10,
-            ),
-            Padding(
-              padding: const EdgeInsets.all(15.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: _submitted
-                    ? SizedBox.shrink()
-                    : ElevatedButton(
-                  onPressed: () {
-                    if (_photoUploaded) {
-                      print("Photo uploaded, navigating to License screen");
-                      setState(() {
-                        _submitted = true;
-                      });
-
-                      Future.delayed(Duration(milliseconds: 100), () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => License(
-                              imageFile: _selectedImage!,
-                            ),
-                          ),
-                        );
-                      });
-                    } else {
-                      print("No photo uploaded");
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Upload a photo first',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          backgroundColor: Colors.red,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  },
+      body: SafeArea(
+        child: Center(
+          child: FutureBuilder<void>(
+            future: _fetchImageFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(
                   child: Text(
-                    'Submit',
-                    style: TextStyle(
-                      color: Colors.white,
-                    ),
+                    'Error: ${snapshot.error}',
+                    style: TextStyle(color: Colors.red),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF2e2c2f),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                );
+              } else {
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        GestureDetector(
+                          onTap: _showImageSourceBottomSheet,
+                          child: Container(
+                            width: 300,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey, width: 2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: _image == null
+                                ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.credit_card, size: 50, color: Colors.grey),
+                                  Text(
+                                    'Add Photo',
+                                    style: TextStyle(color: Colors.black54),
+                                  ),
+                                ],
+                              ),
+                            )
+                                : Image.file(
+                              File(_image!.path),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        if (_image != null)
+                          IconButton(
+                            icon: Icon(Icons.delete, color: Colors.red),
+                            onPressed: _deleteImage,
+                          ),
+                      ],
                     ),
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-              ),
-            ),
-            if (_submitted && _photoUploaded && _selectedImage != null)
-              Container(
-                padding: EdgeInsets.all(10),
-                height: 300,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: _buildRotatedImage(),
-                ),
-              ),
-          ],
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _isUploading
+                          ? null // Disable the button if uploading
+                          : () async {
+                        await _submitImage(); // Upload the selected image
+                      },
+                      child: _isUploading
+                          ? CircularProgressIndicator(color: Colors.white) // Show loading spinner
+                          : Text('Submit'),
+                    ),
+                  ],
+                );
+              }
+            },
+          ),
         ),
       ),
     );
   }
 }
 
-class License extends StatelessWidget {
-  final File imageFile;
+class PhotoDisplayScreen extends StatelessWidget {
+  final String imagePath;
 
-  const License({Key? key, required this.imageFile}) : super(key: key);
+  PhotoDisplayScreen({required this.imagePath});
 
   @override
   Widget build(BuildContext context) {
-    print("Received image file: ${imageFile.path}");
     return Scaffold(
       appBar: AppBar(
-        title: Text('Image Preview'),
+        title: Text('Display Photo'),
       ),
       body: Center(
-        child: imageFile.existsSync()
-            ? Image.file(imageFile, fit: BoxFit.cover)
-            : Text("File not found"),
+        child: FutureBuilder<File>(
+          future: Future.value(File(imagePath)),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  'Error: ${snapshot.error}',
+                  style: TextStyle(color: Colors.red),
+                ),
+              );
+            } else if (snapshot.hasData) {
+              return Image.file(
+                snapshot.data!,
+                fit: BoxFit.cover,
+              );
+            } else {
+              return Center(child: Text('No image available'));
+            }
+          },
+        ),
       ),
     );
   }
 }
-

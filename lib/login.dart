@@ -59,8 +59,8 @@ class _LoginScreenState extends State<LoginScreen> {
           print('$user');
           print('Token : $token');
           if (user.containsKey('uid')) {
-            final uid = user['uid'];
-            print('$uid');
+            final userid = user['uid'];
+            print('$userid');
           }
           if (user.containsKey('uname')) {
             final uname = user['uname'];
@@ -78,18 +78,23 @@ class _LoginScreenState extends State<LoginScreen> {
             final uaddress = user['uaddress'];
             print('$uaddress');
           }
+          if (user.containsKey('profile_photo')) {
+            final profile_photo = user['profile_photo'];
+            print('$profile_photo');
+          }
+
           String uname = user['uname'] ?? 'User';
           String umail = user['umail'] ?? 'User';
           String umobilenumber = user['umobilenumber'].toString() ?? 'User';
           String uaddress = user['uaddress'] ?? 'User';
+          String uid = user['uid']?.toString() ?? 'User';
 
           // Store token in SharedPreferences
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('authToken', token);
 
           Get.snackbar('Success', 'Login successful', snackPosition: SnackPosition.BOTTOM);
-          Get.to(() => UserProfile(userName1: uname, usermail : umail, unumber : umobilenumber, uaddress : uaddress)); // Pass details to UserProfile
-          Get.to(() => FindScreen(userName: uname, usermail: umail,unumber : umobilenumber, uaddress : uaddress)); // Pass details to FindScreen
+          Get.to(() => FindScreen()); // Pass details to FindScreen
         } else {
           Get.snackbar('Error', 'Unexpected response format', snackPosition: SnackPosition.BOTTOM);
         }

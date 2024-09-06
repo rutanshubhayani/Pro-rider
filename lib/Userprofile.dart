@@ -1,21 +1,24 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:travel/license1.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
+import 'package:get/get.dart';
+import 'package:image/image.dart' as img;
+import 'package:travel/api.dart';
+import 'login.dart';
+import 'new.dart';
+import 'package:travel/verifylicenese.dart';
 import 'package:travel/profilesetting.dart';
 import 'package:travel/userinfo.dart';
 import 'package:travel/vechiledetails.dart';
-import 'login.dart';
-import 'new.dart';
-import 'package:http/http.dart' as http;
 
 class UserProfile extends StatefulWidget {
-  final String userName1; // UserName passed from the previous screen
-  final String usermail; // Usermail passed from the previous screen
-  final String unumber; // Usermail passed from the previous screen
-  final String uaddress; // Usermail passed from the previous screen
-
-  const UserProfile({Key? key, required this.userName1, required this.usermail, required this.unumber, required this.uaddress}) : super(key: key);
+  const UserProfile({Key? key}) : super(key: key);
 
   @override
   State<UserProfile> createState() => _UserProfileState();
@@ -23,53 +26,188 @@ class UserProfile extends StatefulWidget {
 
 class _UserProfileState extends State<UserProfile> {
   File? _selectedImage;
+  XFile? _profileImageFile;
   final ImagePicker _picker = ImagePicker();
+  String _userName = 'Loading...';
+  String _userEmail = 'Loading...';
+  bool _isNewUser = false; // Added flag to check if the user is new
 
-
-  void _removeImage() {
-    setState(() {
-      _selectedImage = null;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+    _fetchProfilePhoto();
   }
 
-  Future<void> _getImage(ImageSource source) async {
+  Future<void> _fetchUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token == null) {
+      print('No auth token found');
+      return;
+    }
+
     try {
-      final pickedImage = await _picker.pickImage(source: source);
-      if (pickedImage != null) {
-        _showConfirmationDialog(File(pickedImage.path));
+      final response = await http.get(
+        Uri.parse('${API.api1}/user'),
+        headers: {
+          HttpHeaders.authorizationHeader: 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _userName = data['uname'] ?? 'No name';
+          _userEmail = data['umail'] ?? 'No email';
+          _isNewUser = data['profilePhoto'] == null; // Assume 'profilePhoto' is null for new users
+        });
+      } else {
+        print('Failed to load user data: ${response.statusCode}');
       }
     } catch (e) {
-      print("Error picking image: $e");
+      print('Error fetching user data: $e');
     }
   }
 
+  Future<void> _fetchProfilePhoto() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken') ?? '';
+
+    try {
+      final response = await http.get(
+        Uri.parse('${API.api1}/profile-photo'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final directory = await getApplicationDocumentsDirectory();
+        final uniqueFilename = '${Uuid().v4()}.jpg';
+        final imagePath = path.join(directory.path, uniqueFilename);
+        final imageFile = File(imagePath);
+        await imageFile.writeAsBytes(response.bodyBytes);
+
+        if (mounted) {
+          setState(() {
+            _profileImageFile = XFile(imageFile.path);
+          });
+        }
+      }
+    } catch (error) {
+      if (mounted && !_isNewUser) { // Only show error if the user is not new
+        Get.snackbar(
+          'Error',
+          'An error occurred: $error',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadProfilePhoto(File image) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken') ?? '';
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${API.api1}/upload-profile-photo'),
+    );
+    request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
+    request.files.add(await http.MultipartFile.fromPath('profile_photo', image.path));
+
+    try {
+      final response = await request.send();
+
+      if (response.statusCode == 200) {
+        // Get the image file size
+        final imageSize = image.lengthSync();
+        final imageSizeInMB = imageSize / (1024 * 1024); // Convert bytes to MB
+
+        Get.snackbar(
+          'Upload Successful',
+          'Image uploaded successfully. Size: ${imageSizeInMB.toStringAsFixed(2)} MB',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+
+        _fetchProfilePhoto(); // Refresh profile photo
+      } else if (!_isNewUser) { // Only show error if the user is not new
+        Get.snackbar(
+          'Error',
+          'Failed to upload profile photo',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (error) {
+      if (!_isNewUser) { // Only show error if the user is not new
+        Get.snackbar(
+          'Error',
+          'An error occurred: $error',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
+  }
+
+  Future<File> _compressImage(File file) async {
+    // Read the image file
+    final image = img.decodeImage(file.readAsBytesSync());
+
+    // Resize the image (example: to a width of 800px while maintaining aspect ratio)
+    final resizedImage = img.copyResize(image!, width: 800);
+
+    // Encode the image as JPEG and write it to a new file
+    final directory = await getTemporaryDirectory();
+    final compressedFile = File('${directory.path}/${Uuid().v4()}.jpg')
+      ..writeAsBytesSync(img.encodeJpg(resizedImage, quality: 85));
+
+    return compressedFile;
+  }
+
   Future<void> _showConfirmationDialog(File image) async {
+    // Compress the image before showing the dialog
+    final compressedImage = await _compressImage(image);
+
     return showDialog<void>(
       context: context,
-      barrierDismissible: false, // User must tap a button to close the dialog
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Confirm Image'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.file(image, height: 300, width: 300, fit: BoxFit.cover),
+              Image.file(compressedImage, height: 300, width: 300, fit: BoxFit.cover),
             ],
           ),
           actions: <Widget>[
             TextButton(
               child: Text('Cancel'),
               onPressed: () {
-                Navigator.of(context).pop(); // Dismiss the dialog
+                Navigator.of(context).pop();
               },
             ),
             TextButton(
               child: Text('Confirm'),
               onPressed: () {
                 setState(() {
-                  _selectedImage = image; // Confirm the image selection
+                  _selectedImage = compressedImage;
                 });
-                Navigator.of(context).pop(); // Dismiss the dialog
+                Navigator.of(context).pop();
+                _uploadProfilePhoto(compressedImage); // Upload the compressed image
               },
             ),
           ],
@@ -85,7 +223,7 @@ class _UserProfileState extends State<UserProfile> {
         return SafeArea(
           child: Wrap(
             children: <Widget>[
-              if (_selectedImage != null) // Show delete option only if an image is selected
+              if (_selectedImage != null)
                 ListTile(
                   leading: Icon(Icons.delete, color: Colors.red),
                   title: Text("Delete Image", style: TextStyle(color: Colors.red)),
@@ -117,11 +255,22 @@ class _UserProfileState extends State<UserProfile> {
     );
   }
 
-  String get userName => widget.userName1; // Getter for userName
-  String get usermail => widget.usermail; // Getter for usermail
-  String get unumber => widget.unumber; // Getter for usermail
-  String get uaddress => widget.uaddress; // Getter for usermail
+  void _removeImage() {
+    setState(() {
+      _selectedImage = null;
+    });
+  }
 
+  Future<void> _getImage(ImageSource source) async {
+    try {
+      final pickedImage = await _picker.pickImage(source: source);
+      if (pickedImage != null) {
+        _showConfirmationDialog(File(pickedImage.path));
+      }
+    } catch (e) {
+      print("Error picking image: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,8 +297,10 @@ class _UserProfileState extends State<UserProfile> {
                     radius: 50,
                     backgroundImage: _selectedImage != null
                         ? FileImage(_selectedImage!)
+                        : _profileImageFile != null
+                        ? FileImage(File(_profileImageFile!.path))
                         : AssetImage('images/Userpfp.png') as ImageProvider,
-                    child: _selectedImage == null
+                    child: _selectedImage == null && _profileImageFile == null
                         ? CircleAvatar(
                       radius: 50,
                       backgroundImage: AssetImage('images/Userpfp.png'),
@@ -172,14 +323,14 @@ class _UserProfileState extends State<UserProfile> {
             ),
             SizedBox(height: 10),
             Text(
-              userName, // Use the getter here
+              _userName,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
-              usermail,
+              _userEmail,
               style: TextStyle(
                 color: Colors.grey,
               ),
@@ -193,14 +344,10 @@ class _UserProfileState extends State<UserProfile> {
                     leadingIcon: Icons.info_outline_rounded,
                     title: 'Profile Information',
                     onTap: () {
-                      final String uname = userName; // Use the getter here
-                      final String umail = usermail;
-                      final String umobilenumber = unumber;
-                      final String useraddress = uaddress ;
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => UserInfo(uname: uname, usermail: umail, umobilenumber: umobilenumber, uaddress: useraddress,),
+                          builder: (context) => UserInfo(),
                         ),
                       );
                     },
@@ -210,20 +357,28 @@ class _UserProfileState extends State<UserProfile> {
                     leadingIcon: Icons.directions_car,
                     title: 'Vehicle details',
                     onTap: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => VehicleDetails()));
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => VehicleDetails(),
+                        ),
+                      );
                     },
                   ),
-                  SizedBox(height: 10,),
+                  SizedBox(height: 10),
                   CylindricalTile(
                     leadingIcon: Icons.perm_contact_calendar_outlined,
                     title: 'Profile settings',
-                    onTap: (){
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => ProfileSetting()));
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProfileSetting(),
+                        ),
+                      );
                     },
                   ),
-                  SizedBox(height: 10,),
+                  SizedBox(height: 10),
                   CylindricalTile(
                     leadingIcon: Icons.credit_card,
                     title: 'Verify license',
@@ -231,26 +386,33 @@ class _UserProfileState extends State<UserProfile> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => PhotoPickerScreen(fetchImageOnStart: true),
+                          builder: (context) => VerifyLicense(fetchImageOnStart: true),
                         ),
                       );
                     },
                   ),
-
-
-                  SizedBox(height: 10,),
+                  SizedBox(height: 10),
                   CylindricalTile(
                     leadingIcon: Icons.help_center_outlined,
                     title: 'Help',
-                    onTap: (){},
+                    onTap: () {},
                   ),
-                  SizedBox(height: 10,),
+                  SizedBox(height: 10),
                   CylindricalTile(
                     leadingIcon: Icons.logout,
                     title: 'Log Out',
-                    onTap: (){
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => LoginScreen()));
+                    onTap: () async {
+                      // Clear the token from SharedPreferences
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await prefs.remove('authToken');
+
+                      // Navigate to LoginScreen after clearing token
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => LoginScreen(),
+                        ),
+                      );
                     },
                   ),
                 ],

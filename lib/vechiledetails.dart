@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:async/async.dart';
-import 'package:travel/api.dart';
 
 class VehicleDetails extends StatefulWidget {
   const VehicleDetails({super.key});
@@ -15,6 +16,9 @@ class VehicleDetails extends StatefulWidget {
 }
 
 class _VehicleDetailsState extends State<VehicleDetails> {
+  bool isEditing = false;  // Variable to manage editing state
+  bool _isLoadingImage = false;
+
   FocusNode modelFocusNode = FocusNode();
   FocusNode cartypeFocusNode = FocusNode();
   FocusNode colorFocusNode = FocusNode();
@@ -29,11 +33,21 @@ class _VehicleDetailsState extends State<VehicleDetails> {
   final TextEditingController _modelController = TextEditingController();
   final TextEditingController _yearController = TextEditingController();
   final TextEditingController _licenseController = TextEditingController();
-  String _selectedType = 'Sedan';
-  String _selectedColor = 'Red';
+  String _selectedType = 'Select';
+  String _selectedColor = 'Select';
 
   // Vehicle details
   Map<String, dynamic>? vehicleDetails;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize default values
+    _selectedType = 'Select';
+    _selectedColor = 'Select';
+    _fetchVehicleData();
+  }
+
 
   void _removeImage() {
     setState(() {
@@ -54,9 +68,133 @@ class _VehicleDetailsState extends State<VehicleDetails> {
     }
   }
 
+  Future<void> _fetchVehicleData() async {
+    setState(() {
+      // Start loading data
+      _isLoadingImage = true;
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken');
+
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Authentication token not found. Please log in again.'),
+        ));
+        return;
+      }
+
+      // Fetch vehicle details
+      final url = Uri.parse('http://202.21.32.153:8081/get-vehicle-data');
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          vehicleDetails = data['vehicles'].isNotEmpty ? data['vehicles'][0] : null;
+          if (vehicleDetails != null) {
+            _modelController.text = vehicleDetails!['vehicle_model'];
+            _selectedType = vehicleDetails!['vehicle_type'] ?? 'Select';
+            _selectedColor = vehicleDetails!['vehicle_color'] ?? 'Select';
+            _yearController.text = vehicleDetails!['vehicle_year']?.toString() ?? '';
+            _licenseController.text = vehicleDetails!['licence_plate'] ?? '';
+            _fetchVehicleImage(); // Fetch the image
+          } else {
+            // No vehicle details found
+            _isLoadingImage = false;  // End loading
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(data['message']),
+        ));
+      } else if (response.statusCode == 404) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('You have not uploaded any details.'),
+        ));
+        setState(() {
+          _isLoadingImage = false;  // End loading
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to retrieve vehicle data.'),
+        ));
+        setState(() {
+          _isLoadingImage = false;  // End loading
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('An error occurred: $e'),
+      ));
+      setState(() {
+        _isLoadingImage = false;  // End loading
+      });
+    }
+  }
+
+  Future<void> _fetchVehicleImage() async {
+    setState(() {
+      // Start loading image
+      _isLoadingImage = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken');
+
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Authentication token not found. Please log in again.'),
+        ));
+        return;
+      }
+
+      final url = Uri.parse('http://202.21.32.153:8081/get-vehicle-image');
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final directory = await getApplicationDocumentsDirectory();
+        final uniqueFilename = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final imagePath = path.join(directory.path, uniqueFilename);
+        final imageFile = File(imagePath);
+
+        await imageFile.writeAsBytes(response.bodyBytes);
+
+        setState(() {
+          _selectedImage = imageFile;
+          _isLoadingImage = false;  // End loading
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to retrieve vehicle image.'),
+        ));
+        setState(() {
+          _isLoadingImage = false;  // End loading
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('An error occurred: $e'),
+      ));
+      setState(() {
+        _isLoadingImage = false;  // End loading
+      });
+    }
+  }
+
+
   Future<void> _submitData() async {
     if (!_formKey.currentState!.validate() || _selectedImage == null) {
-      // Show error message if form is not valid or image is not selected
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Please fill out all fields and select an image.'),
       ));
@@ -64,33 +202,47 @@ class _VehicleDetailsState extends State<VehicleDetails> {
     }
 
     try {
-      var stream =
-      http.ByteStream(DelegatingStream.typed(_selectedImage!.openRead()));
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken');
+
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Authentication token not found. Please log in again.'),
+        ));
+        return;
+      }
+
+      var stream = http.ByteStream(DelegatingStream.typed(_selectedImage!.openRead()));
       var length = await _selectedImage!.length();
-      var uri = Uri.parse('${API.api1}/upload-vehicle-image');
+      var uri = Uri.parse('http://202.21.32.153:8081/update-vehicle-data');
 
       var request = http.MultipartRequest("POST", uri);
-
-      var multipartFile = http.MultipartFile('vehicle_img', stream, length,
-          filename: path.basename(_selectedImage!.path));
-
+      var multipartFile = http.MultipartFile('vehicle_img', stream, length, filename: path.basename(_selectedImage!.path));
       request.files.add(multipartFile);
+
       request.fields['vehicle_model'] = _modelController.text;
       request.fields['vehicle_type'] = _selectedType;
       request.fields['vehicle_color'] = _selectedColor;
       request.fields['vehicle_year'] = _yearController.text;
       request.fields['licence_plate'] = _licenseController.text;
 
-      var response = await request.send();
+      request.headers['Authorization'] = 'Bearer $token';
 
-      if (response.statusCode == 201) {
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        setState(() {
+          isEditing = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Vehicle details uploaded successfully!'),
         ));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to upload vehicle details.'),
+          content: Text('Failed to upload vehicle details: ${response.statusCode}'),
         ));
+        print('Error details: $responseBody');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -99,39 +251,16 @@ class _VehicleDetailsState extends State<VehicleDetails> {
     }
   }
 
-  Future<void> _fetchVehicleDetails(String vehicleId) async {
-    try {
-      final uri =
-      Uri.parse('http://202.21.32.153:8081/vehicle-details/$vehicleId');
-      final response = await http.get(uri);
-
-      if (response.statusCode == 200) {
-        setState(() {
-          vehicleDetails = json.decode(response.body);
-          _modelController.text = vehicleDetails?['vehicle_model'] ?? '';
-          _selectedType = vehicleDetails?['vehicle_type'] ?? 'Sedan';
-          _selectedColor = vehicleDetails?['vehicle_color'] ?? 'Red';
-          _yearController.text = vehicleDetails?['vehicle_year'] ?? '';
-          _licenseController.text = vehicleDetails?['licence_plate'] ?? '';
-          // Update image and other fields as needed
+  void toggleEditing() {
+    setState(() {
+      isEditing = !isEditing;  // Toggle the editing state
+      if (isEditing) {
+        // Request focus on the first editable field when entering edit mode
+        Future.delayed(Duration(milliseconds: 100), () {
+          FocusScope.of(context).requestFocus(modelFocusNode);
         });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to fetch vehicle details.'),
-        ));
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('An error occurred: $e'),
-      ));
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // Fetch vehicle details with a given ID (for example, '12345')
-    _fetchVehicleDetails('12345');
+    });
   }
 
   @override
@@ -177,132 +306,88 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                 ),
                 SizedBox(height: 30),
                 GestureDetector(
-                  onTap: () async {
+                  onTap: isEditing ? () async {
                     showModalBottomSheet(
                       context: context,
-                      builder: (BuildContext context) {
-                        return SafeArea(
-                          child: Wrap(
-                            children: <Widget>[
-                              ListTile(
-                                leading: Icon(Icons.photo_camera),
-                                title: Text("Camera"),
-                                onTap: () {
-                                  _getImage(ImageSource.camera);
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                              ListTile(
-                                leading: Icon(Icons.photo_library),
-                                title: Text("Gallery"),
-                                onTap: () {
-                                  _getImage(ImageSource.gallery);
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
-                  child: Center(
-                    child: Stack(
-                      children: [
-                        Container(
-                          height: 200,
-                          width: 300,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey, width: 2.0),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: _selectedImage != null
-                              ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8.0),
-                            child: Image.file(
-                              _selectedImage!,
-                              fit: BoxFit.cover,
+                      builder: (context) => BottomSheet(
+                        onClosing: () {},
+                        builder: (context) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: Icon(Icons.camera_alt),
+                              title: Text('Take a Photo'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _getImage(ImageSource.camera);
+                              },
                             ),
-                          )
-                              : Center(
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding:
-                                  const EdgeInsets.only(top: 60.0),
-                                  child: Icon(
-                                    Icons.directions_car,
-                                    color: Colors.grey,
-                                    size: 50,
-                                  ),
-                                ),
-                                Text(
-                                  'Add Photo',
-                                  style: TextStyle(color: Colors.black54),
-                                ),
-                              ],
+                            ListTile(
+                              leading: Icon(Icons.image),
+                              title: Text('Select from Gallery'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _getImage(ImageSource.gallery);
+                              },
                             ),
-                          ),
+                            ListTile(
+                              leading: Icon(Icons.delete),
+                              title: Text('Remove Image'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _removeImage();
+                              },
+                            ),
+                          ],
                         ),
-                        if (_selectedImage != null)
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: GestureDetector(
-                              onTap: _removeImage,
-                              child: Container(
-                                padding: EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.black54,
-                                ),
-                                child: Icon(
-                                  Icons.delete,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                      ),
+                    );
+                  } : null, // Disable GestureDetector if not editing
+                  child: _isLoadingImage
+                      ? Center(child: CircularProgressIndicator())  // Show loader while loading image
+                      : _selectedImage != null
+                      ? Image.file(
+                    _selectedImage!,
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  )
+                      : Container(
+                    height: 200,
+                    width: double.infinity,
+                    color: Colors.grey[200],
+                    child: Center(
+                      child: Text('No Image Uploaded'),
                     ),
                   ),
                 ),
-                SizedBox(height: 40),
+                SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
                       flex: 1,
                       child: Text(
                         'Model',
-                        style: TextStyle(
-                          color: Colors.black87,
-                          fontSize: 15,
-                        ),
+                        style: TextStyle(color: Colors.black),
                       ),
                     ),
+                    SizedBox(width: 10),
                     Expanded(
-                      flex: 2,
+                      flex: 3,
                       child: TextFormField(
                         controller: _modelController,
                         focusNode: modelFocusNode,
-                        decoration: InputDecoration(
-                            filled: true,
-                            hintText: 'e.g. Ford Focus',
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
-                              borderRadius: BorderRadius.circular(10),
-                            )),
-                        textInputAction: TextInputAction.next,
-                        onFieldSubmitted: (_) {
-                          FocusScope.of(context)
-                              .requestFocus(cartypeFocusNode);
-                        },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter a model';
+                            return 'Please enter the model';
                           }
                           return null;
                         },
+                        decoration: InputDecoration(
+                          hintText: 'Car model',
+                          border: OutlineInputBorder(),
+                        ),
+                        readOnly: !isEditing,  // Set readOnly based on isEditing
                       ),
                     ),
                   ],
@@ -313,68 +398,100 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                     Expanded(
                       flex: 1,
                       child: Text(
-                        'Type',
-                        style: TextStyle(fontSize: 15, color: Colors.black87),
+                        'Car type',
+                        style: TextStyle(color: Colors.black),
                       ),
                     ),
+                    SizedBox(width: 10),
                     Expanded(
-                      flex: 2,
-                      child: DropdownButtonFormField(
+                      flex: 3,
+                      child:DropdownButtonFormField<String>(
+                        hint: Text('Select Type'),
+                        value: _selectedType == 'Select' ? null : _selectedType,
                         focusNode: cartypeFocusNode,
+                        onChanged: isEditing ? (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _selectedType = newValue;
+                            });
+                            print('Selected Type Updated: $_selectedType');
+                          }
+                        } : null,  // Enable/disable based on isEditing
+                        items: <String>[
+                          'Sedan',
+                          'SUV',
+                          'Truck',
+                          'Hatchback',
+                          'Convertible',
+                          'Coupe',
+                          'Wagon',
+                          'Van',
+                          'Luxury'
+                        ].map<DropdownMenuItem<String>>((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
                         decoration: InputDecoration(
+                          hintText: 'Car type',
                           border: OutlineInputBorder(),
                         ),
-                        items: ['Sedan', 'SUV', 'Truck', 'Coupe']
-                            .map((type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type),
-                        ))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedType = value as String;
-                          });
-                          FocusScope.of(context).requestFocus(colorFocusNode);
-                        },
-                        value: _selectedType,
                       ),
+
+
                     ),
                   ],
                 ),
-                SizedBox(height: 20.0),
+                SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
                       flex: 1,
                       child: Text(
                         'Color',
-                        style: TextStyle(
-                          color: Colors.black87,
-                          fontSize: 15,
-                        ),
+                        style: TextStyle(color: Colors.black),
                       ),
                     ),
+                    SizedBox(width: 10),
                     Expanded(
-                      flex: 2,
-                      child: DropdownButtonFormField(
+                      flex: 3,
+                      child: DropdownButtonFormField<String>(
+                        hint: Text('Select color'),
+                        value: _selectedColor == 'Select' ? null : _selectedColor,
                         focusNode: colorFocusNode,
+                        onChanged: isEditing ? (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _selectedColor = newValue;
+                            });
+                          }
+                        } : null,  // Enable/disable based on isEditing
+                        items: <String>[
+                          'Red',
+                          'Blue',
+                          'Green',
+                          'Black',
+                          'White',
+                          'Gray',
+                          'Yellow',
+                          'Orange',
+                          'Brown',
+                          'Purple',
+                          'Pink',
+                          'Beige'
+                        ].map<DropdownMenuItem<String>>((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
                         decoration: InputDecoration(
                           border: OutlineInputBorder(),
                         ),
-                        items: ['Red', 'Blue', 'White', 'Black']
-                            .map((color) => DropdownMenuItem(
-                          value: color,
-                          child: Text(color),
-                        ))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedColor = value as String;
-                          });
-                          FocusScope.of(context).requestFocus(yearFocusNode);
-                        },
-                        value: _selectedColor,
                       ),
+
+
                     ),
                   ],
                 ),
@@ -385,39 +502,30 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                       flex: 1,
                       child: Text(
                         'Year',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.black87,
-                        ),
+                        style: TextStyle(color: Colors.black),
                       ),
                     ),
+                    SizedBox(width: 10),
                     Expanded(
-                      flex: 2,
+                      flex: 3,
                       child: TextFormField(
                         controller: _yearController,
                         focusNode: yearFocusNode,
-                        maxLength: 4,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                            hintText: 'YYYY',
-                            filled: true,
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
-                              borderRadius: BorderRadius.circular(10),
-                            )),
-                        textInputAction: TextInputAction.next,
-                        onFieldSubmitted: (_) {
-                          FocusScope.of(context)
-                              .requestFocus(licenseFocusNode);
-                        },
                         validator: (value) {
-                          if (value == null ||
-                              value.isEmpty ||
-                              int.tryParse(value) == null) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter the year';
+                          }
+                          if (int.tryParse(value) == null) {
                             return 'Please enter a valid year';
                           }
                           return null;
                         },
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'Year',
+                          border: OutlineInputBorder(),
+                        ),
+                        readOnly: !isEditing,  // Set readOnly based on isEditing
                       ),
                     ),
                   ],
@@ -428,57 +536,68 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                     Expanded(
                       flex: 1,
                       child: Text(
-                        'Licence Plate',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.black87,
-                        ),
+                        'License',
+                        style: TextStyle(color: Colors.black),
                       ),
                     ),
+                    SizedBox(width: 10),
                     Expanded(
-                      flex: 2,
+                      flex: 3,
                       child: TextFormField(
                         controller: _licenseController,
                         focusNode: licenseFocusNode,
-                        decoration: InputDecoration(
-                            filled: true,
-                            hintText: 'POP 123',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
-                            )),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter a license plate';
+                            return 'Please enter the license plate';
                           }
                           return null;
                         },
+                        decoration: InputDecoration(
+                          hintText: 'License plate',
+                          border: OutlineInputBorder(),
+                        ),
+                        readOnly: !isEditing,  // Set readOnly based on isEditing
                       ),
                     ),
                   ],
                 ),
                 SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _submitData,
-                    child: Text(
-                      'Submit',
-                      style: TextStyle(
-                        fontSize: 17,
-                        color: Colors.white,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (isEditing)
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _submitData,
+                          child: Text('Save & Continue'),
+                          style: ElevatedButton.styleFrom(
+                            elevation: 7,
+                            backgroundColor: Color(0xFF2e2c2f),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    SizedBox(width: 10,),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: toggleEditing,
+                        child: Text(isEditing ? 'Cancel' : 'Edit'),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 7,
+                          backgroundColor: Color(0xFF2e2c2f),
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      elevation: 7,
-                      backgroundColor: Color(0xFF2e2c2f),
-                      padding:
-                      EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),

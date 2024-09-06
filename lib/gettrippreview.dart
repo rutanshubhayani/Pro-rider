@@ -1,68 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:intl/intl.dart';
-import 'package:travel/book.dart';
-import 'package:travel/posttrip.dart';
-import 'package:travel/home.dart';
-import 'Inbox.dart';
 
-class TripPreview extends StatefulWidget {
+import 'Inbox.dart';
+import 'book.dart';
+
+class GetTripPreview extends StatefulWidget {
   final Map<String, dynamic> tripData;
 
-  const TripPreview({Key? key, required this.tripData}) : super(key: key);
+  const GetTripPreview({Key? key, required this.tripData}) : super(key: key);
 
   @override
-  _TripPreviewState createState() => _TripPreviewState();
+  _GetTripPreviewState createState() => _GetTripPreviewState();
 }
 
-class _TripPreviewState extends State<TripPreview> {
-  String formattedDate = '';
-
-  List<String> otherItems = []; // List to hold other items
+class _GetTripPreviewState extends State<GetTripPreview> {
+  late String formattedDate;
+  late List<String> otherItems;
 
   @override
   void initState() {
     super.initState();
-    _printStops();
+    _formatDate();
+    _processOtherItems();
+  }
 
-    // Format date and time from API
-    String dateString = widget.tripData['leaving_date_time'] ?? '';
-    if (dateString.isNotEmpty) {
+  void _formatDate() {
+    final dateValue = widget.tripData['date'];
+
+    if (dateValue is String && dateValue.isNotEmpty) {
       try {
-        DateTime date = DateTime.parse(dateString);
+        final date = DateTime.parse(dateValue).toLocal();
         formattedDate = DateFormat('E, MMM d \'at\' h:mma').format(date);
       } catch (e) {
         print('Date parsing error: $e');
+        formattedDate = 'Invalid date format';
       }
+    } else if (dateValue is DateTime) {
+      formattedDate = DateFormat('E, MMM d \'at\' h:mma').format(dateValue.toLocal());
     } else {
       formattedDate = 'Date not available';
     }
+  }
 
-    // Process other items
-    String otherItemsString = widget.tripData['other_items'] ?? '';
-    if (otherItemsString.isNotEmpty) {
-      otherItems =
-          otherItemsString.split(',').map((item) => item.trim()).toList();
+  void _processOtherItems() {
+    final otherItemsRaw = widget.tripData['otherItems'];
+
+    if (otherItemsRaw is String) {
+      otherItems = otherItemsRaw.split(',').map((item) => item.trim()).toList();
+    } else if (otherItemsRaw is List) {
+      otherItems = otherItemsRaw.map((item) => item.toString().trim()).toList();
+    } else {
+      otherItems = [];
     }
   }
 
-  void _printStops() {
-    // Extract and print stops
-    var stopsData = widget.tripData['stops'] as List<dynamic>? ?? [];
-    for (var stop in stopsData) {
-      print('Stop ID: ${stop['stop_id']}');
-      print('Stop Name: ${stop['stop_name']}');
-      print('Stop Price: ${stop['stop_price']}');
-      print('Stop Insert Date: ${stop['insdatetime']}');
-      print('Stop Update Date: ${stop['updatetime']}');
-      print('Post A Trip ID: ${stop['post_a_trip_id']}');
-      print('---');
-    }
-  }
-
-  // Function to map luggage code to its corresponding string
-  String getLuggageLabel(String luggageCode) {
-    switch (luggageCode) {
+  String getLuggageLabel(String code) {
+    switch (code) {
       case '0':
         return 'No luggage';
       case '1':
@@ -70,36 +65,28 @@ class _TripPreviewState extends State<TripPreview> {
       case '2':
         return 'Cabin bag (max. 23 kg)';
       default:
-        return 'Unknown luggage type';
+        return 'Unknown';
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    String departureCityFirstName = widget.tripData['departure']?.split(' ').first ?? 'Unknown';
-    String departureCity = widget.tripData['departure'] ?? 'Unknown Departure';
-    String destinationCityFirstName = widget.tripData['destination']?.split(' ').first ?? 'Unknown';
-    String destinationCity = widget.tripData['destination'] ?? 'Unknown Destination';
-    String userName = widget.tripData['uname'] ?? 'Unknown';
-    String price = widget.tripData['price'].toString() ?? 'Can\'t fetch price';
-    String luggageCode = widget.tripData['luggage'].toString();
-    // Get the luggage label from the code
-    String luggage = getLuggageLabel(luggageCode);
-
-    // Ensure description is set correctly, falling back to a default value if needed
-    String description = widget.tripData['description']?.isNotEmpty == true
+    final departureCity = widget.tripData['departure'] ?? 'Unknown Departure';
+    final departureCityFirstName = widget.tripData['departure']?.split(' ').first ?? 'Unknown';
+    final destinationCity = widget.tripData['destination'] ?? 'Unknown Destination';
+    final destinationCityFirstName = widget.tripData['destination']?.split(' ').first ?? 'Unknown';
+    final userName = widget.tripData['userName'] ?? 'Unknown';
+    final price = widget.tripData['price']?.toString() ?? '0';
+    final luggageCode = widget.tripData['luggage']?.toString() ?? '0';
+    final luggage = getLuggageLabel(luggageCode);
+    final description = widget.tripData['description']?.isNotEmpty == true
         ? widget.tripData['description']
-        : '$departureCity to $destinationCity';
-
-    String ride_schedule = widget.tripData['ride_schedule'] ?? 'Unknown';
-    int seatsLeft = widget.tripData['empty_seats'] ?? 0;
-    String userImage = widget.tripData['userImage'] ?? 'images/Userpfp.png';
-
-    // Extract and parse additional items from the API response
-    String otherItemsStr = widget.tripData['other_items'] ?? '';
-    List<String> additionalItems = otherItemsStr.split(',').map((item) => item.trim()).toList();
+        : 'Trip from $departureCity to $destinationCity';
+    final rideSchedule = widget.tripData['rideSchedule'] ?? 'Unknown';
+    final seatsLeft = widget.tripData['seatsLeft'] ?? 0;
+    final backRowSitting = widget.tripData['backRowSitting'] ?? 'Not specified';
+    final userImage = widget.tripData['userImage'] ?? 'images/Userpfp.png';
+    final stopsData = widget.tripData['stops'] as List<dynamic>? ?? [];
 
     // Define a map for luggage icons
     final Map<String, IconData> luggageIcons = {
@@ -113,9 +100,6 @@ class _TripPreviewState extends State<TripPreview> {
       'Pets': Icons.pets,
       'Bikes': Icons.directions_bike,
     };
-    // Extract stops data from tripData
-    var stopsData = widget.tripData['stops'] as List<dynamic>? ?? [];
-
 
     return Scaffold(
       appBar: AppBar(
@@ -184,7 +168,7 @@ class _TripPreviewState extends State<TripPreview> {
                   Expanded(
                     child: Text(
                       textAlign: TextAlign.center,
-                      ride_schedule,
+                      rideSchedule,
                       style: TextStyle(fontSize: 16),
                     ),
                   ),
@@ -192,11 +176,11 @@ class _TripPreviewState extends State<TripPreview> {
                   Expanded(
                     child: Text(
                       textAlign: TextAlign.center,
-                        '\$' + price,
+                      '\$' + price,
                       style: TextStyle(
-                          fontSize: 18,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue
+                        color: Colors.blue,
                       ),
                     ),
                   ),
@@ -324,19 +308,20 @@ class _TripPreviewState extends State<TripPreview> {
               ),
               ListView.builder(
                 shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(), // Disable scrolling
+                physics: NeverScrollableScrollPhysics(),
                 itemCount: stopsData.length,
                 itemBuilder: (context, index) {
-                  var stop = stopsData[index];
+                  final stop = stopsData[index] as Map<String, dynamic>; // Cast to Map
+                  final stopName = stop['stop_name'] ?? 'Unknown Stop';
+                  final stopPrice = stop['stop_price'] ?? '0';
                   return ListTile(
-                    title: Text(stop['stop_name']),
-                    subtitle: Text('Price: \$${stop['stop_price']}'),
+                    title: Text(stopName),
+                    subtitle: Text('Price: \$${stopPrice}'),
                   );
                 },
               ),
             ],
             Divider(thickness: 15, color: Colors.black12),
-
             // Assuming otherItems is a list of strings
             Padding(
               padding: const EdgeInsets.only(right: 150.0, bottom: 100),
@@ -390,8 +375,6 @@ class _TripPreviewState extends State<TripPreview> {
                 ],
               ),
             ),
-
-
           ],
         ),
       ),
@@ -410,15 +393,17 @@ class _TripPreviewState extends State<TripPreview> {
                 child: Row(
                   children: [
                     SizedBox(width: 25),
-                    Text(
-                      'Request to book',
-                      style: TextStyle(
-                        fontSize: 17,
-                        color: Colors.white,
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        'Request to book',
+                        style: TextStyle(
+                          fontSize: 17,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                    SizedBox(width: 80),
-                    Icon(Icons.arrow_forward_ios_rounded, color: Colors.white),
+                    Expanded(child: Icon(Icons.arrow_forward_ios_rounded, color: Colors.white)),
                   ],
                 ),
               ),
@@ -444,6 +429,7 @@ class _TripPreviewState extends State<TripPreview> {
           ),
         ],
       ),
+
     );
   }
 }

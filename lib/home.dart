@@ -60,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 40,
             child: GestureDetector(
               onTap: () {
-               // Get.to(UserProfile(userName: '',),transition: Transition.leftToRight);
+               Get.to(UserProfile(),transition: Transition.leftToRight);
               },
               child: Image.asset(
                 'images/blogo.png',
@@ -72,10 +72,10 @@ class _HomeScreenState extends State<HomeScreen> {
           OutlinedButton.icon(
             icon: Icon(Icons.search, color: Colors.black),
             onPressed: () {
-              // Navigator.push(
-              //   context
-              //  // MaterialPageRoute(builder: (context) => FindScreen(userName: '',)),
-              // );
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FindScreen()),
+              );
             },
             label: Text(
               'Find',
