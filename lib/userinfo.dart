@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'package:shimmer/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
@@ -7,11 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Userprofile.dart';
 import 'package:travel/api.dart';
-import 'package:travel/profilesetting.dart';
 import 'dart:convert';
 import 'package:travel/verifyotp.dart'; // For converting response to JSON
-
-
 
 class UserInfo extends StatefulWidget {
   const UserInfo({super.key});
@@ -22,6 +19,7 @@ class UserInfo extends StatefulWidget {
 
 class _UserInfoState extends State<UserInfo> {
   bool isEditing = false;
+  bool isLoading = true;
   TextEditingController _nameController = TextEditingController();
   TextEditingController _emailController = TextEditingController();
   TextEditingController _phoneController = TextEditingController();
@@ -60,11 +58,9 @@ class _UserInfoState extends State<UserInfo> {
       return;
     }
 
-    const apiUrl = 'http://202.21.32.153:8081/user';
-
     try {
       final response = await http.get(
-        Uri.parse(apiUrl),
+        Uri.parse('${API.api1}/user'),
         headers: {
           HttpHeaders.authorizationHeader: 'Bearer $token',
         },
@@ -79,8 +75,11 @@ class _UserInfoState extends State<UserInfo> {
         setState(() {
           _nameController.text = data['uname'] ?? '';
           _emailController.text = data['umail'] ?? '';
-          _phoneController.text = data['umobilenumber'].toString() ?? '';  // Ensure this matches the key in API response
-          _addressController.text = data['uaddress'] ?? '';      // Ensure this matches the key in API response
+          _phoneController.text = data['umobilenumber'].toString() ??
+              ''; // Ensure this matches the key in API response
+          _addressController.text = data['uaddress'] ??
+              ''; // Ensure this matches the key in API response
+          isLoading = false;
         });
       } else {
         print('Failed to load user data: ${response.statusCode}');
@@ -96,7 +95,8 @@ class _UserInfoState extends State<UserInfo> {
       if (isEditing) {
         FocusScope.of(context).requestFocus(_nameFocusNode);
       } else {
-        FocusScope.of(context).unfocus();  // Unfocus all fields when editing is disabled
+        FocusScope.of(context)
+            .unfocus(); // Unfocus all fields when editing is disabled
       }
     });
   }
@@ -118,7 +118,7 @@ class _UserInfoState extends State<UserInfo> {
           Uri.parse('http://202.21.32.153:8081/updateUser'),
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',  // Ensure this is correct
+            'Authorization': 'Bearer $token', // Ensure this is correct
           },
           body: json.encode(updatedUserData),
         );
@@ -135,7 +135,8 @@ class _UserInfoState extends State<UserInfo> {
           print('Response status: ${response.statusCode}');
           print('Response body: ${response.body}');
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error updating user: ${response.reasonPhrase}')),
+            SnackBar(
+                content: Text('Error updating user: ${response.reasonPhrase}')),
           );
         }
       } catch (e) {
@@ -164,151 +165,7 @@ class _UserInfoState extends State<UserInfo> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 20),
-                TextFormField(
-                  controller: _nameController,
-                  readOnly: !isEditing,
-                  focusNode: _nameFocusNode,  // Set focus node
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.transparent,
-                    labelText: 'Name',
-                    prefixIcon: Icon(Icons.person),
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: Color(0xFF51737A),
-                        width: 1.0,
-                      ),
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
-                    }
-                    return null;
-                  },
-                  onFieldSubmitted: (value) {
-                    FocusScope.of(context).requestFocus(_emailFocusNode);
-                  },
-                ),
-                SizedBox(height: 16),
-                TextFormField(
-                  controller: _emailController,
-                  readOnly: !isEditing,
-                  focusNode: _emailFocusNode,  // Set focus node
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.transparent,
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: Color(0xFF51737A),
-                        width: 1.0,
-                      ),
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-                    if (!emailRegex.hasMatch(value)) {
-                      return 'Please enter a valid email address';
-                    }
-                    return null;
-                  },
-                  onFieldSubmitted: (value) {
-                    FocusScope.of(context).requestFocus(_phoneFocusNode);
-                  },
-                ),
-                SizedBox(height: 16),
-                TextFormField(
-                  controller: _phoneController,
-                  readOnly: !isEditing,
-                  focusNode: _phoneFocusNode,  // Set focus node
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.transparent,
-                    labelText: 'Number',
-                    prefixIcon: Icon(Icons.phone),
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: Color(0xFF51737A),
-                        width: 1.0,
-                      ),
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your phone number';
-                    }
-                    if (value.length != 10) {
-                      return 'Phone number must be 10 digits long';
-                    }
-                    return null;
-                  },
-                  onFieldSubmitted: (value) {
-                    FocusScope.of(context).requestFocus(_addressFocusNode);
-                  },
-                ),
-                SizedBox(height: 16),
-                TextFormField(
-                  controller: _addressController,
-                  readOnly: !isEditing,
-                  focusNode: _addressFocusNode,  // Set focus node
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.transparent,
-                    labelText: isEditing ? 'Address (Optional)' : null,
-                    hintText: isEditing ? null : 'Address (Optional)',
-                    prefixIcon: Icon(Icons.location_on),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isEditing ? submitChanges : toggleEditing,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          textAlign: TextAlign.center,
-                          isEditing ? 'Update' : 'Edit',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 3.0),
-                          child: Icon(
-                            isEditing ? null : Icons.edit,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ],
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      elevation: 7,
-                      backgroundColor: Color(0xFF2e2c2f),
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
+                isLoading ? buildShimmerCard() : buildUserForm(),
               ],
             ),
           ),
@@ -316,15 +173,223 @@ class _UserInfoState extends State<UserInfo> {
       ),
     );
   }
+
+  Widget buildShimmerCard() {
+    return Shimmer.fromColors(
+      baseColor: Color(0xFFE5E5E5),
+      highlightColor: Color(0xFFF0F0F0),
+      child: Column(
+        children: [
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+            elevation: 4,
+            child: SizedBox(
+              height: 50,
+              width: double.infinity,
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+            elevation: 4,
+            child: SizedBox(
+              height: 50,
+              width: double.infinity,
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+            elevation: 4,
+            child: SizedBox(
+              height: 50,
+              width: double.infinity,
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+            elevation: 4,
+            child: SizedBox(
+              height: 50,
+              width: double.infinity,
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildUserForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: 20),
+        TextFormField(
+          controller: _nameController,
+          readOnly: !isEditing,
+          focusNode: _nameFocusNode, // Set focus node
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.transparent,
+            labelText: 'Name',
+            prefixIcon: Icon(Icons.person),
+            border: OutlineInputBorder(
+              borderSide: BorderSide(
+                color: Color(0xFF51737A),
+                width: 1.0,
+              ),
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter your name';
+            }
+            return null;
+          },
+          onFieldSubmitted: (value) {
+            FocusScope.of(context).requestFocus(_emailFocusNode);
+          },
+        ),
+        SizedBox(height: 16),
+        TextFormField(
+          controller: _emailController,
+          readOnly: !isEditing,
+          focusNode: _emailFocusNode, // Set focus node
+          keyboardType: TextInputType.emailAddress,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.transparent,
+            labelText: 'Email',
+            prefixIcon: Icon(Icons.email),
+            border: OutlineInputBorder(
+              borderSide: BorderSide(
+                color: Color(0xFF51737A),
+                width: 1.0,
+              ),
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter your email';
+            }
+            final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+            if (!emailRegex.hasMatch(value)) {
+              return 'Please enter a valid email address';
+            }
+            return null;
+          },
+          onFieldSubmitted: (value) {
+            FocusScope.of(context).requestFocus(_phoneFocusNode);
+          },
+        ),
+        SizedBox(height: 16),
+        TextFormField(
+          controller: _phoneController,
+          readOnly: !isEditing,
+          focusNode: _phoneFocusNode, // Set focus node
+          keyboardType: TextInputType.phone,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.transparent,
+            labelText: 'Number',
+            prefixIcon: Icon(Icons.phone),
+            border: OutlineInputBorder(
+              borderSide: BorderSide(
+                color: Color(0xFF51737A),
+                width: 1.0,
+              ),
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter your phone number';
+            }
+            if (value.length != 10) {
+              return 'Phone number must be 10 digits long';
+            }
+            return null;
+          },
+          onFieldSubmitted: (value) {
+            FocusScope.of(context).requestFocus(_addressFocusNode);
+          },
+        ),
+        SizedBox(height: 16),
+        TextFormField(
+          controller: _addressController,
+          readOnly: !isEditing,
+          focusNode: _addressFocusNode, // Set focus node
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.transparent,
+            labelText: isEditing ? 'Address (Optional)' : null,
+            hintText: isEditing ? null : 'Address (Optional)',
+            prefixIcon: Icon(Icons.location_on),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+          ),
+        ),
+        SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: isEditing ? submitChanges : toggleEditing,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  textAlign: TextAlign.center,
+                  isEditing ? 'Update' : 'Edit',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 3.0),
+                  child: Icon(
+                    isEditing ? null : Icons.edit,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+            style: ElevatedButton.styleFrom(
+              elevation: 7,
+              backgroundColor: Color(0xFF2e2c2f),
+              padding: EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
-
-
-
-
-
-
-
-
 
 class ChangePassword extends StatefulWidget {
   const ChangePassword({super.key});
@@ -338,9 +403,11 @@ class _ChangePasswordState extends State<ChangePassword> {
   FocusNode newPasswordFocusNode = FocusNode();
   FocusNode currentPasswordFocusNode = FocusNode();
   FocusNode confirmPasswordFocusNode = FocusNode();
-  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _currentPasswordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool _isCurrentPasswordVisible = false;
   bool _isNewPasswordVisible = false;
@@ -413,7 +480,9 @@ class _ChangePasswordState extends State<ChangePassword> {
         } else {
           final responseBody = jsonDecode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${responseBody['message'] ?? 'Unknown error'}')),
+            SnackBar(
+                content: Text(
+                    'Error: ${responseBody['message'] ?? 'Unknown error'}')),
           );
           print(responseBody);
         }
@@ -462,7 +531,9 @@ class _ChangePasswordState extends State<ChangePassword> {
                   prefixIcon: Icon(Icons.lock_open),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _isCurrentPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      _isCurrentPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
@@ -492,7 +563,9 @@ class _ChangePasswordState extends State<ChangePassword> {
                   prefixIcon: Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _isNewPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      _isNewPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
@@ -584,14 +657,6 @@ class _ChangePasswordState extends State<ChangePassword> {
   }
 }
 
-
-
-
-
-
-
-
-
 class ForgotPassword extends StatefulWidget {
   const ForgotPassword({super.key});
 
@@ -612,8 +677,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         SnackBar(content: Text('Please enter an email address')),
       );
       return;
-    }
-    else {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Sending OTP...'),
@@ -634,8 +698,12 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('OTP sent successfully')),
         );
-        Navigator.push(context,
-        MaterialPageRoute(builder: (context) => Verifyotp(email: email,)));
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => Verifyotp(
+                      email: email,
+                    )));
       } else {
         // Show error message based on response
         final errorMessage = json.decode(response.body);

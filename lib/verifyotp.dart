@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:travel/api.dart';
 import 'dart:convert';
-
 import 'package:travel/login.dart';
 
 class Verifyotp extends StatefulWidget {
@@ -20,6 +19,7 @@ class _VerifyotpState extends State<Verifyotp> {
   late final TextEditingController _emailController;
   final TextEditingController _otpController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool _isOtpVerified = false;
   bool _isPasswordVisible = false; // Variable to manage password visibility
@@ -180,6 +180,37 @@ class _VerifyotpState extends State<Verifyotp> {
                     },
                   ),
                   SizedBox(height: 15),
+                  Text(
+                    'Confirm New Password',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextFormField(
+
+                    controller: _confirmPasswordController,
+                    obscureText: true, // Toggle visibility to match the new password field
+                    decoration: InputDecoration(
+                      filled: true,
+                      hintText: 'Confirm New Password',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please confirm your password';
+                      }
+                      if (value != _passwordController.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 15),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -241,7 +272,6 @@ class _VerifyotpState extends State<Verifyotp> {
           SnackBar(content: Text('Password reset successfully')),
         );
         Get.to(LoginScreen());
-
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to reset password: ${response.body}')),

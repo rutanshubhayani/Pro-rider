@@ -24,12 +24,24 @@ class _VerifyLicenseState extends State<VerifyLicense> {
   XFile? _image;
   late Future<void> _fetchImageFuture;
   bool _isUploading = false; // Variable to track upload state
+  String? _storedImagePath; // To hold the path of the stored image
 
   @override
   void initState() {
     super.initState();
+    _loadStoredImagePath();
     if (widget.fetchImageOnStart) {
       _fetchImageFuture = _fetchUploadedImage();
+    }
+  }
+
+  Future<void> _loadStoredImagePath() async {
+    final prefs = await SharedPreferences.getInstance();
+    _storedImagePath = prefs.getString('storedImagePath');
+    if (_storedImagePath != null && File(_storedImagePath!).existsSync()) {
+      setState(() {
+        _image = XFile(_storedImagePath!);
+      });
     }
   }
 
@@ -64,6 +76,9 @@ class _VerifyLicenseState extends State<VerifyLicense> {
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
+
+        // Save image path to SharedPreferences
+        await prefs.setString('storedImagePath', imagePath);
 
         if (mounted) {
           setState(() {
@@ -232,6 +247,7 @@ class _VerifyLicenseState extends State<VerifyLicense> {
 
     return compressedFile;
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

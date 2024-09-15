@@ -1,13 +1,16 @@
 import 'dart:convert';
+import 'dart:io'; // Import dart:io for connectivity checks
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:travel/Userprofile.dart';
 import 'package:travel/find.dart';
 import 'package:travel/register.dart';
 import 'package:travel/userinfo.dart';
+
 import 'api.dart';
+import 'internet.dart';
+import 'HttpHandler.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -15,6 +18,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  late HttpHandler hs;
   bool _obsecureText = true; // For password visibility
   TextEditingController _emailicontroller = TextEditingController();
   TextEditingController _passwordcontroller = TextEditingController();
@@ -24,6 +28,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
+
+
+
   @override
   void dispose() {
     _emailFocusNode.dispose();
@@ -31,15 +38,38 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _login() async {
-    final String email = _emailicontroller.text.trim();
-    final String password = _passwordcontroller.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
-      Get.snackbar('Error', 'Please enter both email and password',
-          snackPosition: SnackPosition.BOTTOM);
+  @override
+  void initState() {
+    super.initState();
+    hs = HttpHandler(ctx: context);
+    chkDB();
+  }
+
+
+  void chkDB() async {
+    bool chki = await hs.netconnection(true);
+    if (chki == false) {
+      final res =  Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const OnInternet()),
+              (Route<dynamic> route) => false);
+
+      if (res != null && res.toString() == 'done') {
+        chkDB();
+        return;
+      }
+    }
+  }
+
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) {
+      // If the form is not valid, return
       return;
     }
+
+    final String email = _emailicontroller.text.trim();
+    final String password = _passwordcontroller.text.trim();
 
     try {
       final response = await http.post(
@@ -56,8 +86,18 @@ class _LoginScreenState extends State<LoginScreen> {
         if (responseData.containsKey('token')) {
           final token = responseData['token'];
           final user = responseData['user'];
-          print('$user');
-          print('Token : $token');
+
+          // Print user information for debugging
+          print('User: $user');
+          print('Token: $token');
+          if (user.containsKey('uid')) {
+            final uid = user['uid'].toString();
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('userId', uid.toString()); // Save UID
+            // Verify saved data
+            print('Saved userId: ${prefs.getString('userId')}');
+          }
+
           if (user.containsKey('uid')) {
             final userid = user['uid'];
             print('$userid');
@@ -83,18 +123,20 @@ class _LoginScreenState extends State<LoginScreen> {
             print('$profile_photo');
           }
 
+          // Extract user details
           String uname = user['uname'] ?? 'User';
           String umail = user['umail'] ?? 'User';
-          String umobilenumber = user['umobilenumber'].toString() ?? 'User';
+          String umobilenumber = user['umobilenumber']?.toString() ?? 'User';
           String uaddress = user['uaddress'] ?? 'User';
           String uid = user['uid']?.toString() ?? 'User';
 
           // Store token in SharedPreferences
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('authToken', token);
+          await prefs.setString('userId', uid); // Save uid separately
 
           Get.snackbar('Success', 'Login successful', snackPosition: SnackPosition.BOTTOM);
-          Get.to(() => FindScreen()); // Pass details to FindScreen
+          Get.to(() => FindScreen()); // Navigate to FindScreen
         } else {
           Get.snackbar('Error', 'Unexpected response format', snackPosition: SnackPosition.BOTTOM);
         }
@@ -104,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Get.snackbar('Error', 'Login failed', snackPosition: SnackPosition.BOTTOM);
       }
     } catch (error) {
-      Get.snackbar('Error', 'An error occurred. Please try again.$error',
+      Get.snackbar('Error', 'An error occurred. Please try again. $error',
           snackPosition: SnackPosition.BOTTOM);
       print(error);
     }
@@ -191,7 +233,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       SizedBox(height: 40),
-                      SizedBox(height: 16),
                       TextFormField(
                         controller: _emailicontroller,
                         focusNode: _emailFocusNode,
@@ -214,6 +255,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           FocusScope.of(context)
                               .requestFocus(_passwordFocusNode);
                         },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter valid email';
+                          }
+                          return null;
+                        },
                       ),
                       SizedBox(height: 16),
                       TextFormField(
@@ -227,25 +274,33 @@ class _LoginScreenState extends State<LoginScreen> {
                           labelText: 'Password',
                           prefixIcon: Icon(Icons.lock),
                           suffixIcon: IconButton(
+                            icon: Icon(_obsecureText
+                                ? Icons.visibility
+                                : Icons.visibility_off),
                             onPressed: () {
                               setState(() {
                                 _obsecureText = !_obsecureText;
                               });
                             },
-                            icon: Icon(
-                              _obsecureText
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                            ),
                           ),
                           border: OutlineInputBorder(
                             borderSide: BorderSide(
-                              color: Colors.black,
-                              width: 20.0,
+                              color: Color(0xFF51737A),
+                              width: 1.0,
                             ),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                         ),
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) {
+                          _login();
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter password';
+                          }
+                          return null;
+                        },
                       ),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 1.0),
@@ -253,7 +308,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           alignment: Alignment.centerRight,
                           child: TextButton(
                             onPressed: () {
-                              Get.to(ForgotPassword());
+                              Get.to(() => ForgotPassword());
                             },
                             child: Text(
                               'Forgot Password?',

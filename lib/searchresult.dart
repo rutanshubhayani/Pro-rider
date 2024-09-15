@@ -1,7 +1,11 @@
 import 'dart:convert';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:travel/Userprofile.dart';
+import 'package:travel/api.dart';
 import 'Findtrippreview.dart';
 import 'gettrippreview.dart';
 
@@ -52,7 +56,7 @@ class _SearchResultState extends State<SearchResult> with SingleTickerProviderSt
               ),
               TextButton(
                 onPressed: () {
-                  // Handle settings navigation
+                  Get.to(UserProfile(),transition: Transition.rightToLeft);
                 },
                 child: Text(
                   'Settings',
@@ -120,8 +124,18 @@ class AllScreen extends StatelessWidget {
     List<Map<String, dynamic>> filteredTrips = trips.where((trip) {
       String departureCity = trip['departure'] ?? '';
       String destinationCity = trip['destination'] ?? '';
-      return selectedCities.contains(departureCity) || selectedCities.contains(destinationCity);
+      return selectedCities.contains(departureCity) ||
+          selectedCities.contains(destinationCity);
     }).toList();
+
+    // Sort filteredTrips by date in descending order
+    filteredTrips.sort((a, b) {
+      DateTime dateA = DateTime.tryParse(a['leaving_date_time'] ?? '') ??
+          DateTime.now();
+      DateTime dateB = DateTime.tryParse(b['leaving_date_time'] ?? '') ??
+          DateTime.now();
+      return dateB.compareTo(dateA); // Sort in descending order
+    });
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 13),
@@ -151,17 +165,22 @@ class AllScreen extends StatelessWidget {
           }
 
           int seatsLeft = trip['empty_seats'] ?? 0;
-          String userImage = trip['userImage'] ?? '';
-          String userName = trip['uname'] ?? 'Unknown'; // Updated to use 'uname' field
+          String userImage = trip['profile_photo'] ?? '';
+          String userName = trip['uname'] ??
+              'Unknown'; // Updated to use 'uname' field
 
           // Extract first name of the city from departure and destination
           String getFirstCityName(String city) {
             // Split the city name by spaces and return the first part
-            return city.split(' ').first;
+            return city
+                .split(' ')
+                .first;
           }
 
-          String departureCityFirstName = getFirstCityName(trip['departure'] ?? 'Unknown Departure');
-          String destinationCityFirstName = getFirstCityName(trip['destination'] ?? 'Unknown Destination');
+          String departureCityFirstName = getFirstCityName(
+              trip['departure'] ?? 'Unknown Departure');
+          String destinationCityFirstName = getFirstCityName(
+              trip['destination'] ?? 'Unknown Destination');
 
           return GestureDetector(
             onTap: () {
@@ -171,7 +190,6 @@ class AllScreen extends StatelessWidget {
                   builder: (context) => FindTripPreview(tripData: trip),
                 ),
               );
-
             },
             child: Card(
               shape: RoundedRectangleBorder(
@@ -189,7 +207,8 @@ class AllScreen extends StatelessWidget {
                     Row(
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 15.0, vertical: 10),
                           child: Row(
                             children: [
                               Container(
@@ -203,9 +222,11 @@ class AllScreen extends StatelessWidget {
                                 ),
                                 child: CircleAvatar(
                                   radius: 30,
-                                  backgroundImage: trip['profile_photo'] != null && trip['profile_photo'].isNotEmpty
+                                  backgroundImage: trip['profile_photo'] !=
+                                      null && trip['profile_photo'].isNotEmpty
                                       ? NetworkImage(trip['profile_photo'])
-                                      : AssetImage('images/Userpfp.png') as ImageProvider,
+                                      : AssetImage(
+                                      'images/Userpfp.png') as ImageProvider,
                                 ),
                               ),
                               SizedBox(width: 5),
@@ -225,7 +246,8 @@ class AllScreen extends StatelessWidget {
                         Column(
                           children: [
                             Padding(
-                              padding: const EdgeInsets.only(top: 35, bottom: 10.0, right: 20),
+                              padding: const EdgeInsets.only(
+                                  top: 35, bottom: 10.0, right: 20),
                               child: Text(
                                 '$seatsLeft seats left',
                                 style: TextStyle(
@@ -246,14 +268,16 @@ class AllScreen extends StatelessWidget {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: departureCityFirstName, // Display first name of departure city
+                                  text: departureCityFirstName,
+                                  // Display first name of departure city
                                   style: TextStyle(
                                       color: Colors.black,
                                       fontWeight: FontWeight.bold
                                   ),
                                 ),
                                 TextSpan(
-                                  text: '  ${trip['departure'] ?? 'Unknown Departure'}',
+                                  text: '  ${trip['departure'] ??
+                                      'Unknown Departure'}',
                                   style: TextStyle(
                                     color: Colors.black54,
                                   ),
@@ -270,14 +294,16 @@ class AllScreen extends StatelessWidget {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: destinationCityFirstName, // Display first name of departure city
+                              text: destinationCityFirstName,
+                              // Display first name of destination city
                               style: TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold
                               ),
                             ),
                             TextSpan(
-                              text: '  ${trip['destination'] ?? 'Unknown Destination'}',
+                              text: '  ${trip['destination'] ??
+                                  'Unknown Destination'}',
                               style: TextStyle(
                                 color: Colors.black54,
                               ),
@@ -314,6 +340,8 @@ class AllScreen extends StatelessWidget {
 
 
 
+
+
 class TripsScreen extends StatefulWidget {
   @override
   _TripsScreenState createState() => _TripsScreenState();
@@ -329,32 +357,46 @@ class _TripsScreenState extends State<TripsScreen> {
   }
 
   Future<void> fetchTrips() async {
-    final response = await http.get(Uri.parse('http://202.21.32.153:8081/get-trips'));
+    final response = await http.get(Uri.parse('${API.api1}/get-trips'));
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
+      print(response.body);
+
+      List<Map<String, dynamic>> sortedTrips = data.map((trip) {
+        print('Original date: ${trip['leaving_date_time']}'); // Debugging line
+
+        return {
+          'uid': trip['uid'].toString() ?? 'UID not found',
+          'userName': (trip['uname'] ?? '').trim(),
+          'userImage': trip['profile_photo'] ?? '',
+          'seatsLeft': trip['empty_seats'] ?? 0,
+          'departure': trip['departure'] ?? '',
+          'destination': trip['destination'] ?? '',
+          'date': DateTime.tryParse(trip['leaving_date_time']) ?? DateTime.now(),
+          'rideSchedule': trip['ride_schedule'] ?? '',
+          'luggage': trip['luggage'] ?? '',
+          'description': trip['description'] ?? '',
+          'price': trip['price'] ?? 0,
+          'stops': trip['stops'] ?? [],
+          'otherItems': trip['other_items'] ?? '',
+          'backRowSitting': trip['back_row_sitting'] ?? 'Not specified',
+        };
+      }).toList();
+
+      // Sort trips by date in descending order
+      sortedTrips.sort((a, b) => b['date'].compareTo(a['date']));
+
       setState(() {
-        trips = data.map((trip) {
-          return {
-            'userName': (trip['uname'] ?? '').trim(),
-            'userImage': trip['profile_photo'] ?? '', // Use the URL directly
-            'seatsLeft': trip['empty_seats'] ?? 0,
-            'departure': trip['departure'] ?? '',
-            'destination': trip['destination'] ?? '',
-            'date': DateTime.tryParse(trip['leaving_date_time']) ?? DateTime.now(),
-            'rideSchedule': trip['ride_schedule'] ?? '',
-            'luggage': trip['luggage'] ?? '',
-            'description': trip['description'] ?? '',
-            'price': trip['price'] ?? 0,
-            'stops': trip['stops'] ?? [],
-            'otherItems': trip['other_items'] ?? '',
-          };
-        }).toList();
+        trips = sortedTrips;
       });
     } else {
       print('Failed to load trips');
     }
   }
+
+
+
 
 
   String getFirstNameOfCity(String city) {
@@ -377,14 +419,14 @@ class _TripsScreenState extends State<TripsScreen> {
 
           return GestureDetector(
             onTap: () {
-             /* Navigator.push(
+              Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => GetTripPreview(
                     tripData: trip,
                   ),
                 ),
-              );*/
+              );
             },
             child: Card(
               shape: RoundedRectangleBorder(
@@ -435,25 +477,15 @@ class _TripsScreenState extends State<TripsScreen> {
                           ),
                         ),
                         Spacer(),
-                        Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 35, bottom: 10.0, right: 20),
-                              child: Text(
-                                '${trip['seatsLeft']} seats left',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 35, bottom: 10.0, right: 20),
+                          child: Text(
+                            '${trip['seatsLeft']} seats left',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
-                            Image.asset(
-                              'images/smallbag.png',
-                              height: 25,
-                              width: 25,
-                              color: Color(0XFF2196f3),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
@@ -526,6 +558,9 @@ class _TripsScreenState extends State<TripsScreen> {
     );
   }
 }
+
+
+
 
 
 

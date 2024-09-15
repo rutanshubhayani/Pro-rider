@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:travel/searchresult.dart';
+import 'City_search.dart';
 import 'api.dart';
 
 class Postrequest extends StatefulWidget {
@@ -14,21 +15,21 @@ class Postrequest extends StatefulWidget {
 
 class _PostrequestState extends State<Postrequest> {
   final _formKey = GlobalKey<FormState>();
-  FocusNode originFocusNode = FocusNode();
+  FocusNode departureFocusNode = FocusNode();
   FocusNode destinationFocusNode = FocusNode();
   FocusNode dateFocusNode = FocusNode();
   FocusNode seatFocusNode = FocusNode();
   FocusNode descriptionFocusNode = FocusNode();
 
-  TextEditingController originController = TextEditingController();
+  TextEditingController departureController = TextEditingController();
   TextEditingController destinationController = TextEditingController();
   TextEditingController dateController = TextEditingController();
   TextEditingController seatController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
 
-  bool showOriginContainer = false;
+  bool showDepartureContainer = false;
   bool showDestinationContainer = false;
-  List<dynamic> originSuggestions = [];
+  List<dynamic> departureSuggestions = [];
   List<dynamic> destinationSuggestions = [];
   late TextEditingController activeController; // Keep track of the active controller
 
@@ -36,12 +37,12 @@ class _PostrequestState extends State<Postrequest> {
 
   @override
   void dispose() {
-    originFocusNode.dispose();
+    departureFocusNode.dispose();
     destinationFocusNode.dispose();
     dateFocusNode.dispose();
     seatFocusNode.dispose();
     descriptionFocusNode.dispose();
-    originController.dispose();
+    departureController.dispose();
     destinationController.dispose();
     dateController.dispose();
     descriptionController.dispose();
@@ -59,7 +60,7 @@ class _PostrequestState extends State<Postrequest> {
       Uri.parse('${API.api1}/post_a_request'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'from_location': originController.text,
+        'from_location': departureController.text,
         'to_location': destinationController.text,
         'departure_date': dateController.text,
         'seats_required': _selectedSeat,
@@ -83,7 +84,7 @@ class _PostrequestState extends State<Postrequest> {
 
   void _clearFields(){
    setState(() {
-     originController.clear();
+     departureController.clear();
      destinationController.clear();
      dateController.clear();
      descriptionController.clear();
@@ -126,15 +127,15 @@ class _PostrequestState extends State<Postrequest> {
   void _updateSuggestions(String pattern, TextEditingController controller) async {
     if (pattern.isNotEmpty) {
       setState(() {
-        if (controller == originController) {
-          showOriginContainer = true;
+        if (controller == departureController) {
+          showDepartureContainer = true;
         } else if (controller == destinationController) {
           showDestinationContainer = true;
         }
       });
       try {
-        if (controller == originController) {
-          originSuggestions = await fetchCities(pattern);
+        if (controller == departureController) {
+          departureSuggestions = await fetchCities(pattern);
         } else if (controller == destinationController) {
           destinationSuggestions = await fetchCities(pattern);
         }
@@ -144,8 +145,8 @@ class _PostrequestState extends State<Postrequest> {
       }
     } else {
       setState(() {
-        if (controller == originController) {
-          showOriginContainer = false;
+        if (controller == departureController) {
+          showDepartureContainer = false;
         } else if (controller == destinationController) {
           showDestinationContainer = false;
         }
@@ -176,59 +177,33 @@ class _PostrequestState extends State<Postrequest> {
                 ),
               ),
               SizedBox(height: 10,),
-              TextFormField(
-                controller: originController,
-                focusNode: originFocusNode,
-                decoration: InputDecoration(
-                  filled: true,
-                  prefixIcon: Icon(Icons.location_on),
-                  hintText: 'Enter origin',
-                  suffixIcon: originController.text.isNotEmpty
-                      ? IconButton(
-                    icon: Icon(Icons.close_rounded),
-                    onPressed: () => handleClearClick(originController),
-                  )
-                      : null, // Only show the clear icon if there's text in the field
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                textInputAction: TextInputAction.next,
+              CitySearchField(
+                controller: departureController,
+                focusNode: departureFocusNode,
+                hintText: 'Departure Location',
+                showSuggestions: showDepartureContainer,
+                suggestions: departureSuggestions,
                 onChanged: (value) {
-                  activeController = originController;
-                  _updateSuggestions(value, originController);
+                  activeController = departureController;
+                  _updateSuggestions(value, departureController);
                 },
-                onFieldSubmitted: (value){
+                onSubmitted: (value) {
                   FocusScope.of(context).requestFocus(destinationFocusNode);
                 },
-                validator: (value) {
+                onClear: () => handleClearClick(departureController),
+                onSuggestionTap: (suggestion) {
+                  departureController.text = '${suggestion['city']}, ${suggestion['pname']}';
+                  setState(() {
+                    showDepartureContainer = false;
+                  });
+                },
+                validator: (value){
                   if (value == null || value.isEmpty) {
-                    return 'Please enter origin location';
+                    return 'Please enter departure';
                   }
                   return null;
                 },
               ),
-              if (showOriginContainer)
-                Card(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: originSuggestions.length,
-                    itemBuilder: (context, index) {
-                      final suggestion = originSuggestions[index];
-                      return ListTile(
-                        leading: Icon(Icons.location_on),
-                        title: Text('${suggestion['city']}, ${suggestion['pname']}'),
-                        onTap: () {
-                          originController.text = '${suggestion['city']}, ${suggestion['pname']}';
-                          setState(() {
-                            showOriginContainer = false; // Hide the suggestions after selection
-                          });
-                        },
-                      );
-                    },
-                  ),
-                ),
               SizedBox(height: 20),
               Text(
                 'To',
@@ -238,62 +213,32 @@ class _PostrequestState extends State<Postrequest> {
                 ),
               ),
               SizedBox(height: 10),
-              TextFormField(
+              CitySearchField(
                 controller: destinationController,
                 focusNode: destinationFocusNode,
-                decoration: InputDecoration(
-                  filled: true,
-                  prefixIcon: const Icon(Icons.location_on),
-                  hintText: 'Enter destination',
-                  suffixIcon: destinationController.text.isNotEmpty
-                      ? IconButton(
-                    icon: Icon(Icons.close_rounded),
-                    onPressed: () => handleClearClick(destinationController),
-                  )
-                      : null, // Only show the clear icon if there's text in the field
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                textInputAction: TextInputAction.next,
+                hintText: 'Destination Location',
+                showSuggestions: showDestinationContainer,
+                suggestions: destinationSuggestions,
                 onChanged: (value) {
                   activeController = destinationController;
                   _updateSuggestions(value, destinationController);
                 },
-                onFieldSubmitted: (value){
+                onSubmitted: (value) {
                   FocusScope.of(context).requestFocus(dateFocusNode);
                 },
-                validator: (value) {
+                onClear: () => handleClearClick(destinationController),
+                onSuggestionTap: (suggestion) {
+                  destinationController.text = '${suggestion['city']}, ${suggestion['pname']}';
+                  setState(() {
+                    showDestinationContainer = false;
+                  });
+                },
+                validator: (value){
                   if (value == null || value.isEmpty) {
-                    return 'Please enter destination location';
+                    return 'Please enter destination';
                   }
                   return null;
                 },
-              ),
-              if (showDestinationContainer)
-              /* Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Color(0XFFe6e0e9),
-                          ),*/Card(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: destinationSuggestions.length,
-                  itemBuilder: (context, index) {
-                    final suggestion = destinationSuggestions[index];
-                    return ListTile(
-                      leading: const Icon(Icons.location_on),
-                      title: Text('${suggestion['city']}, ${suggestion['pname']}'),
-                      onTap: () {
-                        destinationController.text = '${suggestion['city']}, ${suggestion['pname']}';
-                        setState(() {
-                          showDestinationContainer = false; // Hide the suggestions after selection
-                        });
-                      },
-                    );
-                  },
-                ),
               ),
               SizedBox(height: 20),
               Text(
@@ -396,34 +341,40 @@ class _PostrequestState extends State<Postrequest> {
         ),
       ),
       bottomNavigationBar: BottomAppBar(
-        child: GestureDetector(
-          onTap: () {
-            if (_formKey.currentState!.validate()) {
-              _postRequest();
-            } else {
-              _focusFirstEmptyField();
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              textAlign: TextAlign.center,
-              'Post request',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                color: Colors.black54,
+        child: SizedBox(
+          height: kBottomNavigationBarHeight, // Ensure this height fits your design
+          child: GestureDetector(
+            onTap: () {
+              if (_formKey.currentState!.validate()) {
+                _postRequest();
+              } else {
+                _focusFirstEmptyField();
+              }
+            },
+            behavior: HitTestBehavior.opaque, // Ensures GestureDetector covers all tappable area
+            child: Container(
+              padding: const EdgeInsets.all(16.0), // Adjust padding as needed
+              alignment: Alignment.center,
+              child: Text(
+                'Post request',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black54,
+                ),
               ),
             ),
           ),
         ),
-      ),
+      )
+
     );
   }
 
   void _focusFirstEmptyField() {
-    if (originController.text.isEmpty) {
-      FocusScope.of(context).requestFocus(originFocusNode);
+    if (departureController.text.isEmpty) {
+      FocusScope.of(context).requestFocus(departureFocusNode);
       return;
     }
 

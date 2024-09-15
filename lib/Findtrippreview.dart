@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:travel/book.dart';
+import 'package:travel/FindBook.dart';
 import 'Inbox.dart';
 
 class FindTripPreview extends StatefulWidget {
@@ -84,6 +84,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
     String destinationCityFirstName = widget.tripData['destination']?.split(' ').first ?? 'Unknown';
     String destinationCity = widget.tripData['destination'] ?? 'Unknown Destination';
     String userName = widget.tripData['uname'] ?? 'Unknown';
+    String uid = widget.tripData['uid'].toString() ?? 'Unknown';
     String price = widget.tripData['price'].toString() ?? 'Can\'t fetch price';
     String luggageCode = widget.tripData['luggage'].toString();
     // Get the luggage label from the code
@@ -226,11 +227,17 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                 ),
                 Divider(thickness: 15, color: Colors.black12),
                 Padding(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(15),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text('Luggage: '),
+                      Text(
+                        'Luggage: ',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17
+                        ),
+                      ),
                       SizedBox(width: 20),
                       Container(
                         padding: EdgeInsets.all(8),
@@ -314,29 +321,54 @@ class _FindTripPreviewState extends State<FindTripPreview> {
               ),
             ),
             SizedBox(height: 5),
-            Divider(thickness: 15, color: Colors.black12),
-            if (stopsData.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'Stops:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-              ),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(), // Disable scrolling
-                itemCount: stopsData.length,
-                itemBuilder: (context, index) {
-                  var stop = stopsData[index];
-                  return ListTile(
-                    title: Text(stop['stop_name']),
-                    subtitle: Text('Price: \$${stop['stop_price']}'),
-                  );
-                },
-              ),
-            ],
-            Divider(thickness: 15, color: Colors.black12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Divider(thickness: 15, color: Colors.black12),
+                if (stopsData == null || stopsData.isEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Stops:',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                        ),
+                        Text(
+                          'No stops included in your ride',
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 15.0, left: 20),
+                    child: Text(
+                      'Stops:',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                    ),
+                  ),
+                  ListView.builder(
+                    padding: EdgeInsets.only(left: 15),
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: stopsData.length,
+                    itemBuilder: (context, index) {
+                      final stop = stopsData[index] as Map<String, dynamic>; // Cast to Map
+                      final stopName = stop['stop_name'] ?? 'Unknown Stop';
+                      final stopPrice = stop['stop_price'] ?? '0';
+                      return ListTile(
+                        title: Text(stopName),
+                        subtitle: Text('Price: \$${stopPrice}'),
+                      );
+                    },
+                  ),
+                ],
+                Divider(thickness: 15, color: Colors.black12),
+              ],
+            ),
+
 
             // Assuming otherItems is a list of strings
             Padding(
@@ -406,7 +438,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
               child: FloatingActionButton(
                 backgroundColor: Color(0xFFff4400),
                 onPressed: () {
-                  Get.to(Book(), transition: Transition.fade);
+                  Get.to(() => FindBook(tripData: widget.tripData,), transition: Transition.fade);
                 },
                 child: Row(
                   children: [
@@ -439,7 +471,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                   borderSide: BorderSide.none,
                 ),
                 onPressed: () {
-                  Get.to(InboxMain(), transition: Transition.leftToRight);
+                  Get.to(() => InboxChat(userId: uid, userName: userName), transition: Transition.leftToRight);
                 },
                 child: Icon(Icons.message, color: Colors.white, size: 30),
               ),

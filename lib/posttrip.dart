@@ -10,6 +10,8 @@ import 'package:travel/api.dart';
 import 'package:travel/searchresult.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'City_search.dart';
+
 class PostTrip extends StatefulWidget {
   @override
   State<PostTrip> createState() => _PostTripState();
@@ -33,6 +35,7 @@ class _PostTripState extends State<PostTrip> {
   TextEditingController dateController = TextEditingController();
   TextEditingController timeController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
+  TextEditingController licenseController = TextEditingController();
   FocusNode departureFocusNode = FocusNode();
   FocusNode destinationFocusNode = FocusNode();
   FocusNode dpriceFocusNode = FocusNode();
@@ -42,9 +45,6 @@ class _PostTripState extends State<PostTrip> {
   FocusNode dateFocusNode = FocusNode();
   FocusNode timeFocusNode = FocusNode();
   FocusNode modelFocusNode = FocusNode();
-  FocusNode cartypeFocusNode = FocusNode();
-  FocusNode colorFocusNode = FocusNode();
-  FocusNode yearFocusNode = FocusNode();
   FocusNode licenseFocusNode = FocusNode();
   FocusNode descriptionFocusNode = FocusNode();
   TimeOfDay? selectedTime;
@@ -72,6 +72,46 @@ class _PostTripState extends State<PostTrip> {
       print('Could not launch $url');
     }
   }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchVehicleData();
+  }
+
+
+  Future<void> fetchVehicleData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token == null) {
+      print('No authentication token found');
+      return;
+    }
+
+    final response = await http.get(
+      Uri.parse('http://202.21.32.153:8081/get-vehicle-data'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['vehicles'] != null && data['vehicles'].isNotEmpty) {
+        final licensePlate = data['vehicles'][0]['licence_plate'];
+        setState(() {
+          licenseController.text = licensePlate;
+        });
+      } else {
+        print('No vehicle data found');
+      }
+    } else {
+      print('Failed to fetch vehicle data: ${response.statusCode}');
+    }
+  }
+
+
 
   Future<void> _postTrip() async {
     if (_formKey.currentState?.validate() ?? false) {
@@ -146,6 +186,9 @@ class _PostTripState extends State<PostTrip> {
     }
   }
 
+
+
+
   void _showErrorSnackbar(String message) {
     final snackBar = SnackBar(
       content: Text(message),
@@ -156,6 +199,10 @@ class _PostTripState extends State<PostTrip> {
 
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
+
+
+
+
 
   // Fetch cities from API
   Future<List<dynamic>> fetchCities(String query) async {
@@ -180,6 +227,10 @@ class _PostTripState extends State<PostTrip> {
       return []; // Return an empty list in case of an error
     }
   }
+
+
+
+
 
   void _updateSuggestions(
       String pattern, TextEditingController controller) async {
@@ -243,28 +294,22 @@ class _PostTripState extends State<PostTrip> {
     }
   }
 
-  // Image selection state and methods
-  /* File? _selectedImage;
-  final ImagePicker _picker = ImagePicker();
 
-  void _removeImage() {
-    setState(() {
-      _selectedImage = null;
-    });
-  }
-  Future<void> _getImage(ImageSource source) async {
-    try {
-      final pickedImage = await _picker.pickImage(source: source);
-      if (pickedImage != null) {
-        setState(() {
-          _selectedImage = File(pickedImage.path);
-        });
-      }
-    } catch (e) {
-      print("Error picking image: $e");
+  Future<void> _selectTime() async {
+    TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (pickedTime != null) {
+      setState(() {
+        timeController.text = pickedTime.format(context);
+      });
     }
   }
-*/
+
+
+
 
   @override
   void dispose() {
@@ -276,11 +321,6 @@ class _PostTripState extends State<PostTrip> {
     dateFocusNode.dispose();
     timeFocusNode.dispose();
     descriptionFocusNode.dispose();
-    /* modelFocusNode.dispose();
-    cartypeFocusNode.dispose();
-    colorFocusNode.dispose();
-    yearFocusNode.dispose();
-    licenseFocusNode.dispose();*/
     super.dispose();
   }
 
@@ -334,64 +374,33 @@ class _PostTripState extends State<PostTrip> {
                           ),
                         ),
                       ),
-                      TextFormField(
+                      CitySearchField(
                         controller: departureController,
                         focusNode: departureFocusNode,
-                        decoration: InputDecoration(
-                          filled: true,
-                          prefixIcon: Icon(Icons.location_on),
-                          hintText: 'Departure Location',
-                          suffixIcon: departureController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: Icon(Icons.close_rounded),
-                                  onPressed: () =>
-                                      handleClearClick(departureController),
-                                )
-                              : null, // Only show the clear icon if there's text in the field
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide.none,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        textInputAction: TextInputAction.next,
-                        onFieldSubmitted: (value) {
-                          FocusScope.of(context)
-                              .requestFocus(destinationFocusNode);
-                        },
+                        hintText: 'Departure Location',
+                        showSuggestions: showDepartureContainer,
+                        suggestions: departureSuggestions,
                         onChanged: (value) {
                           activeController = departureController;
                           _updateSuggestions(value, departureController);
                         },
-                        validator: (value) {
+                        onSubmitted: (value) {
+                          FocusScope.of(context).requestFocus(destinationFocusNode);
+                        },
+                        onClear: () => handleClearClick(departureController),
+                        validator: (value){
                           if (value == null || value.isEmpty) {
-                            return 'Please enter departure location';
+                            return 'Please enter departure';
                           }
                           return null;
                         },
+                        onSuggestionTap: (suggestion) {
+                          departureController.text = '${suggestion['city']}, ${suggestion['pname']}';
+                          setState(() {
+                            showDepartureContainer = false;
+                          });
+                        },
                       ),
-                      if (showDepartureContainer)
-                        Card(
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: departureSuggestions.length,
-                            itemBuilder: (context, index) {
-                              final suggestion = departureSuggestions[index];
-                              return ListTile(
-                                leading: Icon(Icons.location_on),
-                                title: Text(
-                                    '${suggestion['city']}, ${suggestion['pname']}'),
-                                onTap: () {
-                                  departureController.text =
-                                      '${suggestion['city']}, ${suggestion['pname']}';
-                                  setState(() {
-                                    showDepartureContainer =
-                                        false; // Hide the suggestions after selection
-                                  });
-                                },
-                              );
-                            },
-                          ),
-                        ),
                       SizedBox(height: 25),
                       const Padding(
                         padding: EdgeInsets.only(left: 3.0, bottom: 7),
@@ -412,15 +421,15 @@ class _PostTripState extends State<PostTrip> {
                               focusNode: destinationFocusNode,
                               decoration: InputDecoration(
                                 filled: true,
-                                prefixIcon: Icon(Icons.add_location_alt_sharp),
+                                prefixIcon:
+                                Icon(Icons.location_on),
                                 hintText: 'Destination Location',
-                                suffixIcon: destinationController
-                                        .text.isNotEmpty
+                                suffixIcon: destinationController.text.isNotEmpty
                                     ? IconButton(
-                                        icon: Icon(Icons.close_rounded),
-                                        onPressed: () => handleClearClick(
-                                            destinationController),
-                                      )
+                                  icon: Icon(Icons.close_rounded),
+                                  onPressed: () => handleClearClick(
+                                      destinationController),
+                                )
                                     : null, // Only show the clear icon if there's text in the field
                                 border: OutlineInputBorder(
                                   borderSide: BorderSide.none,
@@ -433,8 +442,13 @@ class _PostTripState extends State<PostTrip> {
                                     .requestFocus(dpriceFocusNode);
                               },
                               onChanged: (value) {
-                                _updateSuggestions(
-                                    value, destinationController);
+                                _updateSuggestions(value, destinationController);
+                              },
+                              validator: (value){
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter destination';
+                                }
+                                return null;
                               },
                             ),
                           ),
@@ -451,6 +465,12 @@ class _PostTripState extends State<PostTrip> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
+                              validator: (value){
+                                if (value == null || value.isEmpty) {
+                                  return 'Enter price';
+                                }
+                                return null;
+                              },
                               keyboardType: TextInputType.number,
                               textInputAction: TextInputAction.next,
                               onFieldSubmitted: (_) {
@@ -464,10 +484,11 @@ class _PostTripState extends State<PostTrip> {
                       // Container for suggestions
                       if (showDestinationContainer)
                         Card(
+                          elevation: 4,
                           child: ListView.builder(
                             shrinkWrap: true,
                             physics:
-                                NeverScrollableScrollPhysics(), // Prevent scrolling within the Container
+                            NeverScrollableScrollPhysics(), // Prevent scrolling within the Container
                             itemCount: destinationSuggestions.length,
                             itemBuilder: (context, index) {
                               final suggestion = destinationSuggestions[index];
@@ -477,10 +498,10 @@ class _PostTripState extends State<PostTrip> {
                                     '${suggestion['city']}, ${suggestion['pname']}'),
                                 onTap: () {
                                   destinationController.text =
-                                      '${suggestion['city']}, ${suggestion['pname']}';
+                                  '${suggestion['city']}, ${suggestion['pname']}';
                                   setState(() {
                                     showDestinationContainer =
-                                        false; // Hide the suggestions after selection
+                                    false; // Hide the suggestions after selection
                                   });
                                 },
                               );
@@ -746,37 +767,23 @@ class _PostTripState extends State<PostTrip> {
                             ),
                           ), // Add some space between the two text fields
                           Expanded(
-                            child: TextFormField(
+                            child:TextFormField(
                               focusNode: timeFocusNode,
-                              onTap: () async {
-                                final TimeOfDay? timeOfDay =
-                                    await showTimePicker(
-                                  context: context,
-                                  initialTime: selectedTime ?? TimeOfDay.now(),
-                                  initialEntryMode: TimePickerEntryMode.dial,
-                                );
-                                if (timeOfDay != null) {
-                                  setState(() {
-                                    selectedTime = timeOfDay;
-                                    timeController.text =
-                                        "${selectedTime!.hour}:${selectedTime!.minute.toString().padLeft(2, '0')}";
-                                  });
-                                }
-                              },
+                              onTap: _selectTime,
                               decoration: InputDecoration(
-                                hintText: 'Time', // Added hint text for clarity
+                                hintText: 'Time',
                                 filled: true,
                                 border: OutlineInputBorder(
-                                    borderSide: BorderSide.none,
-                                    borderRadius: BorderRadius.circular(10)),
+                                  borderSide: BorderSide.none,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                                 focusedBorder: OutlineInputBorder(
                                   borderSide: BorderSide(color: Colors.blue),
                                 ),
                               ),
                               textInputAction: TextInputAction.next,
                               onFieldSubmitted: (_) {
-                                FocusScope.of(context)
-                                    .requestFocus(modelFocusNode);
+                                FocusScope.of(context).requestFocus(modelFocusNode);
                               },
                               readOnly: true,
                               controller: timeController,
@@ -800,317 +807,6 @@ class _PostTripState extends State<PostTrip> {
                         thickness: 2,
                         color: Colors.black26,
                       ),
-                      /* SizedBox(
-                        height: 40,
-                      ),*/
-                      /* Padding(
-                        padding: const EdgeInsets.only(left: 3.0, bottom: 7),
-                        child: Text(
-                          'Vehicle details',
-                          style: TextStyle(
-                              fontSize: 20,
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 3.0),
-                        child: Text(
-                          'This will help you get more bookings and it will be easier for passengers to identify your vehicle during pick-up.',
-                          style: TextStyle(
-                            color: Colors.black54,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 20),
-
-                      // Integrated image selection from _AddThemeScreen1
-                      GestureDetector(
-                        onTap: () async {
-                          showModalBottomSheet(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return SafeArea(
-                                child: Wrap(
-                                  children: <Widget>[
-                                    ListTile(
-                                      leading: Icon(Icons.photo_camera),
-                                      title: Text("Camera"),
-                                      onTap: () {
-                                        _getImage(ImageSource.camera);
-                                        Navigator.of(context).pop();
-                                      },
-                                    ),
-                                    ListTile(
-                                      leading: Icon(Icons.photo_library),
-                                      title: Text("Gallery"),
-                                      onTap: () {
-                                        _getImage(ImageSource.gallery);
-                                        Navigator.of(context).pop();
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        },
-                        child: Center(
-                          child: Stack(
-                            children: [
-                              Container(
-                                height: 200,
-                                width: 300,
-                                decoration: BoxDecoration(
-                                  border:
-                                  Border.all(color: Colors.grey, width: 2.0),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: _selectedImage != null
-                                    ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                  child: Image.file(
-                                    _selectedImage!,
-                                    fit: BoxFit.cover,
-                                  ),
-                                )
-                                    : Center(
-                                  child: Column(
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                            top: 60.0),
-                                        child: Icon(
-                                          Icons.directions_car,
-                                          color: Colors.grey,
-                                          size: 50,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Add Photo',
-                                        style:
-                                        TextStyle(color: Colors.black54),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              if (_selectedImage != null)
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: GestureDetector(
-                                    onTap: _removeImage,
-                                    child: Container(
-                                      padding: EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.black54,
-                                      ),
-                                      child: Icon(
-                                        Icons.delete,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 40,
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 3.0),
-                              child: Text(
-                                'Model',
-                                style: TextStyle(
-                                  color: Colors.black87,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: TextFormField(
-                              focusNode: modelFocusNode,
-                              decoration: InputDecoration(
-                                  filled: true,
-                                  hintText: 'e.g. Ford Focus',
-                                  border: OutlineInputBorder(
-                                    borderSide: BorderSide.none,
-                                    borderRadius: BorderRadius.circular(10),
-                                  )),
-                              textInputAction: TextInputAction.next,
-                              onFieldSubmitted: (_){
-                                FocusScope.of(context).requestFocus(cartypeFocusNode);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 3.0),
-                              child: Text(
-                                'Type',
-                                style: TextStyle(
-                                    fontSize: 15, color: Colors.black87),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Container(
-                              height: 53,
-                              child: DropdownButtonFormField(
-                                focusNode: cartypeFocusNode,
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(),
-                                ),
-                                items: ['Sedan', 'SUV', 'Truck', 'Coupe']
-                                    .map((type) => DropdownMenuItem(
-                                  value: type,
-                                  child: Text(type),
-                                ))
-                                    .toList(),
-                                onChanged: (value) {
-                                  FocusScope.of(context).requestFocus(colorFocusNode);
-                                },
-
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20.0),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 3.0),
-                              child: Text(
-                                'Color',
-                                style: TextStyle(
-                                  color: Colors.black87,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Container(
-                              height: 50,
-                              child: DropdownButtonFormField(
-                                focusNode: colorFocusNode,
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(),
-                                ),
-                                items: ['Red', 'Blue', 'White', 'Black']
-                                    .map((type) => DropdownMenuItem(
-                                  value: type,
-                                  child: Text(type),
-                                ))
-                                    .toList(),
-                                onChanged: (value) {
-                                  FocusScope.of(context).requestFocus(yearFocusNode);
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 3.0),
-                              child: Text(
-                                'Year',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                              flex: 2,
-                              child: TextFormField(
-                                focusNode: yearFocusNode,
-                                maxLength: 4,
-                                /*inputFormatters: <TextInputFormatter>[
-                                FilteringTextInputFormatter.digitsOnly,],*/
-                                keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                    hintText: 'YYYY',
-                                    filled: true,
-                                    border: OutlineInputBorder(
-                                      borderSide: BorderSide.none,
-                                      borderRadius: BorderRadius.circular(10),
-                                    )),
-                                textInputAction: TextInputAction.next,
-                                onFieldSubmitted: (_){
-                                  FocusScope.of(context).requestFocus(licenseFocusNode);
-                                },
-                              )),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: Padding(
-                              padding: EdgeInsets.only(left: 3),
-                              child: Text(
-                                'Licence Plate',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                              flex: 2,
-                              child: TextFormField(
-                                focusNode: licenseFocusNode,
-                                decoration: InputDecoration(
-                                    filled: true,
-                                    hintText: 'POP 123',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                      borderSide: BorderSide.none,
-                                    )),
-                              )),
-                        ],
-                      ),
-                      SizedBox(
-                        height: 40,
-                      ),
-                      Divider(
-                        endIndent: 100,
-                        height: 4,
-                        thickness: 2,
-                        color: Colors.black26,
-                      ),*/
                       SizedBox(
                         height: 30,
                       ),
@@ -1359,13 +1055,20 @@ class _PostTripState extends State<PostTrip> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(top: 15.0, bottom: 15),
-                        child: Text(
-                          'Note: You can select maximum 7 seats',
-                          style: TextStyle(
-                              color: Colors.black54,
-                              fontSize: 16,
-                              fontStyle: FontStyle.italic),
+                        padding: const EdgeInsets.only(top: 15.0,bottom: 15),
+                        child: Row(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(right: 2.0),
+                              child: Icon(Icons.info_outline_rounded,color: Colors.black54,size: 15,),
+                            ),
+
+                            Text('Note: You can select maximum 7 seats',
+                              style: TextStyle(
+                                  color: Colors.black54,
+                                  fontStyle: FontStyle.italic
+                              ),),
+                          ],
                         ),
                       ),
                       Row(
@@ -1398,37 +1101,6 @@ class _PostTripState extends State<PostTrip> {
                           ),
                         ],
                       ),
-                      /* Row(
-                        children: List.generate(3, (index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 3.0),
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedChoice = index + 1;
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: _selectedChoice == index + 1 ? Colors.black : Colors.white,
-                                  border: Border.all(color: Colors.grey),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: TextStyle(
-                                      color: _selectedChoice == index + 1 ? Colors.white : Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ),*/
                       SizedBox(
                         height: 40,
                       ),
@@ -1463,6 +1135,60 @@ class _PostTripState extends State<PostTrip> {
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide.none,
                             )),
+                      ),
+                      SizedBox(
+                        height: 30,
+                      ),
+                      Divider(
+                        endIndent: 100,
+                        height: 4,
+                        thickness: 2,
+                        color: Colors.black26,
+                      ),
+                      SizedBox(
+                        height: 30,
+                      ),
+
+                      Padding(
+                        padding: EdgeInsets.only(left: 3, bottom: 15),
+                        child: Text(
+                          'License plate',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10.0),
+                        child: TextFormField(
+                          readOnly: true,
+                          controller: licenseController,
+                          decoration: InputDecoration(
+                            filled: true,
+                            hintText: 'License plate',
+                            hintStyle: TextStyle(color: Colors.grey), // Grey hint text color
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none
+                            ),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 2.0),
+                            child: Icon(Icons.info_outline_rounded,color: Colors.black54,size: 15,),
+                          ),
+
+                          Text('Note: You can\'t edit license plate',
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontStyle: FontStyle.italic
+                          ),),
+                        ],
                       ),
                       SizedBox(
                         height: 30,
@@ -1653,33 +1379,47 @@ class _PostTripState extends State<PostTrip> {
       ),
       bottomNavigationBar: BottomAppBar(
         color: Color(0xFFdfdfdf),
-        child: GestureDetector(
-          onTap: () {
-            print('Post trip tapped');
-            if (_formKey.currentState?.validate() ?? false) {
-              _postTrip();
-            } else {
-              _focusFirstEmptyField();
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Post trip',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black54,
+        child: SizedBox(
+          height: kBottomNavigationBarHeight, // Adjust if needed
+          child: GestureDetector(
+            onTap: () {
+              print('Post trip tapped');
+              if (_isChecked) {
+                if (_formKey.currentState?.validate() ?? false) {
+                  _postTrip();
+                } else {
+                  _focusFirstEmptyField();
+                }
+              } else {
+                // Provide feedback if checkbox is not checked
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Please agree to the terms and conditions.'),
                   ),
-                ),
-              ],
+                );
+              }
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Post trip',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: _isChecked ? Colors.black :  Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
+      )
+
     );
   }
 

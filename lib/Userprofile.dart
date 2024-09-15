@@ -6,16 +6,17 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:travel/all_rides.dart';
 import 'package:uuid/uuid.dart';
 import 'package:get/get.dart';
 import 'package:image/image.dart' as img;
 import 'package:travel/api.dart';
 import 'login.dart';
-import 'new.dart';
 import 'package:travel/verifylicenese.dart';
 import 'package:travel/profilesetting.dart';
 import 'package:travel/userinfo.dart';
 import 'package:travel/vechiledetails.dart';
+
 
 class UserProfile extends StatefulWidget {
   const UserProfile({Key? key}) : super(key: key);
@@ -31,12 +32,28 @@ class _UserProfileState extends State<UserProfile> {
   String _userName = 'Loading...';
   String _userEmail = 'Loading...';
   bool _isNewUser = false; // Added flag to check if the user is new
+  bool _isLoadingImage =
+      true; // To show loading indicator while the image is loading
 
   @override
   void initState() {
     super.initState();
     _fetchUserData();
+    _loadUserData();
     _fetchProfilePhoto();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final storedUserName = prefs.getString('userName') ?? 'Loading...';
+    final storedUserEmail = prefs.getString('userEmail') ?? 'Loading...';
+    final storedIsNewUser = prefs.getBool('isNewUser') ?? true;
+
+    setState(() {
+      _userName = storedUserName;
+      _userEmail = storedUserEmail;
+      _isNewUser = storedIsNewUser;
+    });
   }
 
   Future<void> _fetchUserData() async {
@@ -58,10 +75,15 @@ class _UserProfileState extends State<UserProfile> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        await prefs.setString('userName', data['uname'] ?? 'No name');
+        await prefs.setString('userEmail', data['umail'] ?? 'No email');
+        await prefs.setBool('isNewUser', data['profilePhoto'] == null);
+
         setState(() {
           _userName = data['uname'] ?? 'No name';
           _userEmail = data['umail'] ?? 'No email';
-          _isNewUser = data['profilePhoto'] == null; // Assume 'profilePhoto' is null for new users
+          _isNewUser = data['profilePhoto'] ==
+              null; // Assume 'profilePhoto' is null for new users
         });
       } else {
         print('Failed to load user data: ${response.statusCode}');
@@ -96,11 +118,12 @@ class _UserProfileState extends State<UserProfile> {
         if (mounted) {
           setState(() {
             _profileImageFile = XFile(imageFile.path);
+            _isLoadingImage = false; // Image is loaded, stop loading
           });
         }
       }
     } catch (error) {
-      if (mounted && !_isNewUser) { // Only show error if the user is not new
+      if (mounted && !_isNewUser) {
         Get.snackbar(
           'Error',
           'An error occurred: $error',
@@ -108,6 +131,9 @@ class _UserProfileState extends State<UserProfile> {
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
+        setState(() {
+          _isLoadingImage = false; // Stop loading even on error
+        });
       }
     }
   }
@@ -121,7 +147,8 @@ class _UserProfileState extends State<UserProfile> {
       Uri.parse('${API.api1}/upload-profile-photo'),
     );
     request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
-    request.files.add(await http.MultipartFile.fromPath('profile_photo', image.path));
+    request.files
+        .add(await http.MultipartFile.fromPath('profile_photo', image.path));
 
     try {
       final response = await request.send();
@@ -140,7 +167,8 @@ class _UserProfileState extends State<UserProfile> {
         );
 
         _fetchProfilePhoto(); // Refresh profile photo
-      } else if (!_isNewUser) { // Only show error if the user is not new
+      } else if (!_isNewUser) {
+        // Only show error if the user is not new
         Get.snackbar(
           'Error',
           'Failed to upload profile photo',
@@ -150,7 +178,8 @@ class _UserProfileState extends State<UserProfile> {
         );
       }
     } catch (error) {
-      if (!_isNewUser) { // Only show error if the user is not new
+      if (!_isNewUser) {
+        // Only show error if the user is not new
         Get.snackbar(
           'Error',
           'An error occurred: $error',
@@ -190,7 +219,8 @@ class _UserProfileState extends State<UserProfile> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.file(compressedImage, height: 300, width: 300, fit: BoxFit.cover),
+              Image.file(compressedImage,
+                  height: 300, width: 300, fit: BoxFit.cover),
             ],
           ),
           actions: <Widget>[
@@ -207,7 +237,8 @@ class _UserProfileState extends State<UserProfile> {
                   _selectedImage = compressedImage;
                 });
                 Navigator.of(context).pop();
-                _uploadProfilePhoto(compressedImage); // Upload the compressed image
+                _uploadProfilePhoto(
+                    compressedImage); // Upload the compressed image
               },
             ),
           ],
@@ -226,7 +257,8 @@ class _UserProfileState extends State<UserProfile> {
               if (_selectedImage != null)
                 ListTile(
                   leading: Icon(Icons.delete, color: Colors.red),
-                  title: Text("Delete Image", style: TextStyle(color: Colors.red)),
+                  title:
+                      Text("Delete Image", style: TextStyle(color: Colors.red)),
                   onTap: () {
                     _removeImage();
                     Navigator.of(context).pop();
@@ -285,7 +317,8 @@ class _UserProfileState extends State<UserProfile> {
         backgroundColor: Colors.transparent,
       ),
       body: Padding(
-        padding: const EdgeInsets.only(top: 80.0, left: 16, right: 16, bottom: 10),
+        padding:
+            const EdgeInsets.only(top: 80.0, left: 16, right: 16, bottom: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -298,14 +331,17 @@ class _UserProfileState extends State<UserProfile> {
                     backgroundImage: _selectedImage != null
                         ? FileImage(_selectedImage!)
                         : _profileImageFile != null
-                        ? FileImage(File(_profileImageFile!.path))
-                        : AssetImage('images/Userpfp.png') as ImageProvider,
-                    child: _selectedImage == null && _profileImageFile == null
-                        ? CircleAvatar(
-                      radius: 50,
-                      backgroundImage: AssetImage('images/Userpfp.png'),
-                    )
-                        : null,
+                            ? FileImage(File(_profileImageFile!.path))
+                            : null,
+                    child: _isLoadingImage
+                        ? CircularProgressIndicator() // Show loading while fetching image
+                        : _selectedImage == null && _profileImageFile == null
+                            ? CircleAvatar(
+                                radius: 50,
+                                backgroundImage:
+                                    AssetImage('images/Userpfp.png'),
+                              )
+                            : null,
                   ),
                   Positioned(
                     bottom: 0,
@@ -352,7 +388,6 @@ class _UserProfileState extends State<UserProfile> {
                       );
                     },
                   ),
-                  SizedBox(height: 10),
                   CylindricalTile(
                     leadingIcon: Icons.directions_car,
                     title: 'Vehicle details',
@@ -365,7 +400,18 @@ class _UserProfileState extends State<UserProfile> {
                       );
                     },
                   ),
-                  SizedBox(height: 10),
+                  CylindricalTile(
+                    leadingIcon: Icons.history,
+                    title: 'Your rides',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AllRides(),
+                        ),
+                      );
+                    },
+                  ),
                   CylindricalTile(
                     leadingIcon: Icons.perm_contact_calendar_outlined,
                     title: 'Profile settings',
@@ -378,7 +424,6 @@ class _UserProfileState extends State<UserProfile> {
                       );
                     },
                   ),
-                  SizedBox(height: 10),
                   CylindricalTile(
                     leadingIcon: Icons.credit_card,
                     title: 'Verify license',
@@ -386,18 +431,17 @@ class _UserProfileState extends State<UserProfile> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => VerifyLicense(fetchImageOnStart: true),
+                          builder: (context) =>
+                              VerifyLicense(fetchImageOnStart: true),
                         ),
                       );
                     },
                   ),
-                  SizedBox(height: 10),
                   CylindricalTile(
                     leadingIcon: Icons.help_center_outlined,
                     title: 'Help',
                     onTap: () {},
                   ),
-                  SizedBox(height: 10),
                   CylindricalTile(
                     leadingIcon: Icons.logout,
                     title: 'Log Out',
@@ -406,12 +450,13 @@ class _UserProfileState extends State<UserProfile> {
                       SharedPreferences prefs = await SharedPreferences.getInstance();
                       await prefs.remove('authToken');
 
-                      // Navigate to LoginScreen after clearing token
-                      Navigator.pushReplacement(
+                      // Navigate to LoginScreen and clear the navigation stack
+                      Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(
                           builder: (context) => LoginScreen(),
                         ),
+                            (route) => false, // This will remove all the previous routes
                       );
                     },
                   ),
@@ -430,24 +475,27 @@ Widget CylindricalTile({
   required String title,
   required VoidCallback onTap,
 }) {
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(30.0),
-      border: Border.all(color: Colors.grey),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black12,
-          blurRadius: 7,
-          offset: Offset(1, 10),
-        ),
-      ],
-    ),
-    child: ListTile(
-      leading: Icon(leadingIcon),
-      title: Text(title),
-      trailing: Icon(Icons.arrow_forward_ios),
-      onTap: onTap,
+  return Padding(
+    padding: const EdgeInsets.only(top: 10.0),
+    child: Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30.0),
+        border: Border.all(color: Colors.grey),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 7,
+            offset: Offset(1, 10),
+          ),
+        ],
+      ),
+      child: ListTile(
+        leading: Icon(leadingIcon),
+        title: Text(title),
+        trailing: Icon(Icons.arrow_forward_ios),
+        onTap: onTap,
+      ),
     ),
   );
 }

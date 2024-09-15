@@ -48,6 +48,9 @@ dependencies:
   uuid: ^4.5.0
   internet_connection_checker: ^1.0.0+1
   image: ^4.2.0
+  web_socket_channel: ^3.0.1
+  shimmer: ^3.0.0
+
 
 
 dev_dependencies:

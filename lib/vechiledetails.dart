@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +8,11 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:async/async.dart';
+import 'package:image/image.dart' as img;
+
+import 'api.dart';
+
+
 
 class VehicleDetails extends StatefulWidget {
   const VehicleDetails({super.key});
@@ -18,6 +24,8 @@ class VehicleDetails extends StatefulWidget {
 class _VehicleDetailsState extends State<VehicleDetails> {
   bool isEditing = false;  // Variable to manage editing state
   bool _isLoadingImage = false;
+  bool _isSubmitting = false;
+
 
   FocusNode modelFocusNode = FocusNode();
   FocusNode cartypeFocusNode = FocusNode();
@@ -46,6 +54,39 @@ class _VehicleDetailsState extends State<VehicleDetails> {
     _selectedType = 'Select';
     _selectedColor = 'Select';
     _fetchVehicleData();
+    // Set up FocusNode listeners
+    modelFocusNode.addListener(() {
+      if (modelFocusNode.hasFocus && !isEditing) {
+        _showToast('Click on edit button to change details');
+      }
+    });
+    cartypeFocusNode.addListener(() {
+      if (cartypeFocusNode.hasFocus && !isEditing) {
+        _showToast('Click on edit button to change details');
+      }
+    });
+    colorFocusNode.addListener(() {
+      if (colorFocusNode.hasFocus && !isEditing) {
+        _showToast('Click on edit button to change details');
+      }
+    });
+    yearFocusNode.addListener(() {
+      if (yearFocusNode.hasFocus && !isEditing) {
+        _showToast('Click on edit button to change details');
+      }
+    });
+    licenseFocusNode.addListener(() {
+      if (licenseFocusNode.hasFocus && !isEditing) {
+        _showToast('Click on edit button to change details');
+      }
+    });
+  }
+
+  void _showToast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      duration: Duration(seconds: 2),
+    ));
   }
 
 
@@ -55,18 +96,46 @@ class _VehicleDetailsState extends State<VehicleDetails> {
     });
   }
 
+
+
   Future<void> _getImage(ImageSource source) async {
     try {
       final pickedImage = await _picker.pickImage(source: source);
       if (pickedImage != null) {
-        setState(() {
-          _selectedImage = File(pickedImage.path);
-        });
+        final file = File(pickedImage.path);
+
+        // Read and compress the image
+        final img.Image? image = img.decodeImage(file.readAsBytesSync());
+        if (image != null) {
+          final compressedImage = img.encodeJpg(image, quality: 10);
+
+          // Save compressed image
+          final directory = await getTemporaryDirectory();
+          final compressedImageFile = File('${directory.path}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+          await compressedImageFile.writeAsBytes(compressedImage);
+
+          setState(() {
+            _selectedImage = compressedImageFile;
+          });
+        }
       }
     } catch (e) {
       print("Error picking image: $e");
     }
   }
+
+
+  String _formatFileSize(int sizeInBytes) {
+    if (sizeInBytes < 1024) {
+      return '$sizeInBytes Bytes';
+    } else if (sizeInBytes < 1024 * 1024) {
+      return '${(sizeInBytes / 1024).toStringAsFixed(2)} KB';
+    } else {
+      return '${(sizeInBytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+    }
+  }
+
+
 
   Future<void> _fetchVehicleData() async {
     setState(() {
@@ -85,7 +154,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
       }
 
       // Fetch vehicle details
-      final url = Uri.parse('http://202.21.32.153:8081/get-vehicle-data');
+      final url = Uri.parse('${API.api1}/get-vehicle-data');
       final response = await http.get(
         url,
         headers: {
@@ -154,7 +223,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
         return;
       }
 
-      final url = Uri.parse('http://202.21.32.153:8081/get-vehicle-image');
+      final url = Uri.parse('${API.api1}/get-vehicle-image');
       final response = await http.get(
         url,
         headers: {
@@ -201,6 +270,10 @@ class _VehicleDetailsState extends State<VehicleDetails> {
       return;
     }
 
+    setState(() {
+      _isSubmitting = true; // Set loading state to true
+    });
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('authToken');
@@ -209,12 +282,15 @@ class _VehicleDetailsState extends State<VehicleDetails> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Authentication token not found. Please log in again.'),
         ));
+        setState(() {
+          _isSubmitting = false; // Reset loading state
+        });
         return;
       }
 
       var stream = http.ByteStream(DelegatingStream.typed(_selectedImage!.openRead()));
       var length = await _selectedImage!.length();
-      var uri = Uri.parse('http://202.21.32.153:8081/update-vehicle-data');
+      var uri = Uri.parse('${API.api1}/update-vehicle-data');
 
       var request = http.MultipartRequest("POST", uri);
       var multipartFile = http.MultipartFile('vehicle_img', stream, length, filename: path.basename(_selectedImage!.path));
@@ -231,25 +307,36 @@ class _VehicleDetailsState extends State<VehicleDetails> {
       var response = await request.send();
       var responseBody = await response.stream.bytesToString();
 
+      // Get the size of the uploaded image
+      final imageSize = length / 1024; // Size in KB
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         setState(() {
           isEditing = false;
+          _isSubmitting = false; // Reset loading state
         });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Vehicle details uploaded successfully!'),
+          content: Text('Vehicle details uploaded successfully! Image size: ${imageSize.toStringAsFixed(2)} KB'),
         ));
       } else {
+        setState(() {
+          _isSubmitting = false; // Reset loading state
+        });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Failed to upload vehicle details: ${response.statusCode}'),
         ));
         print('Error details: $responseBody');
       }
     } catch (e) {
+      setState(() {
+        _isSubmitting = false; // Reset loading state
+      });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('An error occurred: $e'),
       ));
     }
   }
+
 
   void toggleEditing() {
     setState(() {
@@ -567,9 +654,15 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                   children: [
                     if (isEditing)
                       Expanded(
-                        child: ElevatedButton(
+                        child:ElevatedButton(
                           onPressed: _submitData,
-                          child: Text('Save & Continue'),
+                          child: _isSubmitting
+                              ? SizedBox(
+                            width: 24, // Adjust as needed
+                            height: 24, // Adjust as needed
+                            child: CircularProgressIndicator(color: Colors.white),
+                          )
+                              : Text('Save & Continue'),
                           style: ElevatedButton.styleFrom(
                             elevation: 7,
                             backgroundColor: Color(0xFF2e2c2f),
@@ -579,7 +672,8 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                        ),
+                        )
+
                       ),
                     SizedBox(width: 10,),
                     Expanded(

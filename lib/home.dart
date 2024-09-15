@@ -89,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
         controller: _pageController,
         onPageChanged: _onPageChanged,
         children: [
-          Inbox1(), // Index 0
+          // Inbox1(), // Index 0
           Trips(), // Index 1
           // UserProfile(), // Index 2
         ],
@@ -123,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: InkWell(
                 onTap: () {
-                  Get.to(() => Inbox1()); // Navigate to HomeScreen
+                  // Get.to(() => Inbox1()); // Navigate to HomeScreen
                 },
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

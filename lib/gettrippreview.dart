@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:intl/intl.dart';
-
-import 'Inbox.dart';
-import 'book.dart';
+import 'package:travel/GetBook.dart';
 
 class GetTripPreview extends StatefulWidget {
   final Map<String, dynamic> tripData;
@@ -16,20 +13,22 @@ class GetTripPreview extends StatefulWidget {
 }
 
 class _GetTripPreviewState extends State<GetTripPreview> {
-  late String formattedDate;
   late List<String> otherItems;
 
   @override
   void initState() {
     super.initState();
-    _formatDate();
+    // _formatDate();
     _processOtherItems();
+    print('Get trip data : ============================');
+    print(widget.tripData);
   }
 
-  void _formatDate() {
+  /*void _formatDate() {
     final dateValue = widget.tripData['date'];
 
-    if (dateValue is String && dateValue.isNotEmpty) {
+    if (dateValue is String) {
+      // Attempt to parse the date string
       try {
         final date = DateTime.parse(dateValue).toLocal();
         formattedDate = DateFormat('E, MMM d \'at\' h:mma').format(date);
@@ -38,11 +37,12 @@ class _GetTripPreviewState extends State<GetTripPreview> {
         formattedDate = 'Invalid date format';
       }
     } else if (dateValue is DateTime) {
+      // Directly format the DateTime object
       formattedDate = DateFormat('E, MMM d \'at\' h:mma').format(dateValue.toLocal());
     } else {
       formattedDate = 'Date not available';
     }
-  }
+  }*/
 
   void _processOtherItems() {
     final otherItemsRaw = widget.tripData['otherItems'];
@@ -71,6 +71,10 @@ class _GetTripPreviewState extends State<GetTripPreview> {
 
   @override
   Widget build(BuildContext context) {
+    final uid = widget.tripData['uid'].toString() ?? 'Unknown uid';
+
+    final DateTime dateTime = DateTime.parse(widget.tripData['date'].toString());
+    final String formattedDate = DateFormat('EE, MMM d \'at\' h:mm a').format(dateTime);
     final departureCity = widget.tripData['departure'] ?? 'Unknown Departure';
     final departureCityFirstName = widget.tripData['departure']?.split(' ').first ?? 'Unknown';
     final destinationCity = widget.tripData['destination'] ?? 'Unknown Destination';
@@ -88,12 +92,12 @@ class _GetTripPreviewState extends State<GetTripPreview> {
     final userImage = widget.tripData['userImage'] ?? 'images/Userpfp.png';
     final stopsData = widget.tripData['stops'] as List<dynamic>? ?? [];
 
-    // Define a map for luggage icons
     final Map<String, IconData> luggageIcons = {
       'No luggage': Icons.cancel,
       'Backpack': Icons.backpack,
       'Cabin bag (max. 23 kg)': Icons.luggage,
     };
+
     final Map<String, IconData> itemsIcons = {
       'Winter tires': Icons.ac_unit,
       'Skis & snowboards': Icons.downhill_skiing,
@@ -209,11 +213,17 @@ class _GetTripPreviewState extends State<GetTripPreview> {
                 ),
                 Divider(thickness: 15, color: Colors.black12),
                 Padding(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(15),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text('Luggage: '),
+                      Text(
+                        'Luggage: ',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                        ),
+                      ),
                       SizedBox(width: 20),
                       Container(
                         padding: EdgeInsets.all(8),
@@ -297,38 +307,58 @@ class _GetTripPreviewState extends State<GetTripPreview> {
               ),
             ),
             SizedBox(height: 5),
-            Divider(thickness: 15, color: Colors.black12),
-            if (stopsData.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'Stops:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-              ),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                itemCount: stopsData.length,
-                itemBuilder: (context, index) {
-                  final stop = stopsData[index] as Map<String, dynamic>; // Cast to Map
-                  final stopName = stop['stop_name'] ?? 'Unknown Stop';
-                  final stopPrice = stop['stop_price'] ?? '0';
-                  return ListTile(
-                    title: Text(stopName),
-                    subtitle: Text('Price: \$${stopPrice}'),
-                  );
-                },
-              ),
-            ],
-            Divider(thickness: 15, color: Colors.black12),
-            // Assuming otherItems is a list of strings
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Divider(thickness: 15, color: Colors.black12),
+                if (stopsData.isEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Stops:',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                        ),
+                        Text(
+                          'No stops included in your ride',
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 15.0, left: 20),
+                    child: Text(
+                      'Stops:',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                    ),
+                  ),
+                  ListView.builder(
+                    padding: EdgeInsets.only(left: 15),
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: stopsData.length,
+                    itemBuilder: (context, index) {
+                      final stop = stopsData[index] as Map<String, dynamic>; // Cast to Map
+                      final stopName = stop['stop_name'] ?? 'Unknown Stop';
+                      final stopPrice = stop['stop_price'] ?? '0';
+                      return ListTile(
+                        title: Text(stopName),
+                        subtitle: Text('Price: \$${stopPrice}'),
+                      );
+                    },
+                  ),
+                ],
+                Divider(thickness: 15, color: Colors.black12),
+              ],
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 150.0, bottom: 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  // "Other" label at the top
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: Text(
@@ -339,7 +369,6 @@ class _GetTripPreviewState extends State<GetTripPreview> {
                       ),
                     ),
                   ),
-                  // List of items
                   Padding(
                     padding: const EdgeInsets.only(left: 25.0),
                     child: Column(
@@ -388,7 +417,7 @@ class _GetTripPreviewState extends State<GetTripPreview> {
               child: FloatingActionButton(
                 backgroundColor: Color(0xFFff4400),
                 onPressed: () {
-                  Get.to(Book(), transition: Transition.fade);
+                  Get.to(GetBook(tripData: widget.tripData,), transition: Transition.fade);
                 },
                 child: Row(
                   children: [
@@ -421,7 +450,7 @@ class _GetTripPreviewState extends State<GetTripPreview> {
                   borderSide: BorderSide.none,
                 ),
                 onPressed: () {
-                  Get.to(InboxMain(), transition: Transition.leftToRight);
+                  // Get.to(InboxMain(), transition: Transition.leftToRight);
                 },
                 child: Icon(Icons.message, color: Colors.white, size: 30),
               ),
@@ -429,7 +458,6 @@ class _GetTripPreviewState extends State<GetTripPreview> {
           ),
         ],
       ),
-
     );
   }
 }

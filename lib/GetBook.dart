@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:travel/verifyemail.dart';
+import 'package:travel/review_trip.dart';
+import 'package:travel/rideverifyemail.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 
+class GetBook extends StatefulWidget {
+  final Map<String, dynamic> tripData;
 
-class Book extends StatefulWidget {
-  const Book({super.key});
+  const GetBook({super.key,required this.tripData});
 
   @override
-  _BookState createState() => _BookState();
+  _GetBookState createState() => _GetBookState();
 }
-class _BookState extends State<Book> {
+class _GetBookState extends State<GetBook> {
   bool _isSwitchOn = false; // State variable for Switch
 
   @override
@@ -42,7 +46,7 @@ class _BookState extends State<Book> {
               children: [
                 Padding(
                   padding:
-                      const EdgeInsets.only(top: 20, left: 10.0, right: 15.0),
+                  const EdgeInsets.only(top: 20, left: 10.0, right: 15.0),
                   child: Image.asset(
                     'images/no-car.png',
                     height: 70,
@@ -186,10 +190,11 @@ class _BookState extends State<Book> {
       ),
       bottomNavigationBar: BottomAppBar(
         child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: () {
             if (_isSwitchOn) {
               print('Next tapped');
-              Get.to(ReviewTrip(),transition: Transition.fade);
+              Get.to(() => GetReviewTrip(tripData: widget.tripData,),transition: Transition.fade);
             } else {
               print('Switch is off');
               // Optionally, you can show a message or indication to the user
@@ -214,167 +219,89 @@ class _BookState extends State<Book> {
 }
 
 
-class ReviewTrip extends StatefulWidget {
-  const ReviewTrip({super.key});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class GetMeetDriver extends StatefulWidget {
+  final Map<String, dynamic> tripData;
+
+  const GetMeetDriver({super.key, required this.tripData});
 
   @override
-  State<ReviewTrip> createState() => _ReviewTripState();
+  State<GetMeetDriver> createState() => _GetMeetDriverState();
 }
-class _ReviewTripState extends State<ReviewTrip> {
-  String formattedDate =
-      DateFormat('E, MMM d \'at\' h:mma').format(DateTime.now());
+
+class _GetMeetDriverState extends State<GetMeetDriver> {
+  Map<String, dynamic>? driverData;
+  bool isLoading = true;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Book'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.only(left: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Review trip details',
-              textAlign: TextAlign.left,
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(
-              height: 15,
-            ),
-            Text(
-              'Itinerary',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(
-              height: 30,
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 5.0, bottom: 7),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: Text(
-                      'Brantford',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: Text(
-                      formattedDate,
-                      style: TextStyle(
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 5.0),
-              child: Text(
-                'Brandford,ON,Canada',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54,
-                ),
-              ),
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 5.0, bottom: 7),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: Text(
-                      'Windsor',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: Text(
-                      formattedDate,
-                      style: TextStyle(
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 5.0),
-              child: Text(
-                'Windsor,ON,Canada',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54,
-                ),
-              ),
-            ),
-            SizedBox(
-              height: 40,
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 5.0, bottom: 7),
-              child: Text(
-                'Trip description',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 5.0),
-              child: Text(
-                '\" Timings are adjustable \"',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomAppBar(
-        child: GestureDetector(
-          onTap: () {
-            Get.to(MeetDriver(),transition: Transition.fade);
-          },
-          child: Center(
-            child: Text(
-              'Next',
-              style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ),
-      ),
-    );
+  void initState() {
+    super.initState();
+    fetchDriverData();
   }
-}
+
+  Future<void> fetchDriverData() async {
+    final uid = widget.tripData['uid'];
+    final url = 'http://202.21.32.153:8081/user-profile-and-vehicle-data/$uid';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('Driver Data: $data'); // Debugging line
+
+        setState(() {
+          driverData = data;
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load driver data: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching driver data: $e'); // Debugging line
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
 
-class MeetDriver extends StatelessWidget {
-  const MeetDriver({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final DateTime dateTime = DateTime.parse(driverData!['user']['insdatetime'].toString() ?? 'Unknown');
+    final String formattedDate = DateFormat('MMMM, yyyy').format(dateTime);
     return Scaffold(
       appBar: AppBar(
         title: Text('Book'),
       ),
-      body: Padding(
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : driverData == null
+          ? Center(child: Text('No driver data available'))
+          : Padding(
         padding: const EdgeInsets.only(left: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,9 +314,10 @@ class MeetDriver extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 40,),
+            SizedBox(height: 40),
             Row(
               children: [
+                // Profile picture with border
                 // Profile picture with border
                 Container(
                   decoration: BoxDecoration(
@@ -401,9 +329,14 @@ class MeetDriver extends StatelessWidget {
                   ),
                   child: CircleAvatar(
                     radius: 40,
-                    backgroundImage: NetworkImage('https://picsum.photos/200/300'), // Replace with your image URL
+                    backgroundImage: FadeInImage.assetNetwork(
+                      placeholder: 'images/default-user.png', // Placeholder image
+                      image: '${driverData!['user']['profile_photo_url']}',
+                      fit: BoxFit.cover,
+                    ).image,
                   ),
                 ),
+
                 SizedBox(width: 12),
                 // User details
                 Expanded(
@@ -419,7 +352,7 @@ class MeetDriver extends StatelessWidget {
                           ),
                           SizedBox(width: 4),
                           Text(
-                            'Mithun',
+                            driverData!['user']['uname'] ?? 'Unknown',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -427,52 +360,57 @@ class MeetDriver extends StatelessWidget {
                           ),
                         ],
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Joined February 2023',
-                        style: TextStyle(
-                          fontSize: 16,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Male, 32 years old',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black54,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'Joined ',
+                            style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.black54
+                            ),
+                          ),
+                          Text(
+                            formattedDate,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black54
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 30,),
+            SizedBox(height: 30),
+            Divider(
+              endIndent: 20,
+            ),
+            SizedBox(height: 30),
             Text(
-              'Bio',
+                'Driver details:',
               style: TextStyle(
-                  fontSize:  20,
-                  fontWeight: FontWeight.bold
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 10,),
-            Text(
-              '\"I would love to meet people on share drive\"',
-              style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54
-              ),
-            ),
-            SizedBox(height: 25,),
+
+            SizedBox(height: 25),
             Row(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12), // Adjust the radius as needed
-                  child: Image.asset(
-                    'images/Poparide.jpg',
-                    height: 120, // Adjust height as needed
-                    width: 150, // Adjust width as needed
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    '${driverData!['vehicle']['vehicle_img_url']}',
+                    height: 120,
+                    width: 150,
                     fit: BoxFit.cover,
+                    // Fallback image
+                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                      'images/default-car.png',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
                 SizedBox(width: 15),
@@ -480,14 +418,14 @@ class MeetDriver extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Honda Civic',
+                      driverData!['vehicle']['vehicle_model'] ?? 'Unknown Model',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      'Light grey, 2008',
+                      '${driverData!['vehicle']['vehicle_color'] ?? 'Unknown Color'}, ${driverData!['vehicle']['vehicle_year'] ?? 'Unknown Year'}',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.black54,
@@ -502,15 +440,17 @@ class MeetDriver extends StatelessWidget {
       ),
       bottomNavigationBar: BottomAppBar(
         child: GestureDetector(
-          onTap: (){
-            Get.to(EmailVerify(),transition: Transition.fade);
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            // Navigate to EmailVerify or any other screen
+            Get.to (() => RideEmailVerify());
           },
           child: Center(
             child: Text(
               'Next',
               style: TextStyle(
                 fontSize: 19,
-                fontWeight: FontWeight.bold
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
@@ -518,4 +458,5 @@ class MeetDriver extends StatelessWidget {
       ),
     );
   }
+
 }

@@ -2,11 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:travel/api.dart';
 import 'package:travel/Findtrippreview.dart';
-
 import 'gettrippreview.dart';
-
 
 
 class Trips extends StatelessWidget {
@@ -49,7 +48,7 @@ class Trips extends StatelessWidget {
                     tabs: [
                       TabItem(title: 'Active'),
                       TabItem(title: 'Recent'),
-                      TabItem(title: 'Cancelled'),
+                      TabItem(title: 'Requests'),
                     ],
                   ),
                 ),
@@ -59,9 +58,9 @@ class Trips extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-             ActieScreen(),
+             ActiveScreen(),
             RecentScreen(),
-             CancelScreen(),
+             Request(),
           ],
         ),
       ),
@@ -75,14 +74,14 @@ class Trips extends StatelessWidget {
 
 
 
-
-class ActieScreen extends StatefulWidget {
+class ActiveScreen extends StatefulWidget {
   @override
-  _ActieScreenState createState() => _ActieScreenState();
+  _ActiveScreenState createState() => _ActiveScreenState();
 }
 
-class _ActieScreenState extends State<ActieScreen> {
+class _ActiveScreenState extends State<ActiveScreen> {
   List<Map<String, dynamic>> trips = [];
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -91,42 +90,47 @@ class _ActieScreenState extends State<ActieScreen> {
   }
 
   Future<void> fetchTrips() async {
-    final response = await http.get(Uri.parse('http://202.21.32.153:8081/get-trips'));
+    final response = await http.get(Uri.parse('${API.api1}/get-trips'));
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
       print(response.body);
 
-      setState(() {
-        trips = data.map((trip) {
-          final leavingDateTime = DateTime.tryParse(trip['leaving_date_time']) ?? DateTime.now();
-          print('Original date: ${trip['leaving_date_time']}'); // Debugging line
-          print('Parsed date: $leavingDateTime'); // Debugging line
+      List<Map<String, dynamic>> sortedTrips = data.map((trip) {
+        print('Original date: ${trip['leaving_date_time']}'); // Debugging line
 
-          return {
-            'userName': (trip['uname'] ?? '').trim(),
-            'userImage': trip['profile_photo'] ?? '',
-            'seatsLeft': trip['empty_seats'] ?? 0,
-            'departure': trip['departure'] ?? '',
-            'destination': trip['destination'] ?? '',
-            'date': leavingDateTime,
-            'rideSchedule': trip['ride_schedule'] ?? '',
-            'luggage': trip['luggage'] ?? '',
-            'description': trip['description'] ?? '',
-            'price': trip['price'] ?? 0,
-            'stops': trip['stops'] ?? [],
-            'otherItems': trip['other_items'] ?? '',
-            'backRowSitting': trip['back_row_sitting'] ?? 'Not specified',
-          };
-        }).toList();
+        return {
+          'uid': trip['uid'].toString() ?? 'UID not found',
+          'userName': (trip['uname'] ?? '').trim(),
+          'userImage': trip['profile_photo'] ?? '',
+          'seatsLeft': trip['empty_seats'] ?? 0,
+          'departure': trip['departure'] ?? '',
+          'destination': trip['destination'] ?? '',
+          'date': DateTime.tryParse(trip['leaving_date_time']) ?? DateTime.now(),
+          'rideSchedule': trip['ride_schedule'] ?? '',
+          'luggage': trip['luggage'] ?? '',
+          'description': trip['description'] ?? '',
+          'price': trip['price'] ?? 0,
+          'stops': trip['stops'] ?? [],
+          'otherItems': trip['other_items'] ?? '',
+          'backRowSitting': trip['back_row_sitting'] ?? 'Not specified',
+        };
+      }).toList();
+
+      // Sort trips by date in descending order
+      sortedTrips.sort((a, b) => b['date'].compareTo(a['date']));
+
+      setState(() {
+        trips = sortedTrips;
+        isLoading = false;
       });
     } else {
       print('Failed to load trips');
+      setState(() {
+        isLoading = false;
+      });
     }
   }
-
-
-
 
   String getFirstNameOfCity(String city) {
     return city.split(' ').first;
@@ -138,7 +142,93 @@ class _ActieScreenState extends State<ActieScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 13),
-      child: ListView.builder(
+      child: isLoading
+          ? ListView.builder(
+        itemCount: 5, // Number of shimmer loading items
+        itemBuilder: (context, index) {
+          return Shimmer.fromColors(
+            baseColor: Color(0XFFe1e1e1)!,
+            highlightColor: Color(0XFFeeeeee)!,
+            child: Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                side: BorderSide(
+                  color: Color(0xFF51737A),
+                  width: 1.5,
+                ),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
+                          child: Row(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Color(0xFF51737A),
+                                    width: 3,
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 30,
+                                  backgroundColor: Colors.grey[300],
+                                ),
+                              ),
+                              SizedBox(width: 5),
+                              Icon(Icons.verified, color: Colors.blue),
+                              SizedBox(width: 5),
+                              Container(
+                                color: Colors.grey[300],
+                                width: 100,
+                                height: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Spacer(),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 35, bottom: 10.0, right: 20),
+                          child: Container(
+                            color: Colors.grey[300],
+                            width: 80,
+                            height: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 15, top: 13),
+                      child: Container(
+                        color: Colors.grey[300],
+                        width: 150,
+                        height: 16,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 13.0, left: 15),
+                      child: Container(
+                        color: Colors.grey[300],
+                        width: 200,
+                        height: 16,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      )
+          : ListView.builder(
         itemCount: trips.length,
         itemBuilder: (context, index) {
           final trip = trips[index];
@@ -316,33 +406,49 @@ class _RecentScreenState extends State<RecentScreen> {
   }
 
   Future<void> fetchTrips() async {
-    final response = await http.get(Uri.parse('http://202.21.32.153:8081/get-trips'));
+    final response = await http.get(Uri.parse('${API.api1}/get-trips'));
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
+      print(response.body);
+
+      List<Map<String, dynamic>> sortedTrips = data.map((trip) {
+        print('Original date: ${trip['leaving_date_time']}'); // Debugging line
+
+        return {
+          'uid': trip['uid'].toString() ?? 'UID not found',
+          'userName': (trip['uname'] ?? '').trim(),
+          'userImage': trip['profile_photo'] ?? '',
+          'seatsLeft': trip['empty_seats'] ?? 0,
+          'departure': trip['departure'] ?? '',
+          'destination': trip['destination'] ?? '',
+          'date': DateTime.tryParse(trip['leaving_date_time']) ?? DateTime.now(),
+          'rideSchedule': trip['ride_schedule'] ?? '',
+          'luggage': trip['luggage'] ?? '',
+          'description': trip['description'] ?? '',
+          'price': trip['price'] ?? 0,
+          'stops': trip['stops'] ?? [],
+          'otherItems': trip['other_items'] ?? '',
+          'backRowSitting': trip['back_row_sitting'] ?? 'Not specified',
+        };
+      }).toList();
+
+      // Sort trips by date in descending order
+      sortedTrips.sort((a, b) => b['date'].compareTo(a['date']));
 
       setState(() {
-        trips = data.map((trip) {
-          return {
-            'userName': trip['uname'], // Placeholder for driver's name
-            'userImage': 'https://picsum.photos/200/300', // Placeholder for driver's image
-            'seatsLeft': trip['empty_seats'],
-            'departure': trip['departure'],
-            'destination': trip['destination'],
-            'date': DateTime.parse(trip['leaving_date_time']),
-          };
-        }).toList();
+        trips = sortedTrips;
       });
     } else {
-      // Handle the error
       print('Failed to load trips');
     }
   }
 
 
 
+
+
   String getFirstNameOfCity(String city) {
-    // Split the city name by spaces and return the first part
     return city.split(' ').first;
   }
 
@@ -362,10 +468,14 @@ class _RecentScreenState extends State<RecentScreen> {
 
           return GestureDetector(
             onTap: () {
-             /* Navigator.push(
+              Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => GetTripPreview()),
-              );*/
+                MaterialPageRoute(
+                  builder: (context) => GetTripPreview(
+                    tripData: trip,
+                  ),
+                ),
+              );
             },
             child: Card(
               shape: RoundedRectangleBorder(
@@ -383,8 +493,7 @@ class _RecentScreenState extends State<RecentScreen> {
                     Row(
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 15.0, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
                           child: Row(
                             children: [
                               Container(
@@ -398,8 +507,9 @@ class _RecentScreenState extends State<RecentScreen> {
                                 ),
                                 child: CircleAvatar(
                                   radius: 30,
-                                  backgroundImage: NetworkImage(
-                                      trip['userImage']),
+                                  backgroundImage: trip['userImage'] != null && trip['userImage'].isNotEmpty
+                                      ? NetworkImage(trip['userImage'])
+                                      : AssetImage('images/Userpfp.png') as ImageProvider,
                                 ),
                               ),
                               SizedBox(width: 5),
@@ -416,26 +526,15 @@ class _RecentScreenState extends State<RecentScreen> {
                           ),
                         ),
                         Spacer(),
-                        Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  top: 35, bottom: 10.0, right: 20),
-                              child: Text(
-                                '${trip['seatsLeft']} seats left',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 35, bottom: 10.0, right: 20),
+                          child: Text(
+                            '${trip['seatsLeft']} seats left',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
-                            Image.asset(
-                              'images/smallbag.png',
-                              height: 25,
-                              width: 25,
-                              color: Color(0XFF2196f3),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
@@ -447,7 +546,7 @@ class _RecentScreenState extends State<RecentScreen> {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: getFirstNameOfCity(trip['departure']),
+                                  text: departureFirstName,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black,
@@ -471,7 +570,7 @@ class _RecentScreenState extends State<RecentScreen> {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: getFirstNameOfCity(trip['destination']),
+                              text: destinationFirstName,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black,
@@ -513,9 +612,9 @@ class _RecentScreenState extends State<RecentScreen> {
 
 
 
-class CancelScreen extends StatelessWidget {
+class Request extends StatelessWidget {
   final int index = 3; // Replace with your actual variable or logic
-  const CancelScreen({super.key});
+  const Request({super.key});
 
   @override
   Widget build(BuildContext context) {
