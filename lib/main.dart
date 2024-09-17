@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:travel/first.dart';
-import 'package:travel/find.dart';
+import 'package:travel/home/first.dart';
+import 'package:travel/Find/find.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'UserProfile/License/verifylicenese.dart';
+import 'UserProfile/vechiledetails.dart';
 
 void main() {
+  Get.put(VehicleDetailsController()); // or Get.lazyPut(() => VehicleDetailsController());
+  Get.put(ImageUploadController()); // or Get.lazyPut(() => VehicleDetailsController());
   runApp(MyApp());
 }
 
