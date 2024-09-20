@@ -6,8 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:travel/UserProfile/Rides/all_booked_rides.dart';
-import 'package:travel/UserProfile/Rides/all_posted_rides.dart';
+import 'package:travel/UserProfile/BookedRides/all_booked_rides.dart';
+import 'package:travel/UserProfile/PostedRides/all_posted_rides.dart';
 import 'package:uuid/uuid.dart';
 import 'package:get/get.dart';
 import 'package:image/image.dart' as img;
@@ -415,7 +415,7 @@ class _UserProfileState extends State<UserProfile> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => AllPostedRides(),
+                          builder: (context) => BookedUserRides(),
                         ),
                       );
                     },

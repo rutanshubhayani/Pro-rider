@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/Driver/updatetrip.dart';
-import 'package:travel/UserProfile/Rides/postedpreview.dart';
+import 'package:travel/UserProfile/PostedRides/postedpreview.dart';
 import 'package:travel/api/api.dart';
 
 import '../../Find/Trips/gettrippreview.dart';

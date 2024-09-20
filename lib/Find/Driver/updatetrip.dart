@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:travel/UserProfile/Rides/all_posted_rides.dart';
+import 'package:travel/UserProfile/PostedRides/all_posted_rides.dart';
 import 'package:travel/api/api.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../widget/City_search.dart';

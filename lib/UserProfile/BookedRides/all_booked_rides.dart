@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:travel/UserProfile/BookedRides/BookedPreview.dart';
 import '../../Find/Trips/trips.dart';
 import '../../api/api.dart';
 
@@ -265,6 +268,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
         return GestureDetector(
           onTap: () {
             // Add navigation or additional functionality here if needed
+            Get.to(() => BookedPreview(tripData: _bookedRides,));
           },
           child: Padding(
             padding: const EdgeInsets.all(8.0),

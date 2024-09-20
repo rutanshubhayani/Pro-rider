@@ -295,6 +295,7 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
     // Fetch the booked seats and post_a_trip_id from SharedPreferences
     _loadPreferences();
 
+    // Add listener to each controller
     for (int i = 0; i < 6; i++) {
       _otpControllers[i].addListener(() {
         String text = _otpControllers[i].text;
@@ -309,6 +310,11 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
         }
       });
     }
+
+    // Request focus on the first OTP TextField after a short delay
+    Future.delayed(Duration(milliseconds: 100), () {
+      FocusScope.of(context).requestFocus(_focusNodes[0]);
+    });
   }
 
   Future<void> _loadPreferences() async {
