@@ -1,5 +1,11 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../Find/Trips/trips.dart';
+import '../../api/api.dart';
 
 class BookedUserRides extends StatelessWidget {
   const BookedUserRides({super.key});
@@ -63,37 +69,593 @@ class BookedUserRides extends StatelessWidget {
 
 
 
-class AllBookedRides extends StatelessWidget {
+
+
+
+
+
+
+class AllBookedRides extends StatefulWidget {
   const AllBookedRides({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return  Center(
-      child: Text('Booked rides'),
-    );
-  }
+  _AllBookedRidesState createState() => _AllBookedRidesState();
 }
 
+class _AllBookedRidesState extends State<AllBookedRides> {
+  bool _isLoading = true;
+  List<dynamic> _bookedRides = [];
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchBookedRides();
+  }
 
+  Future<void> _fetchBookedRides() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? authToken = prefs.getString('authToken');
 
+    if (authToken == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not authenticated')),
+      );
+      return;
+    }
 
+    try {
+      final response = await http.get(
+        Uri.parse('${API.api1}/bookings'),
+        headers: {
+          'Authorization': 'Bearer $authToken',
+          'Content-Type': 'application/json',
+        },
+      );
 
+      if (response.statusCode == 200) {
+        print('All booked rides of user:');
+        print(response.body);
+        setState(() {
+          _bookedRides = jsonDecode(response.body);
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+        print(response.body);
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error2: client side error')),
+      );
+    }
+  }
 
+  Future<void> _cancelRide(String postATripId) async {
+    // Show confirmation dialog
+    bool confirm = await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Confirm Cancellation'),
+          content: Text('Are you sure you want to cancel this booking?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('No'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text('Yes'),
+            ),
+          ],
+        );
+      },
+    );
 
+    // If confirmed, proceed to cancel the booking
+    if (confirm) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? authToken = prefs.getString('authToken');
 
+      if (authToken == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('User not authenticated')),
+        );
+        return;
+      }
 
+      final response = await http.post(
+        Uri.parse('${API.api1}/cancel-book-trip/$postATripId'),
+        headers: {
+          'Authorization': 'Bearer $authToken',
+          'Content-Type': 'application/json',
+        },
+      );
 
+      if (response.statusCode == 200) {
+        // Remove the canceled ride from the _bookedRides list
+        setState(() {
+          _bookedRides.removeWhere((ride) => ride['post_a_trip_id'].toString() == postATripId);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Booking canceled successfully')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to cancel booking: ${response.body}')),
+        );
+      }
+    }
+  }
 
-class CancelledBookedRides extends StatelessWidget {
-  const CancelledBookedRides({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text('Cancelled rides'),
+    DateFormat dateFormat = DateFormat('E, MMM d \'at\' h:mma');
+
+    return Scaffold(
+      body: RefreshIndicator(
+        onRefresh: _fetchBookedRides,
+        child: _isLoading
+            ? _buildShimmerLoading()
+            : _bookedRides.isEmpty
+            ? const Center(child: Text('No booked rides found.'))
+            : _buildBookedRidesList(dateFormat),
+      ),
     );
+  }
+
+  // Shimmer loading effect
+  Widget _buildShimmerLoading() {
+    return ListView.builder(
+      itemCount: 6, // Number of shimmer items
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Color(0xFFE5E5E5),
+          highlightColor: Color(0xFFF0F0F0),
+          child: Card(
+            margin: const EdgeInsets.all(10),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 20,
+                    width: double.infinity,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    height: 20,
+                    width: 150,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    height: 20,
+                    width: 100,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Booked rides list after data is loaded
+  Widget _buildBookedRidesList(DateFormat dateFormat) {
+    return ListView.builder(
+      itemCount: _bookedRides.length,
+      itemBuilder: (context, index) {
+        final ride = _bookedRides[index];
+        String formattedDate = dateFormat.format(DateTime.parse(ride['leaving_date_time']));
+        String departureFirstName = getFirstNameOfCity(ride['departure']);
+        String destinationFirstName = getFirstNameOfCity(ride['destination']);
+
+        return GestureDetector(
+          onTap: () {
+            // Add navigation or additional functionality here if needed
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                side: BorderSide(
+                  color: Color(0xFF51737A),
+                  width: 1.5,
+                ),
+              ),
+              margin: const EdgeInsets.all(10),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Color(0xFF51737A),
+                              width: 3,
+                            ),
+                          ),
+                          child: CircleAvatar(
+                            radius: 30,
+                            backgroundImage: ride['profile_photo'] != null
+                                ? NetworkImage(ride['profile_photo'])
+                                : AssetImage('images/Userpfp.png') as ImageProvider<Object>, // Default image
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          ride['uname'],
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Spacer(),
+                        Text(
+                          ' ${ride['booked_seats']} Seats booked',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: departureFirstName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '  ${ride['departure']}',
+                            style: TextStyle(
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 13.0),
+                      child: RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: destinationFirstName,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            TextSpan(
+                              text: '  ${ride['destination']}',
+                              style: TextStyle(
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10,bottom: 10),
+                      child: Text(
+                        '$formattedDate',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _cancelRide(ride['post_a_trip_id'].toString());
+                        },
+                        child: Text('Cancel Booking'),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)
+                          )
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String getFirstNameOfCity(String city) {
+    return city.split(' ').first;
   }
 }
 
 
+
+
+
+
+
+
+
+class CancelledBookedRides extends StatefulWidget {
+  const CancelledBookedRides({super.key});
+
+  @override
+  _CancelledBookedRidesState createState() => _CancelledBookedRidesState();
+}
+
+class _CancelledBookedRidesState extends State<CancelledBookedRides> {
+  bool _isLoading = true;
+  List<dynamic> _canceledRides = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCanceledRides();
+  }
+
+  Future<void> _fetchCanceledRides() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? authToken = prefs.getString('authToken');
+
+    if (authToken == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not authenticated')),
+      );
+      return;
+    }
+
+    try {
+      String bookingUserId = prefs.getString('bookingUserId') ?? '';
+
+      final response = await http.get(
+        Uri.parse('http://202.21.32.153:8081/canceled-bookings/$bookingUserId'),
+        headers: {
+          'Authorization': 'Bearer $authToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print(response.body);
+        setState(() {
+          _canceledRides = jsonDecode(response.body);
+
+          // Sort rides by date to ensure the most recent is on top
+          _canceledRides.sort((a, b) => DateTime.parse(b['leaving_date_time']).compareTo(DateTime.parse(a['leaving_date_time'])));
+
+          // Limit to the last 5 canceled rides
+          if (_canceledRides.length > 5) {
+            _canceledRides = _canceledRides.take(5).toList(); // Keep only the last 5
+          }
+
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching canceled rides: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    DateFormat dateFormat = DateFormat('E, MMM d \'at\' h:mma');
+
+    return Scaffold(
+      body: _isLoading
+          ? _buildShimmerLoading()
+          : _canceledRides.isEmpty
+          ? const Center(child: Text('No canceled rides found.'))
+          : _buildCanceledRidesList(dateFormat),
+    );
+  }
+
+  // Shimmer loading effect
+  Widget _buildShimmerLoading() {
+    return ListView.builder(
+      itemCount: 6, // Number of shimmer items
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Color(0xFFE5E5E5),
+          highlightColor: Color(0xFFF0F0F0),
+          child: Card(
+            margin: const EdgeInsets.all(10),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 20,
+                    width: double.infinity,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    height: 20,
+                    width: 150,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    height: 20,
+                    width: 100,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Canceled rides list after data is loaded
+  Widget _buildCanceledRidesList(DateFormat dateFormat) {
+    return ListView.builder(
+      itemCount: _canceledRides.length,
+      itemBuilder: (context, index) {
+        final ride = _canceledRides[index];
+        String formattedDate = dateFormat.format(DateTime.parse(ride['leaving_date_time']));
+        String departureFirstName = getFirstNameOfCity(ride['departure']);
+        String destinationFirstName = getFirstNameOfCity(ride['destination']);
+
+        return Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            side: BorderSide(
+              color: Color(0xFF51737A),
+              width: 1.5,
+            ),
+          ),
+          margin: const EdgeInsets.all(10),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Color(0xFF51737A),
+                          width: 3,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 30,
+                        // Placeholder image for demonstration
+                        backgroundImage: AssetImage('images/Userpfp.png'),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      ride['uname'],
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Spacer(),
+                    Text(
+                      ' ${ride['booked_seats']} Seats canceled',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10),
+                RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: departureFirstName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      TextSpan(
+                        text: '  ${ride['departure']}',
+                        style: TextStyle(
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 13.0),
+                  child: RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: destinationFirstName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '  ${ride['destination']}',
+                          style: TextStyle(
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    '$formattedDate',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String getFirstNameOfCity(String city) {
+    return city.split(' ').first;
+  }
+}

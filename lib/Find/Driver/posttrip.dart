@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travel/Find/Trips/TripsHome.dart';
+import 'package:travel/Find/find.dart';
 import 'package:travel/api/api.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -160,14 +162,10 @@ class _PostTripState extends State<PostTrip> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Trip posted successfully!')),
           );
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => SearchResult(
-                        initialTabIndex: 1,
-                        results: [],
-                        selectedCities: [],
-                      )));
+         Navigator.pushAndRemoveUntil(
+             context,
+             MaterialPageRoute(builder: (context) => FindScreen()),
+             (route) => false,);
 
           // Navigate to search results or another page if needed
         } else {

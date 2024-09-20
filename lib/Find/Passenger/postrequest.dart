@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
+import 'package:travel/Find/find.dart';
 import '../../widget/City_search.dart';
 import '../../api/api.dart';
 
@@ -56,9 +60,21 @@ class _PostrequestState extends State<Postrequest> {
   }
 
   Future<void> _postRequest() async {
+    // Retrieve the token from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token == null) {
+      _showErrorSnackbar('User not authenticated. Please log in again.');
+      return;
+    }
+
     final response = await http.post(
       Uri.parse('${API.api1}/post_a_request'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token', // Include the token here
+      },
       body: jsonEncode({
         'from_location': departureController.text,
         'to_location': destinationController.text,
@@ -72,15 +88,17 @@ class _PostrequestState extends State<Postrequest> {
 
     if (response.statusCode == 201) {
       _clearFields();
+      Get.snackbar('Success', 'Ride requested successfully', snackPosition: SnackPosition.BOTTOM);
+
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => SearchResult(initialTabIndex: 2, results: [], selectedCities: [],)),
+        MaterialPageRoute(builder: (context) => FindScreen()),
       );
-
     } else {
       _showErrorSnackbar(jsonDecode(response.body)['error'] ?? 'Failed to submit request');
     }
   }
+
 
   void _clearFields(){
    setState(() {

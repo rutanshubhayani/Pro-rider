@@ -14,6 +14,7 @@ class InboxChat extends StatefulWidget {
 }
 
 class _InboxChatState extends State<InboxChat> {
+
   final _channel = WebSocketChannel.connect(Uri.parse('ws://202.21.32.153:8081'));
   final TextEditingController _textController = TextEditingController();
   final List<String> _messages = [];

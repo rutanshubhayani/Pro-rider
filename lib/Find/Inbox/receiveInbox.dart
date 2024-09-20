@@ -11,6 +11,8 @@ class ReceiveInbox extends StatefulWidget {
 }
 
 class _ReceiveInboxState extends State<ReceiveInbox> {
+
+
   late WebSocketChannel _channel;
   final List<String> _messages = [];
   String? _loggedInUserId;

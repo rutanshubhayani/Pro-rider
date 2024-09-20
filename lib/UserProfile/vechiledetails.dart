@@ -17,6 +17,24 @@ import '../api/api.dart';
 
 class VehicleDetailsController extends GetxController {
   var isDetailsPosted = false.obs;
+
+
+  @override
+  void onInit() {
+    super.onInit();
+    _loadVehicleDetailsStatus();
+  }
+
+  Future<void> _loadVehicleDetailsStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    isDetailsPosted.value = prefs.getBool('isDetailsPosted') ?? false;
+  }
+
+  Future<void> _saveVehicleDetailsStatus(bool status) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isDetailsPosted', status);
+    isDetailsPosted.value = status;
+  }
 }
 
 class VehicleDetails extends StatefulWidget {
@@ -319,7 +337,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Access the VehicleDetailsController
         final vehicleDetailsController = Get.find<VehicleDetailsController>();
-        vehicleDetailsController.isDetailsPosted.value = true;
+        vehicleDetailsController._saveVehicleDetailsStatus(true);
         setState(() {
           isEditing = false;
           _isSubmitting = false; // Reset loading state

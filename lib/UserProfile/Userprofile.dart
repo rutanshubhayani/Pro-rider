@@ -319,7 +319,7 @@ class _UserProfileState extends State<UserProfile> {
       ),
       body: Padding(
         padding:
-            const EdgeInsets.only(top: 80.0, left: 16, right: 16, bottom: 10),
+            const EdgeInsets.only(top: 30.0, left: 16, right: 16, bottom: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -415,7 +415,7 @@ class _UserProfileState extends State<UserProfile> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => BookedUserRides(),
+                          builder: (context) => AllPostedRides(),
                         ),
                       );
                     },

@@ -11,8 +11,26 @@ import 'package:image/image.dart' as img;
 import '../../api/api.dart';
 
 
+
 class ImageUploadController extends GetxController {
   var isImageUploaded = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _loadUploadStatus();
+  }
+
+  Future<void> _loadUploadStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    isImageUploaded.value = prefs.getBool('isImageUploaded') ?? false;
+  }
+
+  Future<void> saveUploadStatus(bool status) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isImageUploaded', status);
+    isImageUploaded.value = status;
+  }
 }
 
 
@@ -149,10 +167,8 @@ class _VerifyLicenseState extends State<VerifyLicense> {
       final responseString = await response.stream.bytesToString();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Access the ImageUploadController
         final imageUploadController = Get.find<ImageUploadController>();
-        imageUploadController.isImageUploaded.value = true;
-
+        imageUploadController.saveUploadStatus(true); // Save upload status
         Get.snackbar(
           'Success',
           'Image uploaded successfully: ${path.basename(compressedFile.path)}\nSize: ${imageSize / 1024} KB',

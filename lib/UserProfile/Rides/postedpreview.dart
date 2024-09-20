@@ -1,69 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:travel/Find/SearchResult/FindBook.dart';
-import '../Inbox/Inbox.dart';
 
-class FindTripPreview extends StatefulWidget {
+class GetPostedPreview extends StatefulWidget {
   final Map<String, dynamic> tripData;
 
-  const FindTripPreview({Key? key, required this.tripData}) : super(key: key);
+  const GetPostedPreview({Key? key, required this.tripData}) : super(key: key);
 
   @override
-  _FindTripPreviewState createState() => _FindTripPreviewState();
+  _GetPostedPreviewState createState() => _GetPostedPreviewState();
 }
 
-class _FindTripPreviewState extends State<FindTripPreview> {
-  String formattedDate = '';
-
-  List<String> otherItems = []; // List to hold other items
+class _GetPostedPreviewState extends State<GetPostedPreview> {
+  late List<String> otherItems;
   int BookSeats = 1;
   @override
   void initState() {
     super.initState();
-    _printStops();
-
-    print('--------------------------------------------');
+    // _formatDate();
+    _processOtherItems();
+    print('Get trip data : ============================');
     print(widget.tripData);
+  }
 
-    // Format date and time from API
-    String dateString = widget.tripData['leaving_date_time'] ?? '';
-    if (dateString.isNotEmpty) {
-      try {
-        DateTime date = DateTime.parse(dateString);
-        formattedDate = DateFormat('E, MMM d \'at\' h:mma').format(date);
-      } catch (e) {
-        print('Date parsing error: $e');
-      }
+
+  void _processOtherItems() {
+    final otherItemsRaw = widget.tripData['otherItems'];
+
+    if (otherItemsRaw is String) {
+      otherItems = otherItemsRaw.split(',').map((item) => item.trim()).toList();
+    } else if (otherItemsRaw is List) {
+      otherItems = otherItemsRaw.map((item) => item.toString().trim()).toList();
     } else {
-      formattedDate = 'Date not available';
-    }
-
-    // Process other items
-    String otherItemsString = widget.tripData['other_items'] ?? '';
-    if (otherItemsString.isNotEmpty) {
-      otherItems =
-          otherItemsString.split(',').map((item) => item.trim()).toList();
+      otherItems = [];
     }
   }
 
-  void _printStops() {
-    // Extract and print stops
-    var stopsData = widget.tripData['stops'] as List<dynamic>? ?? [];
-    for (var stop in stopsData) {
-      print('Stop ID: ${stop['stop_id']}');
-      print('Stop Name: ${stop['stop_name']}');
-      print('Stop Price: ${stop['stop_price']}');
-      print('Stop Insert Date: ${stop['insdatetime']}');
-      print('Stop Update Date: ${stop['updatetime']}');
-      print('Post A Trip ID: ${stop['post_a_trip_id']}');
-      print('---');
-    }
-  }
-
-  // Function to map luggage code to its corresponding string
-  String getLuggageLabel(String luggageCode) {
-    switch (luggageCode) {
+  String getLuggageLabel(String code) {
+    switch (code) {
       case '0':
         return 'No luggage';
       case '1':
@@ -71,53 +44,45 @@ class _FindTripPreviewState extends State<FindTripPreview> {
       case '2':
         return 'Cabin bag (max. 23 kg)';
       default:
-        return 'Unknown luggage type';
+        return 'Unknown';
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    String departureCityFirstName = widget.tripData['departure']?.split(' ').first ?? 'Unknown';
-    String departureCity = widget.tripData['departure'] ?? 'Unknown Departure';
-    String destinationCityFirstName = widget.tripData['destination']?.split(' ').first ?? 'Unknown';
-    String destinationCity = widget.tripData['destination'] ?? 'Unknown Destination';
-    String userName = widget.tripData['uname'] ?? 'Unknown';
-    String uid = widget.tripData['uid'].toString() ?? 'Unknown';
-    String price = widget.tripData['price'].toString() ?? 'Can\'t fetch price';
-    String luggageCode = widget.tripData['luggage'].toString();
-    // Get the luggage label from the code
-    String luggage = getLuggageLabel(luggageCode);
+    final uid = widget.tripData['uid'].toString() ?? 'Unknown uid';
 
-    // Ensure description is set correctly, falling back to a default value if needed
-    String description = widget.tripData['description']?.isNotEmpty == true
+    final DateTime dateTime = DateTime.parse(widget.tripData['date'].toString());
+    final String formattedDate = DateFormat('EE, MMM d \'at\' h:mm a').format(dateTime);
+    final departureCity = widget.tripData['departure'] ?? 'Unknown Departure';
+    final departureCityFirstName = widget.tripData['departure']?.split(' ').first ?? 'Unknown';
+    final destinationCity = widget.tripData['destination'] ?? 'Unknown Destination';
+    final destinationCityFirstName = widget.tripData['destination']?.split(' ').first ?? 'Unknown';
+    final userName = widget.tripData['userName'] ?? 'Unknown';
+    final price = widget.tripData['price']?.toString() ?? '0';
+    final luggageCode = widget.tripData['luggage']?.toString() ?? '0';
+    final luggage = getLuggageLabel(luggageCode);
+    final description = widget.tripData['description']?.isNotEmpty == true
         ? widget.tripData['description']
-        : '$departureCity to $destinationCity';
+        : 'Trip from $departureCity to $destinationCity';
+    final rideSchedule = widget.tripData['rideSchedule'] ?? 'Unknown';
+    final seatsLeft = widget.tripData['seatsLeft'] ?? 0;
+    final backRowSitting = widget.tripData['backRowSitting'] ?? 'Not specified';
+    final userImage = widget.tripData['userImage'] ?? 'images/Userpfp.png';
+    final stopsData = widget.tripData['stops'] as List<dynamic>? ?? [];
 
-    String ride_schedule = widget.tripData['ride_schedule'] ?? 'Unknown';
-    int seatsLeft = widget.tripData['empty_seats'] ?? 0;
-    String userImage = widget.tripData['profile_photo'] ?? 'images/Userpfp.png';
-
-    // Extract and parse additional items from the API response
-    String otherItemsStr = widget.tripData['other_items'] ?? '';
-    List<String> additionalItems = otherItemsStr.split(',').map((item) => item.trim()).toList();
-
-    // Define a map for luggage icons
     final Map<String, IconData> luggageIcons = {
       'No luggage': Icons.cancel,
       'Backpack': Icons.backpack,
       'Cabin bag (max. 23 kg)': Icons.luggage,
     };
+
     final Map<String, IconData> itemsIcons = {
       'Winter tires': Icons.ac_unit,
       'Skis & snowboards': Icons.downhill_skiing,
       'Pets': Icons.pets,
       'Bikes': Icons.directions_bike,
     };
-    // Extract stops data from tripData
-    var stopsData = widget.tripData['stops'] as List<dynamic>? ?? [];
-
 
     return Scaffold(
       appBar: AppBar(
@@ -186,7 +151,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                   Expanded(
                     child: Text(
                       textAlign: TextAlign.center,
-                      ride_schedule,
+                      rideSchedule,
                       style: TextStyle(fontSize: 16),
                     ),
                   ),
@@ -194,11 +159,11 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                   Expanded(
                     child: Text(
                       textAlign: TextAlign.center,
-                        '\$' + price,
+                      '\$' + price,
                       style: TextStyle(
-                          fontSize: 18,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue
+                        color: Colors.blue,
                       ),
                     ),
                   ),
@@ -207,51 +172,12 @@ class _FindTripPreviewState extends State<FindTripPreview> {
             ),
             SizedBox(height: 10),
             Divider(),
-            IntrinsicHeight(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '$seatsLeft Seats left',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 15),
-                    ),
-                  ),
-                  VerticalDivider(indent: 10,endIndent: 10,),
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.remove,
-                            size: 30,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              if (BookSeats > 1) BookSeats--;
-                            });
-                          },
-                        ),
-                        Text(
-                          '$BookSeats',
-                          style: TextStyle(fontSize: 17),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.add,
-                            size: 30,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              if (BookSeats < seatsLeft) BookSeats++;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                '$seatsLeft Seats left',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 15),
               ),
             ),
             Divider(),
@@ -271,8 +197,8 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                   Text(
                     'Luggage: ',
                     style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
                     ),
                   ),
                   SizedBox(width: 20),
@@ -359,7 +285,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Divider(thickness: 15, color: Colors.black12),
-                if (stopsData == null || stopsData.isEmpty) ...[
+                if (stopsData.isEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
@@ -402,15 +328,11 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                 Divider(thickness: 15, color: Colors.black12),
               ],
             ),
-
-
-            // Assuming otherItems is a list of strings
             Padding(
               padding: const EdgeInsets.only(right: 150.0, bottom: 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  // "Other" label at the top
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: Text(
@@ -421,7 +343,6 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                       ),
                     ),
                   ),
-                  // List of items
                   Padding(
                     padding: const EdgeInsets.only(left: 25.0),
                     child: Column(
@@ -457,63 +378,9 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                 ],
               ),
             ),
-
-
           ],
         ),
-      ),
-      floatingActionButton: Stack(
-        children: [
-          Positioned(
-            right: 82.0,
-            bottom: 0,
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.7, // 80% of screen width
-              child: FloatingActionButton(
-                backgroundColor: Color(0xFFff4400),
-                onPressed: () {
-                  Get.to(() => FindBook(tripData: widget.tripData,seats: BookSeats,), transition: Transition.fade);
-                },
-                child: Row(
-                  children: [
-                    SizedBox(width: 25),
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        'Request to book',
-                        style: TextStyle(
-                          fontSize: 17,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Icon(Icons.arrow_forward_ios_rounded, color: Colors.white)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 0.0,
-            bottom: 0.0,
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.15, // 20% of screen width
-              child: FloatingActionButton(
-                backgroundColor: Color(0xFF2e2c2f),
-                shape: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(60),
-                  borderSide: BorderSide.none,
-                ),
-                onPressed: () {
-                  Get.to(() => InboxChat(userId: uid, userName: userName), transition: Transition.leftToRight);
-                },
-                child: Icon(Icons.message, color: Colors.white, size: 30),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
 }
-

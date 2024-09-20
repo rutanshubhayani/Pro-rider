@@ -75,7 +75,7 @@ class _RideEmailVerifyState extends State<RideEmailVerify> {
   Future<void> _sendOtp() async {
     if (_formKey.currentState?.validate() ?? false) {
       final email = _emailController.text;
-      final url = Uri.parse('http://202.21.32.153:8081/verify-ride');
+      final url = Uri.parse('${API.api1}/verify-ride');
 
       try {
         final response = await http.post(
@@ -94,9 +94,10 @@ class _RideEmailVerifyState extends State<RideEmailVerify> {
           // Pass email to OTPVerificationScreen
           Get.to(() => RideOTPVerify(email: email));
         } else {
+          print(response.body);
           // Handle error response
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to send OTP: ${response.body}'), behavior: SnackBarBehavior.floating),
+            SnackBar(content: Text('Failed to send OTP: Internal server error'), behavior: SnackBarBehavior.fixed),
           );
         }
       } catch (e) {
@@ -271,7 +272,6 @@ class _RideEmailVerifyState extends State<RideEmailVerify> {
 
 
 
-
 class RideOTPVerify extends StatefulWidget {
   final String email;
 
@@ -285,9 +285,15 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
   final List<TextEditingController> _otpControllers = List.generate(6, (index) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
 
+  int? bookedSeats; // Variable to store the booked seats
+  int? postATripId; // Variable to store the post_a_trip_id
+
   @override
   void initState() {
     super.initState();
+
+    // Fetch the booked seats and post_a_trip_id from SharedPreferences
+    _loadPreferences();
 
     for (int i = 0; i < 6; i++) {
       _otpControllers[i].addListener(() {
@@ -305,47 +311,85 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
     }
   }
 
+  Future<void> _loadPreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      bookedSeats = prefs.getInt('bookedSeats');
+      postATripId = prefs.getInt('post_a_trip_id'); // Retrieve post_a_trip_id
+    });
+    print('Loaded booked seats: $bookedSeats');
+    print('Loaded post_a_trip_id: $postATripId'); // Print post_a_trip_id for debugging
+  }
+
+
+
+
   Future<void> _verifyOTP() async {
     String otp = _otpControllers.map((controller) => controller.text).join();
-    final url = Uri.parse('${API.api1}/verify-otp');
+    final otpUrl = Uri.parse('${API.api1}/verify-otp');
+    final bookSeatsUrl = Uri.parse('${API.api1}/book-seat/${postATripId}');
 
     try {
-      final response = await http.post(
-        url,
+      // Verify OTP
+      final otpResponse = await http.post(
+        otpUrl,
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
-        body: jsonEncode(<String, String>{
+        body: jsonEncode(<String, dynamic>{
           'email': widget.email,
           'otp': otp,
+          'post_a_trip_id': postATripId,
         }),
       );
 
-      if (response.statusCode == 200) {
-        Get.to(() => FindScreen());
-        // OTP verified successfully
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ride booked successfully')),
-        );
-        // Navigate to the next screen or perform other actions
-      } else {
-        // Handle error response
-        print('email---------------------------------------');
-        print(widget.email);
+      if (otpResponse.statusCode == 200) {
+        // OTP verified successfully, now get the authToken from SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        final authToken = prefs.getString('authToken');
 
-        print('Failed to verify OTP: ${response.body}');
+        if (authToken == null) {
+          Get.snackbar('Error', 'Authentication token not found', snackPosition: SnackPosition.BOTTOM);
+          return;
+        }
+
+        // Book seats
+        final bookSeatsResponse = await http.post(
+          bookSeatsUrl,
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+            'Authorization': 'Bearer $authToken', // Use the authToken for authorization
+          },
+          body: jsonEncode(<String, dynamic>{
+            'booked_seats': bookedSeats,
+          }),
+        );
+
+        if (bookSeatsResponse.statusCode == 201) {
+          Get.to(() => FindScreen());
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ride booked successfully')),
+          );
+        } else {
+          print('Failed to book seats: ${bookSeatsResponse.body}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to book seats: ${bookSeatsResponse.body}')),
+          );
+        }
+      } else {
+        print('Failed to verify OTP: ${otpResponse.body}');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to verify OTP: ${response.body}')),
+          SnackBar(content: Text('Failed to verify OTP: ${otpResponse.body}')),
         );
       }
     } catch (e) {
-      // Handle exception
       print('Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
     }
   }
+
 
 
 
@@ -356,23 +400,37 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 20.0,right: 20),
+            padding: const EdgeInsets.only(left: 20.0, right: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 Padding(
-                  padding: const EdgeInsets.only(top: 30.0,bottom: 10),
-                  child: Text('Enter OTP sent to your provided email.',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight:   FontWeight.bold
-                  ),),
+                  padding: const EdgeInsets.only(top: 30.0, bottom: 10),
+                  child: Text(
+                    'Enter OTP sent to your provided email.',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold
+                    ),
+                  ),
                 ),
-                Text('Enter provied OTP from email to schedule your memorable journey.',
-                style: TextStyle(
-                  color: Colors.black54
-                )),
+                Text(
+                  'Enter provided OTP from email to schedule your memorable journey.',
+                  style: TextStyle(
+                      color: Colors.black54
+                  ),
+                ),
+                /*if (bookedSeats != null) ...[
+                  SizedBox(height: 20),
+                  Text(
+                    'Booked Seats: $bookedSeats',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],*/
               ],
             ),
           ),
@@ -393,7 +451,7 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
                     decoration: InputDecoration(
                       filled: true,
                       border: OutlineInputBorder(
-                        borderSide: BorderSide.none
+                          borderSide: BorderSide.none
                       ),
                       counterText: '',
                     ),
@@ -417,9 +475,9 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
             child: Row(
               children: [
                 Text(
-                  'Verifying otp',
+                  'Verifying OTP',
                   style: TextStyle(
-                    color: Colors.black54
+                      color: Colors.black54
                   ),
                 ),
                 Padding(
@@ -427,41 +485,42 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
                   child: SizedBox(
                     height: 20,
                     width: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.grey,
-                      )),
+                    child: CircularProgressIndicator(
+                      color: Colors.grey,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
           SizedBox(height: 20),
-      Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: (){
-              _verifyOTP();
-            },
-            child: Text(
-              'Verify OTP',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              elevation: 7,
-              backgroundColor: Color(0xFF2e2c2f),
-              padding: EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  _verifyOTP();
+                },
+                child: Text(
+                  'Verify OTP',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  elevation: 7,
+                  backgroundColor: Color(0xFF2e2c2f),
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
-      ],
+        ],
       ),
     );
   }

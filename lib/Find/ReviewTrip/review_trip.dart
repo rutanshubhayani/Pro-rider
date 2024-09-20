@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../SearchResult/FindBook.dart';
 import '../Trips/GetBook.dart';
@@ -8,11 +9,22 @@ import '../Trips/GetBook.dart';
 
 class FindReviewTrip extends StatelessWidget {
   final Map<String, dynamic> tripData;
+  final int bookedSeats;
 
-  const FindReviewTrip({Key? key, required this.tripData}) : super(key: key);
+  const FindReviewTrip({Key? key, required this.tripData, required  this.bookedSeats}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Save bookedSeats in SharedPreferences
+    _saveBookedSeats() async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('bookedSeats', bookedSeats);
+      print('Booked seats saved: $bookedSeats');
+    }
+
+    // Call this function when the widget is built
+    _saveBookedSeats();
+
     print('review data :');
     print(tripData);
     // Use tripData to display details
@@ -132,7 +144,7 @@ class FindReviewTrip extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: Text('5 Seats',
+                  child: Text('$bookedSeats Seats',
                   style: TextStyle(
                     fontSize: 16,
                   ),),
@@ -177,13 +189,25 @@ class FindReviewTrip extends StatelessWidget {
 
 
 
+
 class GetReviewTrip extends StatelessWidget {
   final Map<String, dynamic> tripData;
+  final int bookedSeats;
 
-  const GetReviewTrip({super.key, required this.tripData});
+  const GetReviewTrip({super.key, required this.tripData, required this.bookedSeats});
 
   @override
   Widget build(BuildContext context) {
+    // Save bookedSeats in SharedPreferences
+    _saveBookedSeats() async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('bookedSeats', bookedSeats);
+      print('Booked seats saved: $bookedSeats');
+    }
+
+    // Call this function when the widget is built
+    _saveBookedSeats();
+
     // Extract trip details from tripData
     String departureCity = tripData['departure'] ?? 'Unknown Departure';
     String destinationCity = tripData['destination'] ?? 'Unknown Destination';
@@ -196,7 +220,6 @@ class GetReviewTrip extends StatelessWidget {
       dateTime = DateTime.tryParse(leavingDateTime);
       if (dateTime == null) {
         // Try parsing with additional formats if needed
-        // For example, if your date might not be in UTC:
         dateTime = DateTime.parse(leavingDateTime + 'Z'); // Append Z for UTC
       }
     } catch (e) {
@@ -311,7 +334,7 @@ class GetReviewTrip extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: Text('5 Seats',
+                  child: Text('$bookedSeats Seats',
                     style: TextStyle(
                       fontSize: 16,
                     ),),

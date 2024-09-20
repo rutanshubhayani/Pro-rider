@@ -149,9 +149,10 @@ class _LoginScreenState extends State<LoginScreen> {
         Get.snackbar('Error', 'Invalid email or password', snackPosition: SnackPosition.BOTTOM);
       } else {
         Get.snackbar('Error', 'Login failed', snackPosition: SnackPosition.BOTTOM);
+        print(response.body);
       }
     } catch (error) {
-      Get.snackbar('Error', 'An error occurred. Please try again. $error',
+      Get.snackbar('Error', 'An internal Server error occurred. Please try again. ',
           snackPosition: SnackPosition.BOTTOM);
       print(error);
     }
@@ -160,6 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       body: Stack(
         children: [
@@ -280,8 +282,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: Icon(Icons.lock),
                           suffixIcon: IconButton(
                             icon: Icon(_obsecureText
-                                ? Icons.visibility
-                                : Icons.visibility_off),
+                                ? Icons.visibility_off
+                                : Icons.visibility),
                             onPressed: () {
                               setState(() {
                                 _obsecureText = !_obsecureText;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:travel/Find/Trips/GetBook.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GetTripPreview extends StatefulWidget {
   final Map<String, dynamic> tripData;
@@ -15,34 +16,39 @@ class GetTripPreview extends StatefulWidget {
 class _GetTripPreviewState extends State<GetTripPreview> {
   late List<String> otherItems;
   int BookSeats = 1;
+
+
   @override
   void initState() {
     super.initState();
-    // _formatDate();
     _processOtherItems();
+
+    // Assuming post_a_trip_id is stored as a String in the API response
+    _savePostATripId(widget.tripData['post_a_trip_id'].toString());
+
     print('Get trip data : ============================');
     print(widget.tripData);
   }
 
-  /*void _formatDate() {
-    final dateValue = widget.tripData['date'];
 
-    if (dateValue is String) {
-      // Attempt to parse the date string
-      try {
-        final date = DateTime.parse(dateValue).toLocal();
-        formattedDate = DateFormat('E, MMM d \'at\' h:mma').format(date);
-      } catch (e) {
-        print('Date parsing error: $e');
-        formattedDate = 'Invalid date format';
-      }
-    } else if (dateValue is DateTime) {
-      // Directly format the DateTime object
-      formattedDate = DateFormat('E, MMM d \'at\' h:mma').format(dateValue.toLocal());
+
+
+
+  void _savePostATripId(String postATripIdStr) async {
+    // Try to parse the post_a_trip_id as an integer
+    int? postATripId = int.tryParse(postATripIdStr);
+
+    if (postATripId != null) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('post_a_trip_id', postATripId);
+
+      // Retrieve and print the saved post_a_trip_id
+      int? savedId = prefs.getInt('post_a_trip_id');
+      print('Saved post_a_trip_id: $savedId');
     } else {
-      formattedDate = 'Date not available';
+      print('Invalid post_a_trip_id: Unable to convert to int.');
     }
-  }*/
+  }
 
   void _processOtherItems() {
     final otherItemsRaw = widget.tripData['otherItems'];
@@ -72,6 +78,8 @@ class _GetTripPreviewState extends State<GetTripPreview> {
   @override
   Widget build(BuildContext context) {
     final uid = widget.tripData['uid'].toString() ?? 'Unknown uid';
+
+    final post_a_trip_id = widget.tripData['post_a_trip_id'].toString();
 
     final DateTime dateTime = DateTime.parse(widget.tripData['date'].toString());
     final String formattedDate = DateFormat('EE, MMM d \'at\' h:mm a').format(dateTime);
@@ -337,7 +345,6 @@ class _GetTripPreviewState extends State<GetTripPreview> {
                       ],
                     ),
                   ),
-                  Icon(Icons.arrow_forward_ios_rounded),
                 ],
               ),
             ),
@@ -452,7 +459,7 @@ class _GetTripPreviewState extends State<GetTripPreview> {
               child: FloatingActionButton(
                 backgroundColor: Color(0xFFff4400),
                 onPressed: () {
-                  Get.to(GetBook(tripData: widget.tripData,), transition: Transition.fade);
+                  Get.to(GetBook(tripData: widget.tripData, bookedSeats: BookSeats,), transition: Transition.fade);
                 },
                 child: Row(
                   children: [

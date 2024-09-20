@@ -12,7 +12,7 @@ import '../../api/api.dart';
 
 class FindBook extends StatefulWidget {
   final Map<String, dynamic> tripData;
-  final Map<String, dynamic> seats;
+  final int seats;
 
   const FindBook({super.key,required this.tripData,required this.seats});
 
@@ -198,7 +198,7 @@ class _FindBookState extends State<FindBook> {
           onTap: () {
             if (_isSwitchOn) {
               print('Next tapped');
-              Get.to(FindReviewTrip(tripData: widget.tripData,),transition: Transition.fade);
+              Get.to(FindReviewTrip(tripData: widget.tripData,bookedSeats : widget.seats),transition: Transition.fade);
             } else {
               print('Switch is off');
               // Optionally, you can show a message or indication to the user

@@ -9,8 +9,9 @@ import 'dart:convert';
 
 class GetBook extends StatefulWidget {
   final Map<String, dynamic> tripData;
+  final int bookedSeats;
 
-  const GetBook({super.key,required this.tripData});
+  const GetBook({super.key,required this.tripData,required this.bookedSeats});
 
   @override
   _GetBookState createState() => _GetBookState();
@@ -194,7 +195,7 @@ class _GetBookState extends State<GetBook> {
           onTap: () {
             if (_isSwitchOn) {
               print('Next tapped');
-              Get.to(() => GetReviewTrip(tripData: widget.tripData,),transition: Transition.fade);
+              Get.to(() => GetReviewTrip(tripData: widget.tripData,bookedSeats: widget.bookedSeats,),transition: Transition.fade);
             } else {
               print('Switch is off');
               // Optionally, you can show a message or indication to the user

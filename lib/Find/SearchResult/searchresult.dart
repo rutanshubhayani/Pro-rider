@@ -4,8 +4,10 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/UserProfile/Userprofile.dart';
 import 'package:travel/api/api.dart';
+import '../../shimmer.dart';
 import 'Findtrippreview.dart';
 import '../Trips/gettrippreview.dart';
 
@@ -349,6 +351,8 @@ class TripsScreen extends StatefulWidget {
 
 class _TripsScreenState extends State<TripsScreen> {
   List<Map<String, dynamic>> trips = [];
+  bool isLoading = true;
+  Map<String, dynamic>? _selectedTrip;
 
   @override
   void initState() {
@@ -357,47 +361,63 @@ class _TripsScreenState extends State<TripsScreen> {
   }
 
   Future<void> fetchTrips() async {
-    final response = await http.get(Uri.parse('${API.api1}/get-trips'));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final authToken = prefs.getString('authToken') ?? '';
 
-    if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      print(response.body);
+      final response = await http.get(
+        Uri.parse('http://202.21.32.153:8081/get-trips'),
+        headers: {'Authorization': 'Bearer $authToken'},
+      );
 
-      List<Map<String, dynamic>> sortedTrips = data.map((trip) {
-        print('Original date: ${trip['leaving_date_time']}'); // Debugging line
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        print(response.body);
 
-        return {
-          'uid': trip['uid'].toString() ?? 'UID not found',
-          'userName': (trip['uname'] ?? '').trim(),
-          'userImage': trip['profile_photo'] ?? '',
-          'seatsLeft': trip['empty_seats'] ?? 0,
-          'departure': trip['departure'] ?? '',
-          'destination': trip['destination'] ?? '',
-          'date': DateTime.tryParse(trip['leaving_date_time']) ?? DateTime.now(),
-          'rideSchedule': trip['ride_schedule'] ?? '',
-          'luggage': trip['luggage'] ?? '',
-          'description': trip['description'] ?? '',
-          'price': trip['price'] ?? 0,
-          'stops': trip['stops'] ?? [],
-          'otherItems': trip['other_items'] ?? '',
-          'backRowSitting': trip['back_row_sitting'] ?? 'Not specified',
-        };
-      }).toList();
+        List<Map<String, dynamic>> sortedTrips = data.map((trip) {
+          return {
+            'uid': trip['uid'].toString() ?? 'UID not found',
+            'post_a_trip_id': trip['post_a_trip_id'].toString() ?? 'Not found',
+            'userName': (trip['uname'] ?? '').trim(),
+            'userImage': trip['profile_photo'] ?? '',
+            'seatsLeft': trip['empty_seats'] ?? 0,
+            'departure': trip['departure'] ?? '',
+            'destination': trip['destination'] ?? '',
+            'date': DateTime.tryParse(trip['leaving_date_time']) ?? DateTime.now(),
+            'rideSchedule': trip['ride_schedule'] ?? '',
+            'luggage': trip['luggage'] ?? '',
+            'description': trip['description'] ?? '',
+            'price': trip['price'] ?? 0,
+            'stops': trip['stops'] ?? [],
+            'otherItems': trip['other_items'] ?? '',
+            'backRowSitting': trip['back_row_sitting'] ?? 'Not specified',
+          };
+        }).toList();
 
-      // Sort trips by date in descending order
-      sortedTrips.sort((a, b) => b['date'].compareTo(a['date']));
+        // Sort trips by date in descending order
+        sortedTrips.sort((a, b) => b['date'].compareTo(a['date']));
 
-      setState(() {
-        trips = sortedTrips;
-      });
-    } else {
-      print('Failed to load trips');
+        setState(() {
+          trips = sortedTrips;
+          isLoading = false;
+        });
+      } else {
+        print('Failed to load trips');
+        setState(() {
+          isLoading = false;
+        });
+      }
+    } catch (error) {
+      print('Error fetching trips: $error');
     }
   }
 
-
-
-
+  Future<void> _onRefresh() async {
+    setState(() {
+      isLoading = true; // Optionally show a loading state while refreshing
+    });
+    await fetchTrips(); // Fetch trips again
+  }
 
   String getFirstNameOfCity(String city) {
     return city.split(' ').first;
@@ -409,158 +429,164 @@ class _TripsScreenState extends State<TripsScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 13),
-      child: ListView.builder(
-        itemCount: trips.length,
-        itemBuilder: (context, index) {
-          final trip = trips[index];
-          String formattedDate = dateFormat.format(trip['date']);
-          String departureFirstName = getFirstNameOfCity(trip['departure']);
-          String destinationFirstName = getFirstNameOfCity(trip['destination']);
+      child: RefreshIndicator(
+        onRefresh: _onRefresh,
+        child: isLoading
+            ? ListView.builder(
+          itemCount: 5, // Number of shimmer loading items
+          itemBuilder: (context, index) {
+            return TripShimmerCard();
+          },
+        )
+            : ListView.builder(
+          itemCount: trips.length,
+          itemBuilder: (context, index) {
+            final trip = trips[index];
+            String formattedDate = dateFormat.format(trip['date']);
+            String departureFirstName = getFirstNameOfCity(trip['departure']);
+            String destinationFirstName = getFirstNameOfCity(trip['destination']);
 
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => GetTripPreview(
-                    tripData: trip,
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GetTripPreview(
+                      tripData: trip,
+                    ),
+                  ),
+                );
+              },
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(
+                    color: Color(0xFF51737A),
+                    width: 1.5,
                   ),
                 ),
-              );
-            },
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(
-                  color: Color(0xFF51737A),
-                  width: 1.5,
-                ),
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
-                          child: Row(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Color(0xFF51737A),
-                                    width: 3,
-                                  ),
-                                ),
-                                child: CircleAvatar(
-                                  radius: 30,
-                                  backgroundImage: trip['userImage'] != null && trip['userImage'].isNotEmpty
-                                      ? NetworkImage(trip['userImage'])
-                                      : AssetImage('images/Userpfp.png') as ImageProvider,
-                                ),
-                              ),
-                              SizedBox(width: 5),
-                              Icon(Icons.verified, color: Colors.blue),
-                              SizedBox(width: 5),
-                              Text(
-                                trip['userName'],
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Spacer(),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 35, bottom: 10.0, right: 20),
-                          child: Text(
-                            '${trip['seatsLeft']} seats left',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 15),
-                          child: RichText(
-                            text: TextSpan(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
+                            child: Row(
                               children: [
-                                TextSpan(
-                                  text: departureFirstName,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Color(0xFF51737A),
+                                      width: 3,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage: trip['userImage'] != null && trip['userImage'].isNotEmpty
+                                        ? NetworkImage(trip['userImage'])
+                                        : AssetImage('images/Userpfp.png') as ImageProvider,
                                   ),
                                 ),
-                                TextSpan(
-                                  text: '  ${trip['departure']}',
+                                SizedBox(width: 5),
+                                Icon(Icons.verified, color: Colors.blue),
+                                SizedBox(width: 5),
+                                Text(
+                                  trip['userName'],
                                   style: TextStyle(
-                                    color: Colors.black54,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 13, left: 15),
-                      child: RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: destinationFirstName,
+                          Spacer(),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 35, bottom: 10.0, right: 20),
+                            child: Text(
+                              '${trip['seatsLeft']} seats left',
                               style: TextStyle(
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black,
                               ),
                             ),
-                            TextSpan(
-                              text: '  ${trip['destination']}',
-                              style: TextStyle(
-                                color: Colors.black54,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 15),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: departureFirstName,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: '  ${trip['departure']}',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 13, left: 15),
+                        child: RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: destinationFirstName,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '  ${trip['destination']}',
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 13.0, left: 15),
-                      child: Text(
-                        formattedDate,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      Padding(
+                        padding: const EdgeInsets.only(top: 13.0, left: 15, bottom: 10),
+                        child: Text(
+                          formattedDate,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(height: 10),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 }
-
-
-
 
 
 
@@ -579,6 +605,7 @@ class RequestsScreen extends StatefulWidget {
 
 class _RequestsScreenState extends State<RequestsScreen> {
   List<dynamic> requests = [];
+  bool isLoading = true; // Add loading state
 
   @override
   void initState() {
@@ -587,36 +614,54 @@ class _RequestsScreenState extends State<RequestsScreen> {
   }
 
   Future<void> fetchRequests() async {
-    final response = await http.get(Uri.parse('http://202.21.32.153:8081/post_requests_get'));
+    setState(() {
+      isLoading = true; // Set loading to true when fetching
+    });
 
-    if (response.statusCode == 200) {
-      List<dynamic> fetchedRequests = json.decode(response.body);
+    try {
+      final response = await http.get(Uri.parse('http://202.21.32.153:8081/post_requests_get'));
 
-      // Sort requests by departure_date in descending order
-      fetchedRequests.sort((a, b) {
-        DateTime dateA = DateTime.parse(a['departure_date']);
-        DateTime dateB = DateTime.parse(b['departure_date']);
-        return dateB.compareTo(dateA); // For descending order
-      });
+      print('requests response');
+      print(response.body);
+      if (response.statusCode == 200) {
+        List<dynamic> fetchedRequests = json.decode(response.body);
 
+        // Sort requests by departure_date in descending order
+        fetchedRequests.sort((a, b) {
+          DateTime dateA = DateTime.parse(a['departure_date']);
+          DateTime dateB = DateTime.parse(b['departure_date']);
+          return dateB.compareTo(dateA); // For descending order
+        });
+
+        setState(() {
+          requests = fetchedRequests;
+          isLoading = false; // Set loading to false after fetching
+        });
+      } else {
+        throw Exception('Failed to load requests');
+      }
+    } catch (error) {
+      print('Error fetching requests: $error');
       setState(() {
-        requests = fetchedRequests;
+        isLoading = false; // Handle error and stop loading
       });
-    } else {
-      throw Exception('Failed to load requests');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    DateTime now = DateTime.now();
-    String formattedDate = DateFormat('E, MMM d \'at\' h:mma').format(now);
-
     return Padding(
       padding: const EdgeInsets.only(left: 13.0, right: 13, top: 13),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
+      child: RefreshIndicator(
+        onRefresh: fetchRequests, // Call fetchRequests on refresh
+        child: isLoading // Show shimmer when loading
+            ? ListView.builder(
+          itemCount: 5, // Number of shimmer items
+          itemBuilder: (context, index) {
+            return TripShimmerCard(); // Your shimmer loading widget
+          },
+        )
+            : ListView(
           children: requests.map((request) {
             // Parse the departure date from the API response
             DateTime departureDate = DateTime.parse(request['departure_date']);
@@ -659,17 +704,20 @@ class _RequestsScreenState extends State<RequestsScreen> {
                                       width: 3,
                                     ),
                                   ),
-                                  child: CircleAvatar(
+                                  child:CircleAvatar(
                                     radius: 30,
-                                    backgroundImage: NetworkImage('https://picsum.photos/200/300'),
+                                    backgroundImage: request['profile_photo'] != null && request['profile_photo'].isNotEmpty
+                                        ? NetworkImage(request['profile_photo'])
+                                        : AssetImage('images/Userpfp.png') as ImageProvider<Object>, // Cast to ImageProvider<Object>
                                   ),
+
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.all(8.0),
+                                  padding: const EdgeInsets.only(left: 8.0),
                                   child: Icon(Icons.verified, color: Colors.blue),
                                 ),
                                 Text(
-                                  'Chandeep',
+                                  ' ${request['uname']}', // You can replace with request['userName'] if available
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
