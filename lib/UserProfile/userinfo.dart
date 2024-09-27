@@ -126,7 +126,7 @@ class _UserInfoState extends State<UserInfo> {
 
       try {
         final response = await http.put(
-          Uri.parse('http://202.21.32.153:8081/updateUser'),
+          Uri.parse('${API.api1}/updateUser'),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token', // Ensure this is correct
@@ -389,7 +389,7 @@ class _UserInfoState extends State<UserInfo> {
             ),
             style: ElevatedButton.styleFrom(
               elevation: 7,
-              backgroundColor: Color(0xFF2e2c2f),
+              backgroundColor: Color(0xFF2d7af7),
               padding: EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

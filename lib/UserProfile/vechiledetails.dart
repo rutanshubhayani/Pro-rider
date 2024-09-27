@@ -143,7 +143,8 @@ class _VehicleDetailsState extends State<VehicleDetails> {
         }
       }
     } catch (e) {
-      print("Error picking image: $e");
+      print(e);
+      print("Error picking image");
     }
   }
 
@@ -220,8 +221,9 @@ class _VehicleDetailsState extends State<VehicleDetails> {
         });
       }
     } catch (e) {
+      print(e);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('An error occurred: $e'),
+        content: Text('An error server error occurred'),
       ));
       setState(() {
         _isLoadingImage = false;  // End loading
@@ -275,8 +277,9 @@ class _VehicleDetailsState extends State<VehicleDetails> {
         });
       }
     } catch (e) {
+      print(e);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('An error occurred: $e'),
+        content: Text('An server error occurred'),
       ));
       setState(() {
         _isLoadingImage = false;  // End loading
@@ -356,11 +359,12 @@ class _VehicleDetailsState extends State<VehicleDetails> {
         print('Error details: $responseBody');
       }
     } catch (e) {
+      print(e);
       setState(() {
         _isSubmitting = false; // Reset loading state
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('An error occurred: $e'),
+        content: Text('An server error occurred'),
       ));
     }
   }
@@ -697,7 +701,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                               : Text('Save & Continue'),
                           style: ElevatedButton.styleFrom(
                             elevation: 7,
-                            backgroundColor: Color(0xFF2e2c2f),
+                            backgroundColor: Color(0xFF2d7af7),
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -711,10 +715,10 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: toggleEditing,
-                        child: Text(isEditing ? 'Cancel' : 'Edit'),
+                        child: Text(isEditing ? 'Cancel' : 'Upload'),
                         style: ElevatedButton.styleFrom(
                           elevation: 7,
-                          backgroundColor: Color(0xFF2e2c2f),
+                          backgroundColor: Color(0xFF2d7af7),
                           foregroundColor: Colors.white,
                           padding: EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(

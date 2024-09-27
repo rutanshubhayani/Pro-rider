@@ -499,7 +499,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.15, // 20% of screen width
               child: FloatingActionButton(
-                backgroundColor: Color(0xFF2e2c2f),
+                backgroundColor: Color(0xFF2d7af7),
                 shape: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(60),
                   borderSide: BorderSide.none,

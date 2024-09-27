@@ -5,7 +5,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/UserProfile/Userprofile.dart';
 import 'dart:convert';
-import 'package:travel/auth/verifyotp.dart'; // For converting response to JSON
+import 'package:travel/auth/verifyotp.dart';
+
+import '../api/api.dart'; // For converting response to JSON
 
 
 
@@ -78,7 +80,7 @@ class _ChangePasswordState extends State<ChangePassword> {
 
       try {
         final response = await http.post(
-          Uri.parse('http://202.21.32.153:8081/changepassword'),
+          Uri.parse('${API.api1}/changepassword'),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
@@ -108,9 +110,10 @@ class _ChangePasswordState extends State<ChangePassword> {
           print(responseBody);
         }
       } catch (e) {
+        print(e);
         // Handle any exceptions
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Exception: $e')),
+          SnackBar(content: Text('Server error occured')),
         );
         print(e);
       }
@@ -262,7 +265,7 @@ class _ChangePasswordState extends State<ChangePassword> {
                   ),
                   style: ElevatedButton.styleFrom(
                     elevation: 7,
-                    backgroundColor: Color(0xFF2e2c2f),
+                    backgroundColor: Color(0xFF2d7af7),
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -289,7 +292,7 @@ class ForgotPassword extends StatefulWidget {
 
 class _ForgotPasswordState extends State<ForgotPassword> {
   final TextEditingController _emailController = TextEditingController();
-  final String _apiUrl = 'http://202.21.32.153:8081/forgot-password';
+  final String _apiUrl = '${API.api1}/forgot-password';
 
   Future<void> _sendForgotPasswordRequest() async {
     final email = _emailController.text;
@@ -337,7 +340,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
     } catch (e) {
       // Show error message if request fails
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send OTP: $e')),
+        SnackBar(content: Text('Failed to send OTP: Server Error')),
       );
       print('$e');
     }
@@ -377,7 +380,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                 ),
                 style: ElevatedButton.styleFrom(
                   elevation: 7,
-                  backgroundColor: Color(0xFF2e2c2f),
+                  backgroundColor: Color(0xFF2d7af7),
                   padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),

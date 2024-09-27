@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -78,8 +80,6 @@ class _VerifyLicenseState extends State<VerifyLicense> {
     final token = prefs.getString('authToken') ?? '';
 
     final directory = await getApplicationDocumentsDirectory();
-
-    // Generate a unique filename using UUID
     final uniqueFilename = '${Uuid().v4()}.jpg';
     final imagePath = path.join(directory.path, uniqueFilename);
     final File imageFile = File(imagePath);
@@ -96,40 +96,88 @@ class _VerifyLicenseState extends State<VerifyLicense> {
       );
 
       if (response.statusCode == 200) {
-        await imageFile.writeAsBytes(response.bodyBytes);
-        print(response.body);
-        Get.snackbar(
-          'Success',
-          'Image fetched from database and saved to $imagePath',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
+        final jsonResponse = json.decode(response.body);
+        final base64Image = jsonResponse['image'];
+        final status = jsonResponse['status'];
 
-        // Save image path to SharedPreferences
+        print('Retrieved status: $status'); // Debugging
+
+        // Decode the base64 image
+        final imageBytes = base64Decode(base64Image);
+        await imageFile.writeAsBytes(imageBytes);
         await prefs.setString('storedImagePath', imagePath);
 
         if (mounted) {
           setState(() {
-            _image = XFile(imageFile.path);
+            // Clear the image if status is 2
+            if (status == 2 || status == '2') {
+              _image = null;
+            } else {
+              _image = XFile(imageFile.path);
+            }
           });
+        }
+
+        print('License status: $status');
+
+        // Check the status and navigate based on its value
+        if (mounted) {
+          if (status == 1 || status == '1') {
+            final imageUploadController = Get.find<ImageUploadController>();
+            imageUploadController.saveUploadStatus(true); // Save upload status
+            print('Navigating to PhotoDisplayScreen');
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PhotoDisplayScreen(imagePath: imageFile.path),
+              ),
+            );
+          } else if (status == 2 || status == '2') {
+            print('Navigating to VerifyLicenseScreen');
+            // Do not navigate or show any further UI for status 2
+          } else if (status == 0 || status == '0') {
+            print('Navigating to WaitingForApprovalScreen');
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => WaitingForApprovalScreen(imagePath: imageFile.path),
+              ),
+            );
+          } else {
+            print('Unhandled status: $status');
+            // Handle any other statuses if needed, or do nothing
+          }
+        }
+
+        // Display success message with status
+        if (mounted) {
+          // Show success snackbar if needed
         }
       } else {
         print(response.body);
+        if (mounted) {
+         /* Get.snackbar(
+            'Error',
+            'Failed to fetch image',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );*/
+        }
       }
     } catch (error) {
+      print(error);
       if (mounted) {
-        Get.snackbar(
+      /*  Get.snackbar(
           'Error',
-          'An error occurred: $error',
+          'A server error occurred',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
-        );
+        );*/
       }
     }
   }
-
 
 
 
@@ -167,35 +215,37 @@ class _VerifyLicenseState extends State<VerifyLicense> {
       final responseString = await response.stream.bytesToString();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final imageUploadController = Get.find<ImageUploadController>();
-        imageUploadController.saveUploadStatus(true); // Save upload status
+
         Get.snackbar(
           'Success',
-          'Image uploaded successfully: ${path.basename(compressedFile.path)}\nSize: ${imageSize / 1024} KB',
+          'Image uploaded successfully',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
 
-        Navigator.push(
+
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => PhotoDisplayScreen(imagePath: compressedFile.path),
+            builder: (context) => WaitingForApprovalScreen(imagePath: compressedFile.path),
           ),
         );
       } else {
+        print(responseString);
         Get.snackbar(
           'Error',
-          'Failed to upload image: $responseString',
+          'Failed to upload image',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
       }
     } catch (error) {
+      print(error);
       Get.snackbar(
         'Error',
-        'An error occurred: $error',
+        'An server error occurred',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -226,12 +276,7 @@ class _VerifyLicenseState extends State<VerifyLicense> {
       });
     }
   }
-
-  void _deleteImage() {
-    setState(() {
-      _image = null;
-    });
-  }
+  
 
   void _showImageSourceBottomSheet() {
     showModalBottomSheet(
@@ -285,78 +330,115 @@ class _VerifyLicenseState extends State<VerifyLicense> {
       appBar: AppBar(
         title: Text('Photo Picker'),
       ),
-      body: SafeArea(
-        child: Center(
-          child: FutureBuilder<void>(
-            future: _fetchImageFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Center(
+      body: Padding(
+        padding: const EdgeInsets.all(15.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info,
+                  color: Colors.blue, // Change color as needed
+                  size: 20, // Adjust size if needed
+                ),
+                SizedBox(width: 4), // Small space for visual separation
+                Expanded(
                   child: Text(
-                    'Error: ${snapshot.error}',
-                    style: TextStyle(color: Colors.red),
+                    'Note: Your license application has been rejected. Please review the requirements and reapply with the necessary corrections.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.black54,
+                    ),
                   ),
-                );
-              } else {
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Stack(
-                      alignment: Alignment.topRight,
-                      children: [
-                        GestureDetector(
-                          onTap: _showImageSourceBottomSheet,
-                          child: Container(
-                            width: 300,
-                            height: 200,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey, width: 2),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: _image == null
-                                ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.credit_card, size: 50, color: Colors.grey),
-                                  Text(
-                                    'Add Photo',
-                                    style: TextStyle(color: Colors.black54),
-                                  ),
-                                ],
-                              ),
-                            )
-                                : Image.file(
-                              File(_image!.path),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                ),
+              ],
+            ),
+
+            SizedBox(height: 25,),
+            SafeArea(
+              child: Center(
+                child: FutureBuilder<void>(
+                  future: _fetchImageFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          'Error: ${snapshot.error}',
+                          style: TextStyle(color: Colors.red),
                         ),
-                        if (_image != null)
-                          IconButton(
-                            icon: Icon(Icons.delete, color: Colors.red),
-                            onPressed: _deleteImage,
+                      );
+                    } else {
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Stack(
+                            alignment: Alignment.topRight,
+                            children: [
+                              GestureDetector(
+                                onTap: _showImageSourceBottomSheet,
+                                child: Container(
+                                  width: 300,
+                                  height: 200,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey, width: 2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: _image == null
+                                      ? Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.credit_card, size: 50, color: Colors.grey),
+                                        Text(
+                                          'Add Photo',
+                                          style: TextStyle(color: Colors.black54),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                      : Image.file(
+                                    File(_image!.path),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _isUploading
-                          ? null // Disable the button if uploading
-                          : () async {
-                        await _submitImage(); // Upload the selected image
-                      },
-                      child: _isUploading
-                          ? CircularProgressIndicator(color: Colors.white) // Show loading spinner
-                          : Text('Submit'),
-                    ),
-                  ],
-                );
-              }
-            },
-          ),
+                          SizedBox(height: 20),
+                          SizedBox(
+                            height: 45,
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0XFF008000),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)
+                                )
+                              ),
+                              onPressed: _isUploading
+                                  ? null // Disable the button if uploading
+                                  : () async {
+                                await _submitImage(); // Upload the selected image
+                              },
+                              child: _isUploading
+                                  ? CircularProgressIndicator(color: Colors.white) // Show loading spinner
+                                  : Text('Submit'),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -383,21 +465,104 @@ class PhotoDisplayScreen extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator());
             } else if (snapshot.hasError) {
+              print('Photo display error: ${snapshot.error}');
               return Center(
                 child: Text(
-                  'Error: ${snapshot.error}',
+                  'Error occurred',
                   style: TextStyle(color: Colors.red),
                 ),
               );
             } else if (snapshot.hasData) {
-              return Image.file(
-                snapshot.data!,
-                fit: BoxFit.cover,
+              return Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black12,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.grey,
+                          width: 2
+                        )
+                      ),
+                      height: MediaQuery.of(context).size.height * 0.4,//30% of screen height
+                      width: double.infinity,
+                      child: Image.file(
+                        snapshot.data!,
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 20.0,
+                    right: 20.0,
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                        size: 30.0,
+                      ),
+                    ),
+                  ),
+                ],
               );
             } else {
               return Center(child: Text('No image available'));
             }
           },
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+class WaitingForApprovalScreen extends StatelessWidget {
+  final String imagePath;
+
+  WaitingForApprovalScreen({required this.imagePath});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Waiting for Approval'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10.0), // Set the radius for rounded corners
+              child: Image.file(
+                File(imagePath),
+                fit: BoxFit.cover,
+                height: 300,
+                width: double.infinity,
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Waiting for Approval',
+              textAlign: TextAlign.left,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 5.0, top: 5),
+              child: Text(
+                'Your License is under observation of admin. You will be able to continue your journey with others once your license is verified.',
+              ),
+            ),
+          ],
         ),
       ),
     );

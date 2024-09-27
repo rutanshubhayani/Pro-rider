@@ -5,11 +5,9 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:travel/Find/Driver/updatetrip.dart';
+import 'package:travel/UserProfile/PostedRides/updatetrip.dart';
 import 'package:travel/UserProfile/PostedRides/postedpreview.dart';
 import 'package:travel/api/api.dart';
-
-import '../../Find/Trips/gettrippreview.dart';
 import '../../Find/Trips/trips.dart';
 
 class PostedUserRides extends StatelessWidget {
@@ -108,7 +106,7 @@ class _AllPostedRidesState extends State<AllPostedRides> {
       return;
     }
 
-    final url = Uri.parse('http://202.21.32.153:8081/get-user-posts/$uid');
+    final url = Uri.parse('${API.api1}/get-user-posts/$uid');
     try {
       final response = await http.get(url);
 
@@ -178,10 +176,11 @@ class _AllPostedRidesState extends State<AllPostedRides> {
     final authToken = prefs.getString('authToken') ?? '';
 
     print('Attempting to cancel trip with postId: $postId');
+    Map<String, dynamic>? cancelledTrip; // To store the cancelled trip temporarily
 
     try {
       final response = await http.post(
-        Uri.parse('http://202.21.32.153:8081/cancel-trip/$postId'),
+        Uri.parse('${API.api1}/cancel-trip/$postId'),
         headers: {
           'Authorization': 'Bearer $authToken',
           'Content-Type': 'application/json',
@@ -193,16 +192,34 @@ class _AllPostedRidesState extends State<AllPostedRides> {
 
       if (response.statusCode == 200) {
         setState(() {
-          // Remove the canceled trip from the list
+          // Store the cancelled trip
+          cancelledTrip = userTrips.firstWhere((trip) => trip['post_a_trip_id'].toString() == postId);
+          // Remove the cancelled trip from the list
           userTrips.removeWhere((trip) => trip['post_a_trip_id'].toString() == postId);
         });
-        Get.snackbar('Success', 'Trip cancelled successfully', snackPosition: SnackPosition.BOTTOM);
+
+        // Show snackbar with undo option
+        Get.snackbar(
+          'Success',
+          'Trip cancelled successfully',
+          snackPosition: SnackPosition.BOTTOM,
+          mainButton: TextButton(
+            onPressed: () {
+              // Restore the cancelled trip
+              setState(() {
+                userTrips.add(cancelledTrip!);
+              });
+              Get.closeCurrentSnackbar(); // Close the snackbar
+            },
+            child: Text('Undo', style: TextStyle(color: Colors.blue,fontSize: 16)),
+          ),
+        );
       } else {
-        Get.snackbar('Error', 'Failed to cancel trip', snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('Error', 'Failed to cancel trip.', snackPosition: SnackPosition.BOTTOM);
         print('Failed to cancel trip: ${response.statusCode}');
       }
     } catch (error) {
-      Get.snackbar('Error', 'An error occurred while canceling the trip: $error', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Error', 'An error occurred while canceling the trip.', snackPosition: SnackPosition.BOTTOM);
       print('Error canceling trip: $error');
     }
   }
@@ -415,7 +432,7 @@ class _AllPostedRidesState extends State<AllPostedRides> {
                                   },
                                   style: ElevatedButton.styleFrom(
                                     foregroundColor: Colors.white,
-                                    backgroundColor: Colors.red,
+                                    backgroundColor: Color(0XFFd90000),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10)
                                   )
@@ -434,7 +451,7 @@ class _AllPostedRidesState extends State<AllPostedRides> {
                                   child: Text('Edit Ride'),
                                   style: ElevatedButton.styleFrom(
                                     foregroundColor: Colors.white,
-                                    backgroundColor: Colors.blue,
+                                    backgroundColor: Color(0xFF2d7af7),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10)
                                     )
@@ -619,7 +636,7 @@ class _CancelledPostedRidesState extends State<CancelledPostedRides> {
     }
 
     final response = await http.post(
-      Uri.parse('http://202.21.32.153:8081/update-trip-status/$postATripId'),
+      Uri.parse('${API.api1}/update-trip-status/$postATripId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -687,7 +704,7 @@ class _CancelledPostedRidesState extends State<CancelledPostedRides> {
           },
         )
             : canceledTrips.isEmpty
-            ? Center(child: Text('No canceled trips found'))
+            ? Center(child: Text('No cancelled trips found'))
             : ListView.builder(
           itemCount: canceledTrips.length,
           itemBuilder: (context, index) {
@@ -826,7 +843,7 @@ class _CancelledPostedRidesState extends State<CancelledPostedRides> {
                             onPressed: () => _showConfirmationDialog(trip['post_a_trip_id'].toString()),
                             child: Text('Restore'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green, // Background color
+                              backgroundColor:Color(0XFF008000), // Background color
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10)

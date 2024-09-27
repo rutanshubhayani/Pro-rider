@@ -9,7 +9,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:travel/api/api.dart';
 import 'package:travel/Find/SearchResult/Findtrippreview.dart';
-import 'package:travel/shimmer.dart';
+import 'package:travel/widget/shimmer.dart';
 import 'gettrippreview.dart';
 
 
@@ -99,7 +99,7 @@ class _ActiveScreenState extends State<ActiveScreen> {
       final authToken = prefs.getString('authToken') ?? '';
 
       final response = await http.get(
-        Uri.parse('http://202.21.32.153:8081/get-trips'),
+        Uri.parse('${API.api1}/get-trips'),
         headers: {'Authorization': 'Bearer $authToken'},
       );
 
@@ -170,6 +170,17 @@ class _ActiveScreenState extends State<ActiveScreen> {
           itemBuilder: (context, index) {
             return TripShimmerCard();
           },
+        )
+            : trips.isEmpty
+            ? Center(
+          child: Text(
+            'No trips found',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black54,
+            ),
+          ),
         )
             : ListView.builder(
           itemCount: trips.length,
@@ -417,6 +428,17 @@ class _RecentScreenState extends State<RecentScreen> {
             return TripShimmerCard(); // Your shimmer loading widget
           },
         )
+            : trips.isEmpty
+            ? Center(
+          child: Text(
+            'No trips found',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black54,
+            ),
+          ),
+        )
             : ListView.builder(
           itemCount: trips.length,
           itemBuilder: (context, index) {
@@ -466,10 +488,34 @@ class _RecentScreenState extends State<RecentScreen> {
                                   ),
                                   child: CircleAvatar(
                                     radius: 30,
-                                    backgroundImage: trip['userImage'] != null && trip['userImage'].isNotEmpty
-                                        ? NetworkImage(trip['userImage'])
-                                        : AssetImage('images/Userpfp.png') as ImageProvider,
+                                    backgroundColor: Colors.transparent, // Optional: set a background color if needed
+                                    child: trip['userImage'] != null && trip['userImage'].isNotEmpty
+                                        ? ClipOval(
+                                      child: Image.network(
+                                        trip['userImage'],
+                                        width: 60,  // Adjust according to CircleAvatar size
+                                        height: 60, // Same size as the CircleAvatar (2 * radius)
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Image.asset(
+                                            'images/Userpfp.png',
+                                            width: 60,  // Same size as CircleAvatar
+                                            height: 60, // Same size as CircleAvatar
+                                            fit: BoxFit.cover,
+                                          );
+                                        },
+                                      ),
+                                    )
+                                        : ClipOval(
+                                      child: Image.asset(
+                                        'images/Userpfp.png',
+                                        width: 60,  // Same size as CircleAvatar
+                                        height: 60, // Same size as CircleAvatar
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
                                   ),
+
                                 ),
                                 SizedBox(width: 5),
                                 Icon(Icons.verified, color: Colors.blue),

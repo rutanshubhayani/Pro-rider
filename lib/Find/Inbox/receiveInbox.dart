@@ -21,7 +21,7 @@ class _ReceiveInboxState extends State<ReceiveInbox> {
   void initState() {
     super.initState();
     _loadUserId();
-    _channel = WebSocketChannel.connect(Uri.parse('ws://202.21.32.153:8081'));
+    _channel = WebSocketChannel.connect(Uri.parse('ws://202.21.32.153:  8081'));
 
     _channel.stream.listen((message) {
       final decodedMessage = json.decode(message);

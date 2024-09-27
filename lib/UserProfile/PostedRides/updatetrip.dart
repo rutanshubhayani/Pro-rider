@@ -61,11 +61,9 @@ class _UpdateTripState extends State<UpdateTrip> {
   ];
   late List<bool> isSelected2;
 
-  int _selectedChoice = 1;
   int selectedSeats = 1;
-  bool _isChecked = false;
+  bool _isChecked = true;
   bool _isEditingStops = false;
-
 
   void _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
@@ -124,7 +122,7 @@ class _UpdateTripState extends State<UpdateTrip> {
         isSelected1[2] = true; // "Cabin bag"
         break;
       default:
-      // Remains as no selection
+        // Remains as no selection
         break;
     }
   }
@@ -149,9 +147,6 @@ class _UpdateTripState extends State<UpdateTrip> {
     }
   }
 
-
-
-
   Future<void> fetchVehicleData() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('authToken');
@@ -162,7 +157,7 @@ class _UpdateTripState extends State<UpdateTrip> {
     }
 
     final response = await http.get(
-      Uri.parse('http://202.21.32.153:8081/get-vehicle-data'),
+      Uri.parse('${API.api1}/get-vehicle-data'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -194,8 +189,10 @@ class _UpdateTripState extends State<UpdateTrip> {
     String dateTimeString = widget.tripData['date'].toString();
     DateTime parsedDateTime = DateTime.parse(dateTimeString);
     // Format the date and time as needed
-    String formattedDate = "${parsedDateTime.year}-${parsedDateTime.month.toString().padLeft(2, '0')}-${parsedDateTime.day.toString().padLeft(2, '0')}";
-    String formattedTime = "${parsedDateTime.hour.toString().padLeft(2, '0')}:${parsedDateTime.minute.toString().padLeft(2, '0')}";
+    String formattedDate =
+        "${parsedDateTime.year}-${parsedDateTime.month.toString().padLeft(2, '0')}-${parsedDateTime.day.toString().padLeft(2, '0')}";
+    String formattedTime =
+        "${parsedDateTime.hour.toString().padLeft(2, '0')}:${parsedDateTime.minute.toString().padLeft(2, '0')}";
 
     // Set the values to the controllers
     dateController.text = formattedDate;
@@ -282,6 +279,7 @@ class _UpdateTripState extends State<UpdateTrip> {
 
     if (stop.isNotEmpty && price.isNotEmpty) {
       setState(() {
+        // Append the new stop to the existing list
         stopsAndPrices.add({
           'stop': stop,
           'price': price,
@@ -310,18 +308,34 @@ class _UpdateTripState extends State<UpdateTrip> {
 
 
   Future<void> _updateTrip() async {
-    // Assuming you have a way to retrieve `post_a_trip_id` from `widget.tripData`
-    final postAtripID = widget.tripData['post_a_trip_id'].toString() ?? 'Unknown uid';
+    final postAtripID = widget.tripData['post_a_trip_id'].toString();
 
     if (_formKey.currentState?.validate() ?? false) {
       final url = Uri.parse('${API.api1}/update-trip/$postAtripID');
 
+      // Prepare the merged stops to send in the request
+      final List<Map<String, dynamic>> mergedStops = [
+        // Existing stops from the API response
+        if (widget.tripData['stops'] != null)
+          ...widget.tripData['stops'].map<Map<String, dynamic>>((stop) => {
+            'stop_name': stop['stop_name'] ?? '', // Safely handle nulls
+            'stop_price': stop['stop_price']?.toString() ?? '0', // Convert price to String
+          }).toList(),
+
+        // Newly added stops
+        ...stopsAndPrices.map<Map<String, dynamic>>((item) => {
+          'stop_name': item['stop'] ?? '',
+          'stop_price': item['price'] ?? '0',
+        }),
+      ];
+
+      // Create the body for the API request
       final Map<String, dynamic> body = {
         'departure': departureController.text,
         'destination': destinationController.text,
         'price': dpriceController.text,
         'ride_schedule': isSelectedTrip[0] ? 'One-time trip' : 'Recurring trip',
-        'leaving_date_time': '${dateController.text} ${timeController.text}',
+        'leaving_date_time': '${dateController.text} ${timeController.text}', // Ensure the format is YYYY-MM-DD HH:mm
         'luggage': isSelected1.indexWhere((element) => element),
         'back_row_sitting': isSelectedPeople[0] ? 'Max 2 people' : '3 people',
         'other_items': choices
@@ -332,18 +346,12 @@ class _UpdateTripState extends State<UpdateTrip> {
             .join(', '),
         'empty_seats': selectedSeats,
         'description': descriptionController.text,
-        'stops': stopsAndPrices
-            .map((stopAndPrice) => {
-          'name': stopAndPrice['stop'],
-          'price': stopAndPrice['price'],
-        })
-            .toList(),
+        'stops': mergedStops, // Include the properly formatted stops here
       };
 
-      print('Sending data: $body');
+      print('Sending data: $body'); // Check that the data being sent includes stops
 
       try {
-        // Retrieve the token from SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         final authToken = prefs.getString('authToken');
 
@@ -360,14 +368,11 @@ class _UpdateTripState extends State<UpdateTrip> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Trip updated successfully!')),
           );
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => PostedUserRides(),
-            ),
+            MaterialPageRoute(builder: (context) => PostedUserRides()),
           );
-
-          // Navigate to search results or another page if needed
+          print('Response from server: ${response.body}'); // Log response
         } else {
           print('Failed to update trip: ${response.body}');
           ScaffoldMessenger.of(context).showSnackBar(
@@ -385,19 +390,17 @@ class _UpdateTripState extends State<UpdateTrip> {
 
 
 
+
   void _showErrorSnackbar(String message) {
     final snackBar = SnackBar(
       content: Text(message),
       backgroundColor:
-      Colors.red, // Set the background color to red to indicate an error
+          Colors.red, // Set the background color to red to indicate an error
       behavior: SnackBarBehavior.floating, // Make the snackbar float
     );
 
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
-
-
-
 
   String getLuggageLabel(String code) {
     switch (code) {
@@ -428,13 +431,17 @@ class _UpdateTripState extends State<UpdateTrip> {
   @override
   Widget build(BuildContext context) {
     final uid = widget.tripData['uid'].toString() ?? 'Unknown uid';
-    final postAtripID = widget.tripData['post_a_trip_id'].toString() ?? 'Unknown uid';
+    final postAtripID =
+        widget.tripData['post_a_trip_id'].toString() ?? 'Unknown uid';
 
     // Assuming widget.tripData['stops'] contains the stop details
     final stops = widget.tripData['stops'] ?? [];
-    final stop = stops.isNotEmpty ? stops.first : null;
 
-    final DateTime dateTime =
+/*
+    final stop = stops.isNotEmpty ? stops.first : null;
+*/
+
+    /* final DateTime dateTime =
         DateTime.parse(widget.tripData['date'].toString());
     final String formattedDate =
         DateFormat('EE, MMM d \'at\' h:mm a').format(dateTime);
@@ -470,7 +477,7 @@ class _UpdateTripState extends State<UpdateTrip> {
       'Pets': Icons.pets,
       'Bikes': Icons.directions_bike,
     };
-
+*/
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -769,70 +776,102 @@ class _UpdateTripState extends State<UpdateTrip> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Padding(
-                                    padding: const EdgeInsets.all(10.0),
-                                    child: ElevatedButton(
-                                      style: ButtonStyle(
-                                        shape: MaterialStateProperty.all(
-                                          RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                                12.0), // Adjust the radius as needed
-                                          ),
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: ElevatedButton(
+                                    style: ButtonStyle(
+                                      shape: MaterialStateProperty.all(
+                                        RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12.0),
                                         ),
-                                        elevation: MaterialStateProperty.all(
-                                            5.0), // Adjust the elevation as needed
                                       ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _isEditingStops = !_isEditingStops; // Toggle editing mode
-                                        });
-                                      },
-
-                                      child: Text(
-                                        _isEditingStops ? 'Done' : 'Edit Stops',
-                                        style: TextStyle(color: Colors.black),
-                                      ),
-                                    )),
+                                      elevation: MaterialStateProperty.all(5.0),
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _isEditingStops =
+                                            !_isEditingStops; // Toggle editing mode
+                                      });
+                                    },
+                                    child: Text(
+                                      _isEditingStops ? 'Done' : 'Edit Stops',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                  ),
+                                ),
                                 Padding(
-                                    padding: const EdgeInsets.all(10.0),
-                                    child: ElevatedButton(
-                                      style: ButtonStyle(
-                                        shape: MaterialStateProperty.all(
-                                          RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                                12.0), // Adjust the radius as needed
-                                          ),
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: ElevatedButton(
+                                    style: ButtonStyle(
+                                      shape: MaterialStateProperty.all(
+                                        RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12.0),
                                         ),
-                                        elevation: MaterialStateProperty.all(
-                                            5.0), // Adjust the elevation as needed
                                       ),
-                                      onPressed: addStopAndPrice,
-                                      child: Text(
-                                        'Add',
-                                        style: TextStyle(color: Colors.black),
-                                      ),
-                                    ))
+                                      elevation: MaterialStateProperty.all(5.0),
+                                    ),
+                                    onPressed: addStopAndPrice,
+                                    child: Text(
+                                      'Add',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
-                            SizedBox(
-                              height:
-                                  20, // Optional: Add space between fields and list
-                            ),
-                            // Display all stops and prices
-                            ...stops.map((item) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 5),
+
+// Always display stops from the response
+// Always display stops from the response
+                            for (var stop in widget.tripData['stops'] ?? [])
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 5),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
-                                      child: Text('${item['stop_name']} - \$${item['stop_price']}'),
+                                      child: Text(
+                                          '${stop['stop_name']} - \$${stop['stop_price']}'),
                                     ),
                                     if (_isEditingStops) // Show delete icon only in edit mode
                                       IconButton(
                                         icon: Icon(Icons.delete),
                                         onPressed: () {
                                           setState(() {
-                                            stops.remove(item);
+                                            // Remove the stop using its unique identifier
+                                            widget.tripData['stops']
+                                                .removeWhere((s) =>
+                                                    s['stop_id'] ==
+                                                    stop['stop_id']);
+                                          });
+                                        },
+                                      ),
+                                  ],
+                                ),
+                              ),
+
+                            // Display all stops and prices
+                            ...stopsAndPrices.map((item) {
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 5),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                          '${item['stop']} - \$${item['price']}'), // Correctly reference 'stop' and 'price'
+                                    ),
+                                    if (_isEditingStops) // Show delete icon only in edit mode
+                                      IconButton(
+                                        icon: Icon(Icons.delete),
+                                        onPressed: () {
+                                          setState(() {
+                                            stopsAndPrices.remove(
+                                                item); // Use stopsAndPrices for removal
                                           });
                                         },
                                       ),
@@ -840,7 +879,6 @@ class _UpdateTripState extends State<UpdateTrip> {
                                 ),
                               );
                             }).toList(),
-
                           ],
                         ),
                         SizedBox(height: 20),
@@ -876,9 +914,9 @@ class _UpdateTripState extends State<UpdateTrip> {
                               borderRadius: BorderRadius.circular(20),
                               renderBorder: true,
                               borderWidth: 1,
-                              selectedBorderColor: Colors.black,
+                              selectedBorderColor: Colors.white,
                               selectedColor: Colors.white,
-                              fillColor: Colors.black,
+                              fillColor: Color(0xFF2d7af7),
                               color: Colors.black,
                               constraints:
                                   BoxConstraints(minHeight: 30, minWidth: 130),
@@ -1033,9 +1071,9 @@ class _UpdateTripState extends State<UpdateTrip> {
                               borderRadius: BorderRadius.circular(20),
                               renderBorder: true,
                               borderWidth: 1,
-                              selectedBorderColor: Colors.black,
+                              selectedBorderColor: Colors.white,
                               selectedColor: Colors.white,
-                              fillColor: Colors.black,
+                              fillColor:Color(0xFF2d7af7),
                               color: Colors.black,
                               constraints: BoxConstraints(
                                   minHeight: 33.0, minWidth: 110.0),
@@ -1115,9 +1153,9 @@ class _UpdateTripState extends State<UpdateTrip> {
                             borderRadius: BorderRadius.circular(20),
                             renderBorder: true,
                             borderWidth: 1,
-                            selectedBorderColor: Colors.black,
+                            selectedBorderColor: Colors.white,
                             selectedColor: Colors.white,
-                            fillColor: Colors.black,
+                            fillColor: Color(0xFF2d7af7),
                             color: Colors.black,
                             constraints:
                                 BoxConstraints(minHeight: 30, minWidth: 170),
@@ -1168,15 +1206,18 @@ class _UpdateTripState extends State<UpdateTrip> {
                               spacing: 10, // Spacing between chips
                               children: List<Widget>.generate(
                                 choices.length,
-                                    (int index) {
+                                (int index) {
                                   return ChoiceChip(
                                     avatar: Icon(
                                       icons[index],
-                                      color: isSelected2[index] ? Colors.white : Colors.black,
+                                      color: isSelected2[index]
+                                          ? Colors.white
+                                          : Colors.black,
                                     ),
                                     label: Text(choices[index]),
                                     selected: isSelected2[index],
-                                    selectedColor: Colors.black,
+                                    selectedColor: Color(0xFF2d7af7),
+                                    showCheckmark: false,
                                     onSelected: (bool selected) {
                                       setState(() {
                                         isSelected2[index] = selected;
@@ -1186,15 +1227,20 @@ class _UpdateTripState extends State<UpdateTrip> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20.0),
                                       side: BorderSide(
-                                        color: isSelected2[index] ? Colors.black : Colors.grey,
+                                        color: isSelected2[index]
+                                            ? Colors.black
+                                            : Colors.grey,
                                       ),
                                     ),
                                     labelStyle: TextStyle(
-                                      color: isSelected2[index] ? Colors.white : Colors.black,
+                                      color: isSelected2[index]
+                                          ? Colors.white
+                                          : Colors.black,
                                     ),
                                   );
                                 },
-                              ).toList(),),
+                              ).toList(),
+                            ),
                           ],
                         ),
                         SizedBox(
@@ -1342,11 +1388,11 @@ class _UpdateTripState extends State<UpdateTrip> {
                             decoration: InputDecoration(
                               filled: true,
                               hintText: 'License plate',
-                              hintStyle: TextStyle(color: Colors.grey), // Grey hint text color
+                              hintStyle: TextStyle(
+                                  color: Colors.grey), // Grey hint text color
                               border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide.none
-                              ),
+                                  borderSide: BorderSide.none),
                             ),
                           ),
                         ),
@@ -1599,8 +1645,6 @@ class _UpdateTripState extends State<UpdateTrip> {
           ),
         ));
   }
-
-
 
   void _focusFirstEmptyField() {
     if (departureController.text.isEmpty) {

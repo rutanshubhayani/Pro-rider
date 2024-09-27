@@ -9,6 +9,9 @@ import 'package:shimmer/shimmer.dart';
 import 'package:travel/UserProfile/BookedRides/BookedPreview.dart';
 import '../../Find/Trips/trips.dart';
 import '../../api/api.dart';
+import '../Userprofile.dart';
+
+
 
 class BookedUserRides extends StatelessWidget {
   const BookedUserRides({super.key});
@@ -19,8 +22,18 @@ class BookedUserRides extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () {
+              // Navigate directly to UserProfile screen
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => UserProfile()),
+              );
+            },
+          ),
           title: const Text(
-            'All User Rides',
+            'All Booked Rides',
             style: TextStyle(
               fontWeight: FontWeight.bold,
             ),
@@ -108,7 +121,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
 
     try {
       final response = await http.get(
-        Uri.parse('${API.api1}/bookings'),
+        Uri.parse('${API.api1}/get-bookings'), // Updated API URL
         headers: {
           'Authorization': 'Bearer $authToken',
           'Content-Type': 'application/json',
@@ -134,7 +147,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
       });
       print(e);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error2: client side error')),
+        SnackBar(content: Text('Error: client side error $e')),
       );
     }
   }
@@ -182,16 +195,37 @@ class _AllBookedRidesState extends State<AllBookedRides> {
       );
 
       if (response.statusCode == 200) {
+        // Store the cancelled ride temporarily
+        final cancelledRide = _bookedRides.firstWhere((ride) => ride['post_a_trip_id'].toString() == postATripId);
+
         // Remove the canceled ride from the _bookedRides list
         setState(() {
           _bookedRides.removeWhere((ride) => ride['post_a_trip_id'].toString() == postATripId);
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Booking canceled successfully')),
-        );
+
+        // Show snackbar with undo option
+        Get.snackbar(
+          'Success',
+          'Trip cancelled successfully',
+          snackPosition: SnackPosition.BOTTOM,
+          mainButton: TextButton(
+            onPressed: () {
+              // Restore the cancelled trip
+              setState(() {
+                _bookedRides.add(cancelledRide);
+              });
+              Get.closeCurrentSnackbar(); // Close the snackbar
+            },
+            child: Text(
+              'Undo',
+              style: TextStyle(color: Colors.blue, fontSize: 16),
+            ),
+          ),
+    );
       } else {
+        print('Failed to cancel booking: ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to cancel booking: ${response.body}')),
+          SnackBar(content: Text('Failed to cancel booking.')),
         );
       }
     }
@@ -268,7 +302,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
         return GestureDetector(
           onTap: () {
             // Add navigation or additional functionality here if needed
-            Get.to(() => BookedPreview(tripData: _bookedRides,));
+            Get.to(() => GetBookedPreview(tripData: _bookedRides,));
           },
           child: Padding(
             padding: const EdgeInsets.all(8.0),
@@ -299,10 +333,11 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                           ),
                           child: CircleAvatar(
                             radius: 30,
-                            backgroundImage: ride['profile_photo'] != null
+                            backgroundImage: ride['profile_photo'] != null && ride['profile_photo'].isNotEmpty
                                 ? NetworkImage(ride['profile_photo'])
-                                : AssetImage('images/Userpfp.png') as ImageProvider<Object>, // Default image
-                          ),
+                                : AssetImage('images/Userpfp.png') as ImageProvider,
+                          )
+
                         ),
                         SizedBox(width: 10),
                         Text(
@@ -384,7 +419,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                         child: Text('Cancel Booking'),
                         style: ElevatedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          backgroundColor: Colors.red,
+                          backgroundColor: Color(0XFFd90000),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)
                           )
@@ -446,7 +481,7 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
       String bookingUserId = prefs.getString('bookingUserId') ?? '';
 
       final response = await http.get(
-        Uri.parse('http://202.21.32.153:8081/canceled-bookings/$bookingUserId'),
+        Uri.parse('${API.api1}/canceled-bookings/$bookingUserId'),
         headers: {
           'Authorization': 'Bearer $authToken',
           'Content-Type': 'application/json',

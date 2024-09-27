@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../api/api.dart';
+
 class cities extends StatefulWidget {
   @override
   _citiesState createState() => _citiesState();
@@ -48,7 +50,7 @@ class _DestinationInputWidgetState extends State<DestinationInputWidget> {
   Future<List<dynamic>> fetchCities(String query) async {
     try {
       final response = await http.get(Uri.parse(
-          'http://202.21.32.153:8081/cities')); // Replace with your API URL
+          '${API.api1}/cities')); // Replace with your API URL
 
       if (response.statusCode == 200) {
         final List<dynamic> cities = json.decode(response.body);

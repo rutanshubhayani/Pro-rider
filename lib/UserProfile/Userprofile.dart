@@ -124,10 +124,11 @@ class _UserProfileState extends State<UserProfile> {
         }
       }
     } catch (error) {
+      print(error);
       if (mounted && !_isNewUser) {
         Get.snackbar(
           'Error',
-          'An error occurred: $error',
+          'An error occurred',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
@@ -166,7 +167,6 @@ class _UserProfileState extends State<UserProfile> {
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
-
         _fetchProfilePhoto(); // Refresh profile photo
       } else if (!_isNewUser) {
         // Only show error if the user is not new
@@ -179,11 +179,12 @@ class _UserProfileState extends State<UserProfile> {
         );
       }
     } catch (error) {
+      print(error);
       if (!_isNewUser) {
         // Only show error if the user is not new
         Get.snackbar(
           'Error',
-          'An error occurred: $error',
+          'An error occurred',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
@@ -440,7 +441,7 @@ class _UserProfileState extends State<UserProfile> {
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              VerifyLicense(fetchImageOnStart: true),
+                              VerifyLicense(),
                         ),
                       );
                     },

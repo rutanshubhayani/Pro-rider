@@ -249,7 +249,7 @@ class _VerifyLicenseNonUsedState extends State<VerifyLicenseNonUsed> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF2e2c2f),
+                    backgroundColor: Color(0xFF2d7af7),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

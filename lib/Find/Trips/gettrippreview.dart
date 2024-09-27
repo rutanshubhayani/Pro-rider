@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:travel/Find/Trips/GetBook.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../newinbox.dart';
+import '../Inbox/Inbox.dart';
+
 class GetTripPreview extends StatefulWidget {
   final Map<String, dynamic> tripData;
 
@@ -78,8 +81,8 @@ class _GetTripPreviewState extends State<GetTripPreview> {
   @override
   Widget build(BuildContext context) {
     final uid = widget.tripData['uid'].toString() ?? 'Unknown uid';
-
     final post_a_trip_id = widget.tripData['post_a_trip_id'].toString();
+    final userName = widget.tripData['userName'] ?? 'Unknown';
 
     final DateTime dateTime = DateTime.parse(widget.tripData['date'].toString());
     final String formattedDate = DateFormat('EE, MMM d \'at\' h:mm a').format(dateTime);
@@ -87,7 +90,6 @@ class _GetTripPreviewState extends State<GetTripPreview> {
     final departureCityFirstName = widget.tripData['departure']?.split(' ').first ?? 'Unknown';
     final destinationCity = widget.tripData['destination'] ?? 'Unknown Destination';
     final destinationCityFirstName = widget.tripData['destination']?.split(' ').first ?? 'Unknown';
-    final userName = widget.tripData['userName'] ?? 'Unknown';
     final price = widget.tripData['price']?.toString() ?? '0';
     final luggageCode = widget.tripData['luggage']?.toString() ?? '0';
     final luggage = getLuggageLabel(luggageCode);
@@ -486,14 +488,18 @@ class _GetTripPreviewState extends State<GetTripPreview> {
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.15, // 20% of screen width
               child: FloatingActionButton(
-                backgroundColor: Color(0xFF2e2c2f),
+                backgroundColor: Color(0xFF2d7af7),
                 shape: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(60),
                   borderSide: BorderSide.none,
                 ),
-                onPressed: () {
-                  // Get.to(InboxMain(), transition: Transition.leftToRight);
-                },
+                  onPressed: () {
+                    Get.to(() => ChatScreen(
+                      recipientId: widget.tripData['uid'].toString(),
+                    recipientUserName: userName,
+                    ),
+                        transition: Transition.fade);
+                  },
                 child: Icon(Icons.message, color: Colors.white, size: 30),
               ),
             ),

@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/UserProfile/Userprofile.dart';
 import 'package:travel/api/api.dart';
-import '../../shimmer.dart';
+import '../../widget/shimmer.dart';
 import 'Findtrippreview.dart';
 import '../Trips/gettrippreview.dart';
 
@@ -366,7 +366,7 @@ class _TripsScreenState extends State<TripsScreen> {
       final authToken = prefs.getString('authToken') ?? '';
 
       final response = await http.get(
-        Uri.parse('http://202.21.32.153:8081/get-trips'),
+        Uri.parse('${API.api1}/get-trips'),
         headers: {'Authorization': 'Bearer $authToken'},
       );
 
@@ -487,9 +487,12 @@ class _TripsScreenState extends State<TripsScreen> {
                                   ),
                                   child: CircleAvatar(
                                     radius: 30,
-                                    backgroundImage: trip['userImage'] != null && trip['userImage'].isNotEmpty
-                                        ? NetworkImage(trip['userImage'])
-                                        : AssetImage('images/Userpfp.png') as ImageProvider,
+                                    backgroundImage: NetworkImage( trip['userImage']),
+                                    child: Image.network( trip['userImage'],
+                                      errorBuilder: (context, error, StackTrace){
+                                      return Image.asset('images/Userpfp.png');
+                                      },
+                                    ),
                                   ),
                                 ),
                                 SizedBox(width: 5),
@@ -619,7 +622,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
     });
 
     try {
-      final response = await http.get(Uri.parse('http://202.21.32.153:8081/post_requests_get'));
+      final response = await http.get(Uri.parse('${API.api1}/post_requests_get'));
 
       print('requests response');
       print(response.body);
@@ -660,6 +663,17 @@ class _RequestsScreenState extends State<RequestsScreen> {
           itemBuilder: (context, index) {
             return TripShimmerCard(); // Your shimmer loading widget
           },
+        )
+            : requests.isEmpty
+            ? Center(
+          child: Text(
+            'No requests found',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black54,
+            ),
+          ),
         )
             : ListView(
           children: requests.map((request) {
@@ -706,9 +720,13 @@ class _RequestsScreenState extends State<RequestsScreen> {
                                   ),
                                   child:CircleAvatar(
                                     radius: 30,
-                                    backgroundImage: request['profile_photo'] != null && request['profile_photo'].isNotEmpty
-                                        ? NetworkImage(request['profile_photo'])
-                                        : AssetImage('images/Userpfp.png') as ImageProvider<Object>, // Cast to ImageProvider<Object>
+                                    backgroundImage: NetworkImage(request['profile_photo']),
+                                    child: Image.network(
+                                      request['profile_photo'],
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Image.asset('images/Userpfp.png');
+                                      },
+                                    ),
                                   ),
 
                                 ),

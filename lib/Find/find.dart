@@ -346,10 +346,13 @@ class _FindScreenState extends State<FindScreen> {
             ),
           ),
           actions: [
-            IconButton(onPressed: (){
-              Get.to(NotificationScreen());
-            },
-                icon:Icon(Icons.notifications_active)),
+            Tooltip(
+              message: 'Notifications',
+              child: IconButton(onPressed: (){
+                Get.to(NotificationScreen());
+              },
+                  icon:Icon(Icons.notifications_active)),
+            ),
             SizedBox(width: 15),
           ],
         ),
@@ -420,7 +423,7 @@ class _FindScreenState extends State<FindScreen> {
                     top: 75,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.black,
+                        color: Color(0xFF2d7af7),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
@@ -448,7 +451,7 @@ class _FindScreenState extends State<FindScreen> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF2e2c2f),
+                    backgroundColor: Color(0xFF2d7af7),
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -525,12 +528,14 @@ class _FindScreenState extends State<FindScreen> {
                               actions: [
                                 TextButton(
                                   onPressed: () {
-                                    Get.to(() => VerifyLicense()); // Navigate to upload image page
+                                    Navigator.pop(context); // Close the dialog
+                                    Get.to(() => VerifyLicense()); // Navigate to upload license page
                                   },
                                   child: Text('Upload License'),
                                 ),
                                 TextButton(
                                   onPressed: () {
+                                    Navigator.pop(context); // Close the dialog
                                     Get.to(() => VehicleDetails()); // Navigate to upload details page
                                   },
                                   child: Text('Upload Details'),
@@ -550,6 +555,7 @@ class _FindScreenState extends State<FindScreen> {
                               actions: [
                                 TextButton(
                                   onPressed: () {
+                                    Navigator.pop(context); // Close the dialog
                                     Get.to(() => VerifyLicense()); // Navigate to upload image page
                                   },
                                   child: Text('Upload Image'),
@@ -569,6 +575,7 @@ class _FindScreenState extends State<FindScreen> {
                               actions: [
                                 TextButton(
                                   onPressed: () {
+                                    Navigator.pop(context); // Close the dialog
                                     Get.to(() => VehicleDetails()); // Navigate to upload details page
                                   },
                                   child: Text('Upload Details'),

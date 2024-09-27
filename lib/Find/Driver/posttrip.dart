@@ -91,7 +91,7 @@ class _PostTripState extends State<PostTrip> {
     }
 
     final response = await http.get(
-      Uri.parse('http://202.21.32.153:8081/get-vehicle-data'),
+      Uri.parse('${API.api1}/get-vehicle-data'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -686,9 +686,9 @@ class _PostTripState extends State<PostTrip> {
                           borderRadius: BorderRadius.circular(20),
                           renderBorder: true,
                           borderWidth: 1,
-                          selectedBorderColor: Colors.black,
+                          selectedBorderColor: Colors.white,
                           selectedColor: Colors.white,
-                          fillColor: Colors.black,
+                          fillColor: Color(0xFF2d7af7),
                           color: Colors.black,
                           constraints:
                               BoxConstraints(minHeight: 30, minWidth: 130),
@@ -842,9 +842,9 @@ class _PostTripState extends State<PostTrip> {
                           borderRadius: BorderRadius.circular(20),
                           renderBorder: true,
                           borderWidth: 1,
-                          selectedBorderColor: Colors.black,
+                          selectedBorderColor: Colors.white,
                           selectedColor: Colors.white,
-                          fillColor: Colors.black,
+                          fillColor: Color(0xFF2d7af7),
                           color: Colors.black,
                           constraints:
                               BoxConstraints(minHeight: 33.0, minWidth: 110.0),
@@ -932,9 +932,9 @@ class _PostTripState extends State<PostTrip> {
                           borderRadius: BorderRadius.circular(20),
                           renderBorder: true,
                           borderWidth: 1,
-                          selectedBorderColor: Colors.black,
+                          selectedBorderColor: Colors.white,
                           selectedColor: Colors.white,
-                          fillColor: Colors.black,
+                          fillColor: Color(0xFF2d7af7),
                           color: Colors.black,
                           constraints:
                               BoxConstraints(minHeight: 30, minWidth: 170),
@@ -1001,7 +1001,8 @@ class _PostTripState extends State<PostTrip> {
                                   ),
                                   label: Text(choices[index]),
                                   selected: isSelected2[index],
-                                  selectedColor: Colors.black,
+                                  selectedColor: Color(0xFF2d7af7),
+                                  showCheckmark: false,
                                   onSelected: (bool selected) {
                                     setState(() {
                                       isSelected2[index] = selected;
@@ -1012,7 +1013,7 @@ class _PostTripState extends State<PostTrip> {
                                     borderRadius: BorderRadius.circular(20.0),
                                     side: BorderSide(
                                       color: isSelected2[index]
-                                          ? Colors.black
+                                          ? Colors.white
                                           : Colors.grey,
                                     ),
                                   ),
@@ -1380,7 +1381,6 @@ class _PostTripState extends State<PostTrip> {
           height: kBottomNavigationBarHeight, // Adjust if needed
           child: GestureDetector(
             onTap: () {
-              print('Post trip tapped');
               if (_isChecked) {
                 if (_formKey.currentState?.validate() ?? false) {
                   _postTrip();
@@ -1431,7 +1431,7 @@ class _PostTripState extends State<PostTrip> {
       return;
     }
 
-    /* if (dateController == null) {
+     if (dateController == null) {
       FocusScope.of(context).requestFocus(dateFocusNode);
       return;
     }
@@ -1439,7 +1439,7 @@ class _PostTripState extends State<PostTrip> {
     if (timeController == null) {
       FocusScope.of(context).requestFocus(timeFocusNode);
       return;
-    }*/
+    }
   }
 
   Future<void> _selectDate() async {

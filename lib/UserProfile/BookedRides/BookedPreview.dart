@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-class BookedPreview extends StatefulWidget {
+class GetBookedPreview extends StatefulWidget {
   final List<dynamic> tripData;
 
-  const BookedPreview({super.key, required this.tripData});
+  const GetBookedPreview({super.key, required this.tripData});
 
   @override
-  State<BookedPreview> createState() => _BookedPreviewState();
+  State<GetBookedPreview> createState() => _GetBookedPreviewState();
 }
 
-class _BookedPreviewState extends State<BookedPreview> {
+class _GetBookedPreviewState extends State<GetBookedPreview> {
   @override
   void initState() {
     super.initState();

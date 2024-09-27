@@ -6,6 +6,8 @@ import 'package:travel/Find/rideverifyemail.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../../api/api.dart';
+
 
 class GetBook extends StatefulWidget {
   final Map<String, dynamic> tripData;
@@ -264,7 +266,7 @@ class _GetMeetDriverState extends State<GetMeetDriver> {
 
   Future<void> fetchDriverData() async {
     final uid = widget.tripData['uid'];
-    final url = 'http://202.21.32.153:8081/user-profile-and-vehicle-data/$uid';
+    final url = '${API.api1}/user-profile-and-vehicle-data/$uid';
 
     try {
       final response = await http.get(Uri.parse(url));
