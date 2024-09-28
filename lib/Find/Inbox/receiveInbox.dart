@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../newinbox.dart';
+import 'newinbox.dart';
 
 class InboxList extends StatefulWidget {
   const InboxList({Key? key}) : super(key: key);
