@@ -459,6 +459,7 @@ class _GetTripPreviewState extends State<GetTripPreview> {
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.7, // 80% of screen width
               child: FloatingActionButton(
+                heroTag: "btn1",  // removes error : There are multiple heroes that share the same tag within a subtree.
                 backgroundColor: Color(0xFFff4400),
                 onPressed: () {
                   Get.to(GetBook(tripData: widget.tripData, bookedSeats: BookSeats,), transition: Transition.fade);
@@ -488,20 +489,30 @@ class _GetTripPreviewState extends State<GetTripPreview> {
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.15, // 20% of screen width
               child: FloatingActionButton(
+                heroTag: "btn2",
                 backgroundColor: Color(0xFF2d7af7),
                 shape: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(60),
                   borderSide: BorderSide.none,
                 ),
-                  onPressed: () {
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  final token = prefs.getString('authToken');
+
+                  if (token != null) {
                     Get.to(() => ChatScreen(
                       recipientId: widget.tripData['uid'].toString(),
-                    recipientUserName: userName,
-                    ),
-                        transition: Transition.fade);
-                  },
+                      recipientUserName: userName,
+                      recipientUserImage: userImage,
+
+                    ), transition: Transition.fade);
+                  } else {
+                    print("User is not authenticated");
+                  }
+                },
                 child: Icon(Icons.message, color: Colors.white, size: 30),
-              ),
+              )
+              ,
             ),
           ),
         ],

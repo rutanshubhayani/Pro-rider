@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:async/async.dart';
 import 'package:image/image.dart' as img;
+import 'package:shimmer/shimmer.dart';
 import '../api/api.dart';
 
 
@@ -202,9 +203,9 @@ class _VehicleDetailsState extends State<VehicleDetails> {
             _isLoadingImage = false;  // End loading
           }
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        /*ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(data['message']),
-        ));
+        ));*/
       } else if (response.statusCode == 404) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('You have not uploaded any details.'),
@@ -347,14 +348,14 @@ class _VehicleDetailsState extends State<VehicleDetails> {
 
         });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Vehicle details uploaded successfully! Image size: ${imageSize.toStringAsFixed(2)} KB'),
+          content: Text('Vehicle details uploaded successfully!'),
         ));
       } else {
         setState(() {
           _isSubmitting = false; // Reset loading state
         });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to upload vehicle details: ${response.statusCode}'),
+          content: Text('Failed to upload vehicle details.'),
         ));
         print('Error details: $responseBody');
       }
@@ -462,23 +463,50 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                       ),
                     );
                   } : null, // Disable GestureDetector if not editing
-                  child: _isLoadingImage
-                      ? Center(child: CircularProgressIndicator())  // Show loader while loading image
-                      : _selectedImage != null
-                      ? Image.file(
-                    _selectedImage!,
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  )
-                      : Container(
-                    height: 200,
-                    width: double.infinity,
-                    color: Colors.grey[200],
-                    child: Center(
-                      child: Text('No Image Uploaded'),
+                    child: _isLoadingImage
+                        ? Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey, width: 2), // Rounded border
+                        ),
+                        height: 200,
+                        width: double.infinity,
+                        child: Center(child: Text('Loading...')),
+                      ),
+                    )
+                        : _selectedImage != null
+                        ? Container(
+                      height: 200,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10), // Rounded corners
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10), // Ensuring the image fits in the rounded border
+                        child: Image.file(
+                          _selectedImage!,
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    )
+                        : Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey, width: 2), // Rounded border
+                      ),
+                      height: 200,
+                      width: double.infinity,
+                      child: Center(
+                        child: Text('No Image Uploaded'),
+                      ),
                     ),
-                  ),
                 ),
                 SizedBox(height: 20),
                 Row(

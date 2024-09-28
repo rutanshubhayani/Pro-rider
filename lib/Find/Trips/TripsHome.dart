@@ -206,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: InkWell(
                   onTap: ()
                   {
-                    Get.to(() => ReceiveInbox()); // Navigate to HomeScreen
+                    Get.to(() => InboxList()); // Navigate to HomeScreen
                   },
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

@@ -88,3 +88,5 @@ class TripShimmerCard extends StatelessWidget {
     );
   }
 }
+
+

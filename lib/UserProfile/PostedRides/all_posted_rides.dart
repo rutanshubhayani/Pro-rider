@@ -204,14 +204,38 @@ class _AllPostedRidesState extends State<AllPostedRides> {
           'Trip cancelled successfully',
           snackPosition: SnackPosition.BOTTOM,
           mainButton: TextButton(
-            onPressed: () {
-              // Restore the cancelled trip
-              setState(() {
-                userTrips.add(cancelledTrip!);
-              });
+            onPressed: () async {
+              // Restore the cancelled trip by updating the status to 'active'
+              try {
+                final restoreResponse = await http.post(
+                  Uri.parse('${API.api1}/update-trip-status/$postId'),
+                  headers: {
+                    'Authorization': 'Bearer $authToken',
+                    'Content-Type': 'application/json',
+                  },
+                  body: jsonEncode({
+                    'status': 'active',
+                  }),
+                );
+
+                if (restoreResponse.statusCode == 200) {
+                  setState(() {
+                    // Add the cancelled trip back to the list
+                    userTrips.add(cancelledTrip!);
+                  });
+                  Get.snackbar('Success', 'Trip restored successfully', snackPosition: SnackPosition.BOTTOM);
+                } else {
+                  Get.snackbar('Error', 'Failed to restore the trip.', snackPosition: SnackPosition.BOTTOM);
+                  print('Failed to restore trip: ${restoreResponse.statusCode}');
+                }
+              } catch (restoreError) {
+                Get.snackbar('Error', 'An error occurred while restoring the trip.', snackPosition: SnackPosition.BOTTOM);
+                print('Error restoring trip: $restoreError');
+              }
+
               Get.closeCurrentSnackbar(); // Close the snackbar
             },
-            child: Text('Undo', style: TextStyle(color: Colors.blue,fontSize: 16)),
+            child: Text('Undo', style: TextStyle(color: Colors.blue, fontSize: 16)),
           ),
         );
       } else {

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:travel/UserProfile/BookedRides/all_booked_rides.dart';
 import 'package:travel/UserProfile/PostedRides/all_posted_rides.dart';
 import 'package:uuid/uuid.dart';
@@ -162,7 +163,7 @@ class _UserProfileState extends State<UserProfile> {
 
         Get.snackbar(
           'Upload Successful',
-          'Image uploaded successfully. Size: ${imageSizeInMB.toStringAsFixed(2)} MB',
+          'Image uploaded successfully.',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,
@@ -305,7 +306,6 @@ class _UserProfileState extends State<UserProfile> {
       print("Error picking image: $e");
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -319,8 +319,7 @@ class _UserProfileState extends State<UserProfile> {
         backgroundColor: Colors.transparent,
       ),
       body: Padding(
-        padding:
-            const EdgeInsets.only(top: 30.0, left: 16, right: 16, bottom: 10),
+        padding: const EdgeInsets.only(top: 30.0, left: 16, right: 16, bottom: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -335,11 +334,19 @@ class _UserProfileState extends State<UserProfile> {
                         : _profileImageFile != null
                         ? FileImage(File(_profileImageFile!.path))
                         : AssetImage('images/Userpfp.png') as ImageProvider,
-                    child: _isLoadingImage && (_selectedImage != null || _profileImageFile != null)
-                        ? Center(child: CircularProgressIndicator()) // Show loading only if an image is being loaded
+                    child: _isLoadingImage
+                        ? Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
                         : null,
                   ),
-
                   Positioned(
                     bottom: 0,
                     right: 0,
@@ -441,15 +448,10 @@ class _UserProfileState extends State<UserProfile> {
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              VerifyLicense(),
+                              VerifyLicense(fetchImageOnStart: true),
                         ),
                       );
                     },
-                  ),
-                  CylindricalTile(
-                    leadingIcon: Icons.help_center_outlined,
-                    title: 'Help',
-                    onTap: () {},
                   ),
                   CylindricalTile(
                     leadingIcon: Icons.logout,

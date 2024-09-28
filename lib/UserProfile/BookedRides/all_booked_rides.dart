@@ -147,7 +147,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
       });
       print(e);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: client side error $e')),
+        SnackBar(content: Text('Error: Internal server error.')),
       );
     }
   }
@@ -198,7 +198,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
         // Store the cancelled ride temporarily
         final cancelledRide = _bookedRides.firstWhere((ride) => ride['post_a_trip_id'].toString() == postATripId);
 
-        // Remove the canceled ride from the _bookedRides list
+        // Remove the cancelled ride from the _bookedRides list
         setState(() {
           _bookedRides.removeWhere((ride) => ride['post_a_trip_id'].toString() == postATripId);
         });
@@ -208,19 +208,6 @@ class _AllBookedRidesState extends State<AllBookedRides> {
           'Success',
           'Trip cancelled successfully',
           snackPosition: SnackPosition.BOTTOM,
-          mainButton: TextButton(
-            onPressed: () {
-              // Restore the cancelled trip
-              setState(() {
-                _bookedRides.add(cancelledRide);
-              });
-              Get.closeCurrentSnackbar(); // Close the snackbar
-            },
-            child: Text(
-              'Undo',
-              style: TextStyle(color: Colors.blue, fontSize: 16),
-            ),
-          ),
     );
       } else {
         print('Failed to cancel booking: ${response.body}');
@@ -458,15 +445,15 @@ class CancelledBookedRides extends StatefulWidget {
 
 class _CancelledBookedRidesState extends State<CancelledBookedRides> {
   bool _isLoading = true;
-  List<dynamic> _canceledRides = [];
+  List<dynamic> _cancelledRides = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchCanceledRides();
+    _fetchCancelledRides();
   }
 
-  Future<void> _fetchCanceledRides() async {
+  Future<void> _fetchCancelledRides() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? authToken = prefs.getString('authToken');
 
@@ -491,24 +478,25 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
       if (response.statusCode == 200) {
         print(response.body);
         setState(() {
-          _canceledRides = jsonDecode(response.body);
+          _cancelledRides = jsonDecode(response.body);
 
           // Sort rides by date to ensure the most recent is on top
-          _canceledRides.sort((a, b) => DateTime.parse(b['leaving_date_time']).compareTo(DateTime.parse(a['leaving_date_time'])));
+          _cancelledRides.sort((a, b) => DateTime.parse(b['leaving_date_time']).compareTo(DateTime.parse(a['leaving_date_time'])));
 
-          // Limit to the last 5 canceled rides
-          if (_canceledRides.length > 5) {
-            _canceledRides = _canceledRides.take(5).toList(); // Keep only the last 5
+          // Limit to the last 5 cancelled rides
+          if (_cancelledRides.length > 5) {
+            _cancelledRides = _cancelledRides.take(5).toList(); // Keep only the last 5
           }
 
           _isLoading = false;
         });
       } else {
+        print('Error fetching cancelled rides: ${response.body}');
         setState(() {
           _isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error fetching canceled rides: ${response.body}')),
+          SnackBar(content: Text('Error fetching cancelled rides.')),
         );
       }
     } catch (e) {
@@ -528,9 +516,9 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
     return Scaffold(
       body: _isLoading
           ? _buildShimmerLoading()
-          : _canceledRides.isEmpty
-          ? const Center(child: Text('No canceled rides found.'))
-          : _buildCanceledRidesList(dateFormat),
+          : _cancelledRides.isEmpty
+          ? const Center(child: Text('No cancelled rides found.'))
+          : _buildCancelledRidesList(dateFormat),
     );
   }
 
@@ -575,12 +563,12 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
     );
   }
 
-  // Canceled rides list after data is loaded
-  Widget _buildCanceledRidesList(DateFormat dateFormat) {
+  // Cancelled rides list after data is loaded
+  Widget _buildCancelledRidesList(DateFormat dateFormat) {
     return ListView.builder(
-      itemCount: _canceledRides.length,
+      itemCount: _cancelledRides.length,
       itemBuilder: (context, index) {
-        final ride = _canceledRides[index];
+        final ride = _cancelledRides[index];
         String formattedDate = dateFormat.format(DateTime.parse(ride['leaving_date_time']));
         String departureFirstName = getFirstNameOfCity(ride['departure']);
         String destinationFirstName = getFirstNameOfCity(ride['destination']);
@@ -626,7 +614,7 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
                     ),
                     Spacer(),
                     Text(
-                      ' ${ride['booked_seats']} Seats canceled',
+                      ' ${ride['booked_seats']} Seats cancelled',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

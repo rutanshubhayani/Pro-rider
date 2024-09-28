@@ -8,45 +8,24 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:travel/UserProfile/License/rejected.dart';
+import 'package:travel/UserProfile/License/verifylicenese.dart';
 import 'package:uuid/uuid.dart';
 import 'package:image/image.dart' as img;
 import '../../api/api.dart';
 
 
 
-class ImageUploadController extends GetxController {
-  var isImageUploaded = false.obs;
-
-  @override
-  void onInit() {
-    super.onInit();
-    _loadUploadStatus();
-  }
-
-  Future<void> _loadUploadStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    isImageUploaded.value = prefs.getBool('isImageUploaded') ?? false;
-  }
-
-  Future<void> saveUploadStatus(bool status) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isImageUploaded', status);
-    isImageUploaded.value = status;
-  }
-}
-
-
-class VerifyLicense extends StatefulWidget {
+class RejectedScreen extends StatefulWidget {
+  final String imagePath;
   final bool fetchImageOnStart;
 
-  VerifyLicense({this.fetchImageOnStart = true});
+  RejectedScreen({this.fetchImageOnStart = true, required this.imagePath});
 
   @override
-  _VerifyLicenseState createState() => _VerifyLicenseState();
+  _RejectedScreenState createState() => _RejectedScreenState();
 }
 
-class _VerifyLicenseState extends State<VerifyLicense> {
+class _RejectedScreenState extends State<RejectedScreen> {
   final ImagePicker _picker = ImagePicker();
   XFile? _image;
   late Future<void> _fetchImageFuture;
@@ -114,7 +93,7 @@ class _VerifyLicenseState extends State<VerifyLicense> {
             if (status == 2 || status == '2') {
               _image = null;
             } else {
-              _image = null;
+              _image = XFile(imageFile.path);
             }
           });
         }
@@ -134,12 +113,8 @@ class _VerifyLicenseState extends State<VerifyLicense> {
               ),
             );
           } else if (status == 2 || status == '2') {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RejectedScreen(imagePath: imageFile.path),
-              ),
-            );
+            print('Navigating to RejectedScreenScreen');
+            // Do not navigate or show any further UI for status 2
           } else if (status == 0 || status == '0') {
             print('Navigating to WaitingForApprovalScreen');
             Navigator.pushReplacement(
@@ -161,7 +136,7 @@ class _VerifyLicenseState extends State<VerifyLicense> {
       } else {
         print(response.body);
         if (mounted) {
-         /* Get.snackbar(
+          /* Get.snackbar(
             'Error',
             'Failed to fetch image',
             snackPosition: SnackPosition.BOTTOM,
@@ -173,7 +148,7 @@ class _VerifyLicenseState extends State<VerifyLicense> {
     } catch (error) {
       print(error);
       if (mounted) {
-      /*  Get.snackbar(
+        /*  Get.snackbar(
           'Error',
           'A server error occurred',
           snackPosition: SnackPosition.BOTTOM,
@@ -281,7 +256,7 @@ class _VerifyLicenseState extends State<VerifyLicense> {
       });
     }
   }
-  
+
 
   void _showImageSourceBottomSheet() {
     showModalBottomSheet(
@@ -351,7 +326,7 @@ class _VerifyLicenseState extends State<VerifyLicense> {
                 SizedBox(width: 4), // Small space for visual separation
                 Expanded(
                   child: Text(
-                    'Upload your license',
+                    'Note: Your license application has been rejected. Please review the requirements and reapply with the necessary corrections.',
                     style: TextStyle(
                       fontSize: 15,
                       fontStyle: FontStyle.italic,
@@ -420,11 +395,11 @@ class _VerifyLicenseState extends State<VerifyLicense> {
                             width: double.infinity,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0XFF008000),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)
-                                )
+                                  backgroundColor: Color(0XFF008000),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10)
+                                  )
                               ),
                               onPressed: _isUploading
                                   ? null // Disable the button if uploading
@@ -441,130 +416,6 @@ class _VerifyLicenseState extends State<VerifyLicense> {
                     }
                   },
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
-
-class PhotoDisplayScreen extends StatelessWidget {
-  final String imagePath;
-
-  PhotoDisplayScreen({required this.imagePath});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Display Photo'),
-      ),
-      body: Center(
-        child: FutureBuilder<File>(
-          future: Future.value(File(imagePath)),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              print('Photo display error: ${snapshot.error}');
-              return Center(
-                child: Text(
-                  'Error occurred',
-                  style: TextStyle(color: Colors.red),
-                ),
-              );
-            } else if (snapshot.hasData) {
-              return Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black12,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.grey,
-                          width: 2
-                        )
-                      ),
-                      height: MediaQuery.of(context).size.height * 0.4,//30% of screen height
-                      width: double.infinity,
-                      child: Image.file(
-                        snapshot.data!,
-                        fit: BoxFit.contain,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 20.0,
-                    right: 20.0,
-                    child: CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Colors.white,
-                      child: Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
-                        size: 30.0,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            } else {
-              return Center(child: Text('No image available'));
-            }
-          },
-        ),
-      ),
-    );
-  }
-}
-
-
-
-
-class WaitingForApprovalScreen extends StatelessWidget {
-  final String imagePath;
-
-  WaitingForApprovalScreen({required this.imagePath});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Waiting for Approval'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10.0), // Set the radius for rounded corners
-              child: Image.file(
-                File(imagePath),
-                fit: BoxFit.cover,
-                height: 300,
-                width: double.infinity,
-              ),
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Waiting for Approval',
-              textAlign: TextAlign.left,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 5.0, top: 5),
-              child: Text(
-                'Your License is under observation of admin. You will be able to continue your journey with others once your license is verified.',
               ),
             ),
           ],

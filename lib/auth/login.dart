@@ -91,38 +91,13 @@ class _LoginScreenState extends State<LoginScreen> {
           // Print user information for debugging
           print('User: $user');
           print('Token: $token');
-          if (user.containsKey('uid')) {
-            final uid = user['uid'].toString();
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('userId', uid.toString()); // Save UID
-            // Verify saved data
-            print('Saved userId: ${prefs.getString('userId')}');
+          List<String> userKeys = ['uid', 'uname', 'umail', 'umobilenumber', 'uaddress', 'profile_photo'];
+          for (String key in userKeys) {
+            if (user.containsKey(key)) {
+              print('${key}: ${user[key]}');
+            }
           }
 
-          if (user.containsKey('uid')) {
-            final userid = user['uid'];
-            print('$userid');
-          }
-          if (user.containsKey('uname')) {
-            final uname = user['uname'];
-            print('$uname');
-          }
-          if (user.containsKey('umail')) {
-            final umail = user['umail'];
-            print('$umail');
-          }
-          if (user.containsKey('umobilenumber')) {
-            final umobilenumber = user['umobilenumber'];
-            print('$umobilenumber');
-          }
-          if (user.containsKey('uaddress')) {
-            final uaddress = user['uaddress'];
-            print('$uaddress');
-          }
-          if (user.containsKey('profile_photo')) {
-            final profile_photo = user['profile_photo'];
-            print('$profile_photo');
-          }
 
           // Extract user details
           String uname = user['uname'] ?? 'User';

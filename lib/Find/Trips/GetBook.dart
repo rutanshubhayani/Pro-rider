@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:travel/Find/ReviewTrip/review_trip.dart';
 import 'package:travel/Find/rideverifyemail.dart';
 import 'package:http/http.dart' as http;
@@ -243,8 +244,6 @@ class _GetBookState extends State<GetBook> {
 
 
 
-
-
 class GetMeetDriver extends StatefulWidget {
   final Map<String, dynamic> tripData;
 
@@ -273,8 +272,6 @@ class _GetMeetDriverState extends State<GetMeetDriver> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('Driver Data: $data'); // Debugging line
-
         setState(() {
           driverData = data;
           isLoading = false;
@@ -283,25 +280,67 @@ class _GetMeetDriverState extends State<GetMeetDriver> {
         throw Exception('Failed to load driver data: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching driver data: $e'); // Debugging line
+      print('Error fetching driver data: $e');
       setState(() {
         isLoading = false;
       });
     }
   }
 
-
+  Widget buildShimmerEffect() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 30,
+            width: 200,
+            color: Colors.grey[200],
+          ),
+          SizedBox(height: 10),
+          Container(
+            height: 20,
+            width: 150,
+            color: Colors.grey[200],
+          ),
+          SizedBox(height: 10),
+          Container(
+            height: 20,
+            width: 100,
+            color: Colors.grey[200],
+          ),
+          SizedBox(height: 30),
+          Divider(),
+          SizedBox(height: 30),
+          Container(
+            height: 20,
+            width: 200,
+            color: Colors.grey[200],
+          ),
+          SizedBox(height: 10),
+          Container(
+            height: 120,
+            width: 150,
+            color: Colors.grey[200],
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final DateTime dateTime = DateTime.parse(driverData!['user']['insdatetime'].toString() ?? 'Unknown');
+    final DateTime dateTime = DateTime.parse(driverData?['user']['insdatetime'].toString() ?? 'Unknown');
     final String formattedDate = DateFormat('MMMM, yyyy').format(dateTime);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Book'),
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? Center(child: buildShimmerEffect())
           : driverData == null
           ? Center(child: Text('No driver data available'))
           : Padding(
@@ -309,107 +348,92 @@ class _GetMeetDriverState extends State<GetMeetDriver> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Meet the driver',
-              textAlign: TextAlign.left,
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
+          Text(
+          'Meet the driver',
+          textAlign: TextAlign.left,
+          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 40),
+        Row(
+          children: [
+            // Profile picture with shimmer
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.blue, width: 3),
+              ),
+              child: isLoading
+                  ? Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.white,
+                child: CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Colors.grey[200],
+                ),
+              )
+                  : CircleAvatar(
+                radius: 40,
+                backgroundImage: NetworkImage('${driverData!['user']['profile_photo_url']}'),
+                backgroundColor: Colors.transparent,
               ),
             ),
-            SizedBox(height: 40),
-            Row(
-              children: [
-                // Profile picture with border
-                // Profile picture with border
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.blue,
-                      width: 3,
-                    ),
-                  ),
-                  child: CircleAvatar(
-                    radius: 40,
-                    backgroundImage: FadeInImage.assetNetwork(
-                      placeholder: 'images/default-user.png', // Placeholder image
-                      image: '${driverData!['user']['profile_photo_url']}',
-                      fit: BoxFit.cover,
-                    ).image,
-                  ),
-                ),
-
-                SizedBox(width: 12),
-                // User details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  isLoading
+                      ? buildShimmerEffect()
+                      : Column(
                     children: [
                       Row(
                         children: [
-                          Icon(
-                            Icons.verified,
-                            color: Colors.blue,
-                            size: 20,
-                          ),
+                          Icon(Icons.verified, color: Colors.blue, size: 20),
                           SizedBox(width: 4),
                           Text(
                             driverData!['user']['uname'] ?? 'Unknown',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                           ),
                         ],
                       ),
                       Row(
                         children: [
-                          Text(
-                            'Joined ',
-                            style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.black54
-                            ),
-                          ),
-                          Text(
-                            formattedDate,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.black54
-                            ),
-                          ),
+                          Text('Joined ', style: TextStyle(fontSize: 16, color: Colors.black54)),
+                          Text(formattedDate, style: TextStyle(fontSize: 16, color: Colors.black54)),
                         ],
                       ),
                     ],
                   ),
-                ),
+                ],
+              ),
+            ),
               ],
             ),
             SizedBox(height: 30),
-            Divider(
-              endIndent: 20,
-            ),
+            Divider(endIndent: 20),
             SizedBox(height: 30),
-            Text(
-                'Driver details:',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
+            Text('Driver details:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             SizedBox(height: 25),
             Row(
               children: [
+                // Vehicle image with shimmer
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
+                  child: isLoading
+                      ? Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.white,
+                    child: Container(
+                      height: 120,
+                      width: 150,
+                      color: Colors.grey[200],
+                    ),
+                  )
+                      : Image.network(
                     '${driverData!['vehicle']['vehicle_img_url']}',
                     height: 120,
                     width: 150,
                     fit: BoxFit.cover,
-                    // Fallback image
                     errorBuilder: (context, error, stackTrace) => Image.asset(
                       'images/default-car.png',
                       fit: BoxFit.cover,
@@ -420,19 +444,25 @@ class _GetMeetDriverState extends State<GetMeetDriver> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    isLoading
+                        ? Container(
+                      height: 20,
+                      width: 150,
+                      color: Colors.grey[200],
+                    )
+                        : Text(
                       driverData!['vehicle']['vehicle_model'] ?? 'Unknown Model',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    Text(
+                    isLoading
+                        ? Container(
+                      height: 20,
+                      width: 180,
+                      color: Colors.grey[200],
+                    )
+                        : Text(
                       '${driverData!['vehicle']['vehicle_color'] ?? 'Unknown Color'}, ${driverData!['vehicle']['vehicle_year'] ?? 'Unknown Year'}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black54,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
                     ),
                   ],
                 ),
@@ -445,21 +475,16 @@ class _GetMeetDriverState extends State<GetMeetDriver> {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () {
-            // Navigate to EmailVerify or any other screen
-            Get.to (() => RideEmailVerify());
+            Get.to(() => RideEmailVerify());
           },
           child: Center(
             child: Text(
               'Next',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
             ),
           ),
         ),
       ),
     );
   }
-
 }
