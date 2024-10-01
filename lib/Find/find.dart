@@ -551,14 +551,14 @@ class _FindScreenState extends State<FindScreen> {
                           builder: (BuildContext context) {
                             return AlertDialog(
                               title: Text('Upload Image'),
-                              content: Text('Please upload your vehicle image.'),
+                              content: Text('Please upload your driving license.'),
                               actions: [
                                 TextButton(
                                   onPressed: () {
                                     Navigator.pop(context); // Close the dialog
                                     Get.to(() => VerifyLicense()); // Navigate to upload image page
                                   },
-                                  child: Text('Upload Image'),
+                                  child: Text('Upload License'),
                                 ),
                               ],
                             );

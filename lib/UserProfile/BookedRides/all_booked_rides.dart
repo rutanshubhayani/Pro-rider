@@ -64,7 +64,7 @@ class BookedUserRides extends StatelessWidget {
                     unselectedLabelColor: Colors.black54,
                     tabs: [
                       TabItem(title: 'All'),
-                      TabItem(title: 'Cancel'),
+                      TabItem(title: 'Cancelled'),
                     ],
                   ),
                 ),
@@ -129,8 +129,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
       );
 
       if (response.statusCode == 200) {
-        print('All booked rides of user:');
-        print(response.body);
+        print('All booked rides of user: ${response.body}');
         setState(() {
           _bookedRides = jsonDecode(response.body);
           _isLoading = false;
@@ -210,7 +209,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
           snackPosition: SnackPosition.BOTTOM,
     );
       } else {
-        print('Failed to cancel booking: ${response.body}');
+        print('Failed to cancel booking. ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to cancel booking.')),
         );
@@ -301,7 +300,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                   width: 1.5,
                 ),
               ),
-              margin: const EdgeInsets.all(10),
+              margin: index == 0 ? const EdgeInsets.only(top: 10, left: 10, right: 10) : const EdgeInsets.only(left: 10, right: 10, bottom: 0), // Remove bottom margin for all but the last card
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -323,8 +322,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                             backgroundImage: ride['profile_photo'] != null && ride['profile_photo'].isNotEmpty
                                 ? NetworkImage(ride['profile_photo'])
                                 : AssetImage('images/Userpfp.png') as ImageProvider,
-                          )
-
+                          ),
                         ),
                         SizedBox(width: 10),
                         Text(
@@ -387,7 +385,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(top: 10,bottom: 10),
+                      padding: const EdgeInsets.only(top: 10, bottom: 10),
                       child: Text(
                         '$formattedDate',
                         style: TextStyle(
@@ -396,7 +394,6 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                         ),
                       ),
                     ),
-
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -408,8 +405,8 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                           foregroundColor: Colors.white,
                           backgroundColor: Color(0XFFd90000),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)
-                          )
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),

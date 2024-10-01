@@ -36,6 +36,7 @@ class _UserProfileState extends State<UserProfile> {
   bool _isNewUser = false; // Added flag to check if the user is new
   bool _isLoadingImage =
       true; // To show loading indicator while the image is loading
+  bool _isUploading = false; // Track upload status
 
   @override
   void initState() {
@@ -213,7 +214,8 @@ class _UserProfileState extends State<UserProfile> {
     // Compress the image before showing the dialog
     final compressedImage = await _compressImage(image);
 
-    return showDialog<void>(
+    // Show loading dialog
+    showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
@@ -222,8 +224,11 @@ class _UserProfileState extends State<UserProfile> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.file(compressedImage,
-                  height: 300, width: 300, fit: BoxFit.cover),
+              if (_isUploading)
+                Center(child: CircularProgressIndicator())
+              else
+                Image.file(compressedImage,
+                    height: 300, width: 300, fit: BoxFit.cover),
             ],
           ),
           actions: <Widget>[
@@ -235,13 +240,15 @@ class _UserProfileState extends State<UserProfile> {
             ),
             TextButton(
               child: Text('Confirm'),
-              onPressed: () {
+              onPressed: () async {
                 setState(() {
-                  _selectedImage = compressedImage;
+                  _isUploading = true; // Set uploading state
                 });
-                Navigator.of(context).pop();
-                _uploadProfilePhoto(
-                    compressedImage); // Upload the compressed image
+                Navigator.of(context).pop(); // Close confirmation dialog
+                await _uploadProfilePhoto(compressedImage); // Upload the compressed image
+                setState(() {
+                  _isUploading = false; // Reset uploading state after upload
+                });
               },
             ),
           ],
@@ -249,7 +256,6 @@ class _UserProfileState extends State<UserProfile> {
       },
     );
   }
-
   void _showImageOptions() {
     showModalBottomSheet(
       context: context,

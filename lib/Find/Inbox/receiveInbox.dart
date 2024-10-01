@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'newinbox.dart';
+import '../../newinbox.dart';
 
 class InboxList extends StatefulWidget {
   const InboxList({Key? key}) : super(key: key);
@@ -40,7 +40,8 @@ class _InboxListState extends State<InboxList> {
       MaterialPageRoute(
         builder: (context) => ChatScreen(
           recipientId: recipientId,
-          recipientUserName: recipientUserName, recipientUserImage: '',
+          recipientUserName: recipientUserName,
+          recipientUserImage: '',
         ),
       ),
     );
@@ -99,32 +100,37 @@ class _InboxListState extends State<InboxList> {
         itemCount: _conversations.length,
         itemBuilder: (context, index) {
           final conversation = _conversations[index];
-          return ListTile(
-            title: Row(
-              children: [
-
-                Text(conversation['recipientUserName']),
-              ],
+          bool isSelected = _selectedIndices.contains(index);
+          return Container(
+            color: isSelected ? Colors.grey[300] : Colors.transparent, // Highlight selected
+            child: ListTile(
+              title: Row(
+                children: [
+                  Expanded(child: Text(conversation['recipientUserName'])),
+                  if (isSelected) // Show checkmark if selected
+                    const Icon(Icons.check, color: Colors.green),
+                ],
+              ),
+              subtitle: Text(conversation['lastMessage']),
+              trailing: Text(conversation['timestamp']),
+              onTap: () {
+                if (_isMultiSelectMode) {
+                  _toggleSelection(index);
+                } else {
+                  _navigateToChat(
+                    conversation['recipientId'],
+                    conversation['recipientUserName'],
+                  );
+                }
+              },
+              onLongPress: () {
+                setState(() {
+                  _isMultiSelectMode = true;
+                  _toggleSelection(index);
+                });
+              },
+              selected: isSelected,
             ),
-            subtitle: Text(conversation['lastMessage']),
-            trailing: Text(conversation['timestamp']),
-            onTap: () {
-              if (_isMultiSelectMode) {
-                _toggleSelection(index);
-              } else {
-                _navigateToChat(
-                  conversation['recipientId'],
-                  conversation['recipientUserName'],
-                );
-              }
-            },
-            onLongPress: () {
-              setState(() {
-                _isMultiSelectMode = true;
-                _toggleSelection(index);
-              });
-            },
-            selected: _selectedIndices.contains(index),
           );
         },
       ),

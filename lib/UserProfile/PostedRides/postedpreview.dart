@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:travel/api/api.dart';
 
 class GetPostedPreview extends StatefulWidget {
   final Map<String, dynamic> tripData;
@@ -12,12 +17,14 @@ class GetPostedPreview extends StatefulWidget {
 
 class _GetPostedPreviewState extends State<GetPostedPreview> {
   late List<String> otherItems;
-  int BookSeats = 1;
+  List<dynamic> bookedUsers = [];
+  bool isLoading = true;
   @override
   void initState() {
     super.initState();
     // _formatDate();
     _processOtherItems();
+    _fetchBookedUsers();
     print('Get trip data : ============================');
     print(widget.tripData);
   }
@@ -34,6 +41,44 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
       otherItems = [];
     }
   }
+
+
+  Future<void> _fetchBookedUsers() async {
+    final postATripId = widget.tripData['post_a_trip_id'].toString();
+    final url = '${API.api1}/trip_booking_data/$postATripId';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      print('Response of booked user: ${response.body}');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('Booked user details: ${response.body}');
+        setState(() {
+          bookedUsers = data['bookings'];
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        Get.snackbar(
+          'Error',
+          'Error fetching booked users',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+     /* Get.snackbar(
+        'Error',
+        'Failed to fetch booking data',
+        snackPosition: SnackPosition.BOTTOM,
+      );*/
+    }
+  }
+
 
   String getLuggageLabel(String code) {
     switch (code) {
@@ -329,7 +374,7 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
               ],
             ),
             Padding(
-              padding: const EdgeInsets.only(right: 150.0, bottom: 100),
+              padding: const EdgeInsets.only(right: 150.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
@@ -349,7 +394,7 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: otherItems.map((item) {
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
+                          padding: const EdgeInsets.only(bottom: 10.0),
                           child: Container(
                             padding: EdgeInsets.all(8),
                             decoration: BoxDecoration(
@@ -378,6 +423,85 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
                 ],
               ),
             ),
+            Divider(thickness: 15, color: Colors.black12),
+
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text(
+                'Who booked your ride:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+              ),
+            ),
+            bookedUsers.isEmpty
+                ? Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text('No one has booked your ride yet.'),
+            )
+                : ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: bookedUsers.length,
+              itemBuilder: (context, index) {
+                final user = bookedUsers[index];
+                return ListTile(
+                  leading: CircleAvatar(
+                    radius: 24,
+                    backgroundImage: NetworkImage(user['profile_photo']),
+                  ),
+                  title: Row(
+                    children: [
+                      Text(user['uname'] ?? 'Unknown User'),
+                      Spacer(),
+                      Row(
+                        children: [
+                          Text(
+                            'Booked Seats: ',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                          Text(user['booked_seats'].toString() ?? 'N/A'),
+                        ],
+                      ),
+                    ],
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Email: ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(user['umail'].toString() ?? 'N/A'),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            'Mobile: ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(user['umobilenumber'].toString() ?? 'N/A'),
+                        ],
+                      ),
+                      // Show "this user has cancelled booking" if the status is "canceled"
+                      if (user['status'] == 'canceled') ...[
+                        SizedBox(height: 4),
+                        Text(
+                          'This user has cancelled booking',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+            SizedBox(height: 50,)
           ],
         ),
       ),

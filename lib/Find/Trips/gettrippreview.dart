@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:travel/Find/Trips/GetBook.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../Inbox/newinbox.dart';
+import '../../newinbox.dart';
 import '../Inbox/Inbox.dart';
 
 class GetTripPreview extends StatefulWidget {

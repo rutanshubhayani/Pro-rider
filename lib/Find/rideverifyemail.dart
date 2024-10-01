@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:convert';
@@ -271,7 +272,6 @@ class _RideEmailVerifyState extends State<RideEmailVerify> {
 
 
 
-
 class RideOTPVerify extends StatefulWidget {
   final String email;
 
@@ -282,65 +282,47 @@ class RideOTPVerify extends StatefulWidget {
 }
 
 class _RideOTPVerifyState extends State<RideOTPVerify> {
-  final List<TextEditingController> _otpControllers = List.generate(6, (index) => TextEditingController());
-  final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
-
-  int? bookedSeats; // Variable to store the booked seats
-  int? postATripId; // Variable to store the post_a_trip_id
+  TextEditingController _otpController = TextEditingController();
+  int? bookedSeats;
+  int? postATripId;
+  FocusNode otpFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-
-    // Fetch the booked seats and post_a_trip_id from SharedPreferences
     _loadPreferences();
-
-    // Add listener to each controller
-    for (int i = 0; i < 6; i++) {
-      _otpControllers[i].addListener(() {
-        String text = _otpControllers[i].text;
-        if (text.length == 1) {
-          // Move focus to next field when text is entered
-          if (i < 5) {
-            FocusScope.of(context).requestFocus(_focusNodes[i + 1]);
-          } else {
-            FocusScope.of(context).unfocus(); // Hide keyboard when OTP is complete
-            _verifyOTP();
-          }
-        }
-      });
-    }
-
-    // Request focus on the first OTP TextField after a short delay
-    Future.delayed(Duration(milliseconds: 100), () {
-      FocusScope.of(context).requestFocus(_focusNodes[0]);
+    // Focus on the OTP field after the build is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(otpFocusNode);
     });
   }
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    otpFocusNode.dispose();
+    super.dispose();
+  }
+
 
   Future<void> _loadPreferences() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       bookedSeats = prefs.getInt('bookedSeats');
-      postATripId = prefs.getInt('post_a_trip_id'); // Retrieve post_a_trip_id
+      postATripId = prefs.getInt('post_a_trip_id');
     });
-    print('Loaded booked seats: $bookedSeats');
-    print('Loaded post_a_trip_id: $postATripId'); // Print post_a_trip_id for debugging
   }
 
-
-
-
   Future<void> _verifyOTP() async {
-    String otp = _otpControllers.map((controller) => controller.text).join();
+    String otp = _otpController.text;
     final otpUrl = Uri.parse('${API.api1}/verify-otp');
     final bookSeatsUrl = Uri.parse('${API.api1}/book-seat/${postATripId}');
 
     try {
-      // Verify OTP
       final otpResponse = await http.post(
         otpUrl,
         headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
+          'Content-Type': 'application/json; charset=UTF-8'
         },
         body: jsonEncode(<String, dynamic>{
           'email': widget.email,
@@ -350,25 +332,22 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
       );
 
       if (otpResponse.statusCode == 200) {
-        // OTP verified successfully, now get the authToken from SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         final authToken = prefs.getString('authToken');
 
         if (authToken == null) {
-          Get.snackbar('Error', 'Authentication token not found', snackPosition: SnackPosition.BOTTOM);
+          Get.snackbar('Error', 'Authentication token not found',
+              snackPosition: SnackPosition.BOTTOM);
           return;
         }
 
-        // Book seats
         final bookSeatsResponse = await http.post(
           bookSeatsUrl,
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
-            'Authorization': 'Bearer $authToken', // Use the authToken for authorization
+            'Authorization': 'Bearer $authToken',
           },
-          body: jsonEncode(<String, dynamic>{
-            'booked_seats': bookedSeats,
-          }),
+          body: jsonEncode(<String, dynamic>{'booked_seats': bookedSeats}),
         );
 
         if (bookSeatsResponse.statusCode == 201) {
@@ -379,24 +358,22 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
         } else {
           print('Failed to book seats: ${bookSeatsResponse.body}');
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to book seats: ${bookSeatsResponse.body}')),
+            SnackBar(content: Text('Failed to book seats.')),
           );
         }
       } else {
         print('Failed to verify OTP: ${otpResponse.body}');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to verify OTP: ${otpResponse.body}')),
+          SnackBar(content: Text('Failed to verify OTP.')),
         );
       }
     } catch (e) {
       print('Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(content: Text('Error')),
       );
     }
   }
-
-
 
 
   @override
@@ -414,66 +391,44 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
                   padding: const EdgeInsets.only(top: 30.0, bottom: 10),
                   child: Text(
                     'Enter OTP sent to your provided email.',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
                 Text(
                   'Enter provided OTP from email to schedule your memorable journey.',
-                  style: TextStyle(
-                      color: Colors.black54
-                  ),
+                  style: TextStyle(color: Colors.black54),
                 ),
-                /*if (bookedSeats != null) ...[
-                  SizedBox(height: 20),
-                  Text(
-                    'Booked Seats: $bookedSeats',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],*/
               ],
             ),
           ),
           SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(6, (index) {
-                return SizedBox(
-                  width: 40,
-                  child: TextField(
-                    controller: _otpControllers[index],
-                    focusNode: _focusNodes[index],
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    maxLength: 1,
-                    decoration: InputDecoration(
-                      filled: true,
-                      border: OutlineInputBorder(
-                          borderSide: BorderSide.none
-                      ),
-                      counterText: '',
-                    ),
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (value) {
-                      if (value.isEmpty && index > 0) {
-                        // Move focus to previous field if current field is empty
-                        FocusScope.of(context).requestFocus(_focusNodes[index - 1]);
-                      } else if (value.length == 1 && index < 5) {
-                        // Move focus to next field when text is entered
-                        FocusScope.of(context).requestFocus(_focusNodes[index + 1]);
-                      }
-                    },
-                  ),
-                );
-              }),
+            child: PinCodeTextField(
+              appContext: context,
+              length: 6,
+              controller: _otpController,
+              focusNode: otpFocusNode,
+              autoDisposeControllers: false,
+              pastedTextStyle: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+              keyboardType: TextInputType.number,
+              animationType: AnimationType.fade,
+              pinTheme: PinTheme(
+                shape: PinCodeFieldShape.box,
+                borderRadius: BorderRadius.circular(5),
+                fieldHeight: 50,
+                fieldWidth: 40,
+                activeColor: Colors.blue,
+                selectedColor: Colors.blueAccent,
+                inactiveColor: Colors.grey,
+              ),
+              onChanged: (value) {},
+              onCompleted: (value) {
+                _verifyOTP();
+              },
             ),
           ),
           Padding(
@@ -482,18 +437,14 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
               children: [
                 Text(
                   'Verifying OTP',
-                  style: TextStyle(
-                      color: Colors.black54
-                  ),
+                  style: TextStyle(color: Colors.black54),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 10.0),
                   child: SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.grey,
-                    ),
+                    child: CircularProgressIndicator(color: Colors.grey),
                   ),
                 ),
               ],
@@ -510,10 +461,7 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
                 },
                 child: Text(
                   'Verify OTP',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
                 style: ElevatedButton.styleFrom(
                   elevation: 7,
@@ -529,16 +477,5 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    for (var controller in _otpControllers) {
-      controller.dispose();
-    }
-    for (var focusNode in _focusNodes) {
-      focusNode.dispose();
-    }
-    super.dispose();
   }
 }

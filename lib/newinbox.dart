@@ -32,13 +32,25 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _getToken();
     _loadMessages();
-    _connectWebSocket();
+    // _reconnectWebSocket();
+
   }
+
+/*
+  void _reconnectWebSocket() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _connectWebSocket();
+      }
+    });
+  }*/
 
   Future<void> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
+    print(prefs.getString('authToken'));
     setState(() {
       _token = prefs.getString('authToken');
+      _connectWebSocket();
     });
   }
 
@@ -57,34 +69,46 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _connectWebSocket() {
     _channel = WebSocketChannel.connect(Uri.parse('ws://202.21.32.153:8081'));
+    print(_token);
     if (_token != null) {
+      print("add method called");
       _channel.sink.add(jsonEncode({'token': _token}));
     }
-
+    print("connect");
     _channel.stream.listen(
           (message) {
+            print('channel');
         _handleIncomingMessage(message);
       },
-      onError: (error) => print("WebSocket error: $error"),
+      onError: (error) {
+        print("WebSocket error: $error"); // Print error message
+      },
       onDone: () {
         print("WebSocket connection closed");
-        _connectWebSocket();
+        //_connectWebSocket(); // Reconnect if connection closes
       },
     );
   }
+
 
   void _handleIncomingMessage(String message) {
     final parsedMessage = json.decode(message);
     final sender = parsedMessage['from'];
     final content = parsedMessage['content'];
-    if (sender != null && content != null) {
+    final error = parsedMessage['error']; // Handle error in the response if any
+
+    if (error != null) {
+      print("Error from server: $error"); // Print the error received from the server
+    } else if (sender != null && content != null) {
+      print("Response from server: $sender: $content"); // Print the response
       setState(() {
-        _messages.insert(0, "$sender: $content"); // Add new messages to the top
+        _messages.insert(0, "$sender: $content"); // Add response to the top
         _scrollToTop();
       });
       _saveMessages();
     }
   }
+
 
   void _scrollToTop() {
     if (_scrollController.hasClients) {
@@ -114,15 +138,26 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       setState(() {
-        _messages.insert(0, '$messageText'); // Add sent messages to the top
+        _messages.insert(0, 'You: $messageText'); // Add sent messages to the top
         _messageController.clear();
         _scrollToTop();
       });
 
-      _channel.sink.add(jsonEncode({'token': _token, 'to': int.parse(widget.recipientId), 'content': messageText}));
+      final messageData = {
+        'token': _token,
+        'to': int.parse(widget.recipientId),
+        'content': messageText,
+      };
+
+      // Print the message that is being sent to WebSocket
+      print("Sending message: $messageData");
+
+      _channel.sink.add(jsonEncode(messageData));
+
       _saveMessages();
     }
   }
+
 
   bool _hasIntegers(String text) {
     return RegExp(r'\d').hasMatch(text);
@@ -136,7 +171,7 @@ class _ChatScreenState extends State<ChatScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Row(
+        title: const Row(
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.red),
             SizedBox(width: 8),
@@ -145,7 +180,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         content: Text(message),
         actions: <Widget>[
-          TextButton(child: Text('OK'), onPressed: () => Navigator.of(context).pop()),
+          TextButton(child: const Text('OK'), onPressed: () => Navigator.of(context).pop()),
         ],
       ),
     );

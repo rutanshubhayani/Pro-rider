@@ -338,11 +338,12 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         );
       }
     } catch (e) {
+      print(e);
+
       // Show error message if request fails
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to send OTP: Server Error')),
       );
-      print('$e');
     }
   }
 

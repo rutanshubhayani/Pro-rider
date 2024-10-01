@@ -192,11 +192,11 @@ class _VehicleDetailsState extends State<VehicleDetails> {
         setState(() {
           vehicleDetails = data['vehicles'].isNotEmpty ? data['vehicles'][0] : null;
           if (vehicleDetails != null) {
-            _modelController.text = vehicleDetails!['vehicle_model'];
+            _modelController.text = vehicleDetails!['vehicle_model'] ?? 'Loading...';
             _selectedType = vehicleDetails!['vehicle_type'] ?? 'Select';
             _selectedColor = vehicleDetails!['vehicle_color'] ?? 'Select';
-            _yearController.text = vehicleDetails!['vehicle_year']?.toString() ?? '';
-            _licenseController.text = vehicleDetails!['licence_plate'] ?? '';
+            _yearController.text = vehicleDetails!['vehicle_year']?.toString() ?? 'Loading...';
+            _licenseController.text = vehicleDetails!['licence_plate'] ?? 'Loading...';
             _fetchVehicleImage(); // Fetch the image
           } else {
             // No vehicle details found

@@ -20,7 +20,7 @@ class PostedUserRides extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
-            'All User Rides',
+            'All Posted Rides',
             style: TextStyle(
               fontWeight: FontWeight.bold,
             ),
