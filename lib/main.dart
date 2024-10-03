@@ -8,8 +8,8 @@ import 'UserProfile/License/verifylicenese.dart';
 import 'UserProfile/vechiledetails.dart';
 
 void main() {
-  Get.put(VehicleDetailsController()); // or Get.lazyPut(() => VehicleDetailsController());
-  Get.put(ImageUploadController()); // or Get.lazyPut(() => VehicleDetailsController());
+  /*Get.put(VehicleDetailsController()); // or Get.lazyPut(() => VehicleDetailsController());
+  Get.put(ImageUploadController()); // or Get.lazyPut(() => VehicleDetailsController());*/
   runApp(MyApp());
 }
 

@@ -16,6 +16,7 @@ import '../api/api.dart';
 
 
 
+/*
 class VehicleDetailsController extends GetxController {
   var isDetailsPosted = false.obs;
 
@@ -37,6 +38,7 @@ class VehicleDetailsController extends GetxController {
     isDetailsPosted.value = status;
   }
 }
+*/
 
 class VehicleDetails extends StatefulWidget {
   const VehicleDetails({super.key});
@@ -209,6 +211,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
           content: Text(data['message']),
         ));*/
       } else if (response.statusCode == 404) {
+        print('new user');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('You have not uploaded any details.'),
         ));
@@ -342,8 +345,8 @@ class _VehicleDetailsState extends State<VehicleDetails> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Access the VehicleDetailsController
-        final vehicleDetailsController = Get.find<VehicleDetailsController>();
-        vehicleDetailsController._saveVehicleDetailsStatus(true);
+       /* final vehicleDetailsController = Get.find<VehicleDetailsController>();
+        vehicleDetailsController._saveVehicleDetailsStatus(true);*/
         setState(() {
           isEditing = false;
           _isSubmitting = false; // Reset loading state

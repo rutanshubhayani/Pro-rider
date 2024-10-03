@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../newinbox.dart';
+import 'package:web_socket_channel/io.dart';
+import 'package:get/get.dart';
+import '../../newinbox.dart'; // Adjust import based on your structure
 
 class InboxList extends StatefulWidget {
   const InboxList({Key? key}) : super(key: key);
@@ -14,21 +16,64 @@ class _InboxListState extends State<InboxList> {
   List<Map<String, dynamic>> _conversations = [];
   Set<int> _selectedIndices = {}; // Store selected indices
   bool _isMultiSelectMode = false; // Track multi-select mode
+  IOWebSocketChannel? _channel;
 
   @override
   void initState() {
     super.initState();
+    _connectToWebSocket();
     _loadConversations(); // Load stored conversations on startup
   }
 
+  @override
+  void dispose() {
+    _channel?.sink.close(); // Close the WebSocket connection
+    super.dispose();
+  }
+
+  // Establish WebSocket connection
+  void _connectToWebSocket() {
+    String socketUrl = 'ws://202.21.32.153:8081/socket'; // Replace with your socket URL
+    _channel = IOWebSocketChannel.connect(socketUrl);
+
+    _channel!.stream.listen((message) {
+      _handleIncomingMessage(message);
+    }, onError: (error) {
+      print('WebSocket error: $error');
+    });
+  }
+
+  // Handle incoming messages from WebSocket
+  void _handleIncomingMessage(String message) async {
+    final parsedMessage = json.decode(message);
+    final senderId = parsedMessage['from'];
+    final content = parsedMessage['content'];
+    final timestamp = DateTime.now().toString();
+
+    final prefs = await SharedPreferences.getInstance();
+
+    List<String> storedMessages =
+        prefs.getStringList('chatMessages_$senderId') ?? [];
+    storedMessages.insert(0, jsonEncode({
+      'content': content,
+      'read': false, // Mark the message as unread
+      'timestamp': timestamp,
+    }));
+
+    await prefs.setStringList('chatMessages_$senderId', storedMessages);
+
+    _loadConversations(); // Reload conversations to reflect unread status
+  }
+
+  // Load stored conversations from SharedPreferences
   Future<void> _loadConversations() async {
     final prefs = await SharedPreferences.getInstance();
     final storedConversations = prefs.getStringList('conversations') ?? [];
 
-    // Decode stored conversations and add them to the list
     setState(() {
       _conversations = storedConversations
-          .map((conversation) => json.decode(conversation) as Map<String, dynamic>)
+          .map((conversation) =>
+      json.decode(conversation) as Map<String, dynamic>)
           .toList();
     });
   }
@@ -57,6 +102,7 @@ class _InboxListState extends State<InboxList> {
     });
   }
 
+  // Delete selected conversations from SharedPreferences
   void _deleteSelectedConversations() async {
     final prefs = await SharedPreferences.getInstance();
     final storedConversations = prefs.getStringList('conversations') ?? [];
@@ -71,7 +117,8 @@ class _InboxListState extends State<InboxList> {
     await prefs.setStringList('conversations', storedConversations);
     setState(() {
       _conversations = storedConversations
-          .map((conversation) => json.decode(conversation) as Map<String, dynamic>)
+          .map((conversation) =>
+      json.decode(conversation) as Map<String, dynamic>)
           .toList();
       _selectedIndices.clear();
       _isMultiSelectMode = false; // Exit multi-select mode
@@ -101,14 +148,22 @@ class _InboxListState extends State<InboxList> {
         itemBuilder: (context, index) {
           final conversation = _conversations[index];
           bool isSelected = _selectedIndices.contains(index);
+          bool isUnread = conversation['lastMessageUnread'] == true;
+
           return Container(
-            color: isSelected ? Colors.grey[300] : Colors.transparent, // Highlight selected
+            color: isSelected
+                ? Colors.grey[300]
+                : isUnread
+                ? Colors.blue[50] // Highlight unread conversations
+                : Colors.transparent, // Highlight selected
             child: ListTile(
               title: Row(
                 children: [
                   Expanded(child: Text(conversation['recipientUserName'])),
                   if (isSelected) // Show checkmark if selected
                     const Icon(Icons.check, color: Colors.green),
+                  if (isUnread) // Show unread badge
+                    const Icon(Icons.circle, color: Colors.red, size: 8),
                 ],
               ),
               subtitle: Text(conversation['lastMessage']),

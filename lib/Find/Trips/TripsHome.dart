@@ -1,6 +1,9 @@
-import 'dart:io';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/Inbox/Inbox.dart';
 import 'package:travel/Find/find.dart';
 import 'package:travel/auth/login.dart';
@@ -12,6 +15,7 @@ import 'package:travel/Find/Trips/trips.dart';
 import '../../UserProfile/License/verifylicenese.dart';
 import '../../UserProfile/Userprofile.dart';
 import '../../UserProfile/vechiledetails.dart';
+import '../../api/api.dart';
 import '../Inbox/receiveInbox.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,6 +30,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
+  int _selectedIndex = 0;
+
 
   @override
   void initState() {
@@ -42,6 +48,17 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+      if (index == 1) {
+        // Navigate to Trips screen
+        Get.to(() => HomeScreen(initialIndex: 1));
+      }
+    });
+  }
+
+
   void _onNavBarItemTapped(int index) {
     setState(() {
       _currentIndex = index;
@@ -50,6 +67,117 @@ class _HomeScreenState extends State<HomeScreen> {
         curve: Curves.easeInOut,
       );
     });
+  }
+
+  Future<void> _checkTripPostConditions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token != null) {
+      try {
+        final vehicleResponse = await http.get(
+          Uri.parse('${API.api1}/get-vehicle-data'),
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        final licenseResponse = await http.get(
+          Uri.parse('${API.api1}/images'),
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        int? licenseStatus;
+        if (licenseResponse.statusCode == 200) {
+          final jsonResponse = json.decode(licenseResponse.body);
+          licenseStatus = int.tryParse(jsonResponse['status'].toString());
+        }
+
+        bool vehicleDataFound = vehicleResponse.statusCode == 200;
+
+        if (licenseStatus == 1 && vehicleDataFound) {
+          Get.to(() => PostTrip());
+        } else {
+          _showStatusDialog(context, licenseStatus, vehicleDataFound);
+        }
+      } catch (e) {
+        _showErrorDialog(context, 'An error occurred. Please try again.');
+      }
+    } else {
+      print('Auth token not found');
+    }
+  }
+
+
+  void _showStatusDialog(BuildContext context, int? licenseStatus, bool vehicleDataFound) {
+    String message = '';
+    bool showLicenseAlert = licenseStatus != 1;
+    bool showVehicleAlert = !vehicleDataFound;
+
+    if (showLicenseAlert) {
+      message += 'Your license is either not uploaded or under approval.\n';
+    }
+
+    if (showVehicleAlert) {
+      message += 'You have not uploaded vehicle details. Please upload before posting a ride.\n';
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Status Alert'),
+          content: Text(message),
+          actions: [
+            if (showLicenseAlert)
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Get.to(() => VerifyLicense());
+                },
+                child: Text('Go to License'),
+              ),
+            if (showVehicleAlert)
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Get.to(() => VehicleDetails());
+                },
+                child: Text('Go to Vehicle Details'),
+              ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -106,81 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Tooltip(
                 message: 'Post a trip as driver',
                 child: InkWell(
-                  onTap: () {
-                    final vehicleController = Get.put(VehicleDetailsController());
-                    final imageController = Get.put(ImageUploadController());
-
-                    bool isDetailsPosted = vehicleController.isDetailsPosted.value;
-                    bool isImageUploaded = imageController.isImageUploaded.value;
-
-                    if (!isImageUploaded && !isDetailsPosted) {
-                      // Show alert if neither image nor details are uploaded
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: Text('Upload Required'),
-                            content: Text('Please upload both your vehicle image and vehicle details.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Get.to(() => VerifyLicense()); // Navigate to upload image page
-                                },
-                                child: Text('Upload License'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Get.to(() => VehicleDetails()); // Navigate to upload details page
-                                },
-                                child: Text('Upload Details'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    } else if (!isImageUploaded) {
-                      // Show alert if only image is not uploaded
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: Text('Upload Image'),
-                            content: Text('Please upload your vehicle image.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Get.to(() => VerifyLicense()); // Navigate to upload image page
-                                },
-                                child: Text('Upload Image'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    } else if (!isDetailsPosted) {
-                      // Show alert if only details are not uploaded
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: Text('Upload Details'),
-                            content: Text('Please upload your vehicle details.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Get.to(() => VehicleDetails()); // Navigate to upload details page
-                                },
-                                child: Text('Upload Details'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    } else {
-                      // Navigate to PostTrip if both image and details are uploaded
-                      Get.to(() => PostTrip());
-                    }
-                  },
+                  onTap: _checkTripPostConditions,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -191,10 +245,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
-
             Padding(
-              padding: const EdgeInsets.only(top: 15.0,bottom: 15),
+              padding: const EdgeInsets.only(top: 15.0, bottom: 15),
               child: VerticalDivider(
                 width: 1,
                 color: Colors.grey, // Color of the divider
@@ -204,22 +256,27 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Tooltip(
                 message: 'Inbox',
                 child: InkWell(
-                  onTap: ()
-                  {
+                  onTap: () {
                     Get.to(() => InboxList()); // Navigate to HomeScreen
                   },
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.inbox,size: 20,),
-                      Text('Inbox',style: TextStyle(fontSize: 14),),
+                      Icon(
+                        Icons.inbox,
+                        size: 20,
+                      ),
+                      Text(
+                        'Inbox',
+                        style: TextStyle(fontSize: 14),
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(top: 15.0,bottom: 15),
+              padding: const EdgeInsets.only(top: 15.0, bottom: 15),
               child: VerticalDivider(
                 width: 1,
                 color: Colors.grey, // Color of the divider
@@ -230,19 +287,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 message: 'Requests details',
                 child: InkWell(
                   onTap: () {
+                    _onItemTapped(1); // Set index for Trips screen
                   },
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.trip_origin,size: 20,),
-                      Text('Requests',style: TextStyle(fontSize: 14),),
+                      Icon(
+                        Icons.trip_origin,
+                        size: 20,
+                      ),
+                      Text(
+                        'Requests',
+                        style: TextStyle(fontSize: 14),
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(top: 15.0,bottom: 15),
+              padding: const EdgeInsets.only(top: 15.0, bottom: 15),
               child: VerticalDivider(
                 width: 1,
                 color: Colors.grey, // Color of the divider
@@ -253,13 +317,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 message: 'Reqeust a trip',
                 child: InkWell(
                   onTap: () {
-                    Get.to(Postrequest());
+                    Get.to(() => Postrequest());
                   },
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.person,size: 20,),
-                      Text('Passenger',style: TextStyle(fontSize: 14),),
+                      Icon(
+                        Icons.person,
+                        size: 20,
+                      ),
+                      Text(
+                        'Passenger',
+                        style: TextStyle(fontSize: 14),
+                      ),
                     ],
                   ),
                 ),

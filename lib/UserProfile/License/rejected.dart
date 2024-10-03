@@ -103,8 +103,8 @@ class _RejectedScreenState extends State<RejectedScreen> {
         // Check the status and navigate based on its value
         if (mounted) {
           if (status == 1 || status == '1') {
-            final imageUploadController = Get.find<ImageUploadController>();
-            imageUploadController.saveUploadStatus(true); // Save upload status
+          /*  final imageUploadController = Get.find<ImageUploadController>();
+            imageUploadController.saveUploadStatus(true); // Save upload status*/
             print('Navigating to PhotoDisplayScreen');
             Navigator.pushReplacement(
               context,

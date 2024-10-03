@@ -53,8 +53,39 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _saveMessages() async {
     final prefs = await SharedPreferences.getInstance();
-    // Save messages specific to the current recipient
+
+    // Save specific messages for the current recipient
     await prefs.setStringList('chatMessages_${widget.recipientId}', _messages);
+
+    // Store or update the conversation summary in 'conversations'
+    List<String> storedConversations = prefs.getStringList('conversations') ?? [];
+
+    // Create a conversation object (or find and update it)
+    Map<String, dynamic> conversation = {
+      'recipientId': widget.recipientId,
+      'recipientUserName': widget.recipientUserName,
+      'lastMessage': _messages.isNotEmpty ? _messages[0] : '', // The most recent message
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    // Update or add the conversation
+    bool conversationExists = false;
+    for (int i = 0; i < storedConversations.length; i++) {
+      Map<String, dynamic> existingConversation = json.decode(storedConversations[i]);
+      if (existingConversation['recipientId'] == widget.recipientId) {
+        // Update the existing conversation
+        storedConversations[i] = json.encode(conversation);
+        conversationExists = true;
+        break;
+      }
+    }
+
+    if (!conversationExists) {
+      storedConversations.add(json.encode(conversation));
+    }
+
+    // Save the updated conversation list
+    await prefs.setStringList('conversations', storedConversations);
   }
 
   void _connectWebSocket() {

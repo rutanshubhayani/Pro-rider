@@ -35,8 +35,8 @@ class FindScreen extends StatefulWidget {
 }
 
 class _FindScreenState extends State<FindScreen> {
-  final VehicleDetailsController vehicleDetailsController =
-      Get.find(); // Access your controller
+  /*final VehicleDetailsController vehicleDetailsController =
+      Get.find(); // Access your controller*/
   late HttpHandler hs;
 
   TextEditingController departureController = TextEditingController();
@@ -120,6 +120,118 @@ class _FindScreenState extends State<FindScreen> {
       });
     }
   }
+
+  Future<void> _checkTripPostConditions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token != null) {
+      try {
+        final vehicleResponse = await http.get(
+          Uri.parse('${API.api1}/get-vehicle-data'),
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        final licenseResponse = await http.get(
+          Uri.parse('${API.api1}/images'),
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        int? licenseStatus;
+        if (licenseResponse.statusCode == 200) {
+          final jsonResponse = json.decode(licenseResponse.body);
+          licenseStatus = int.tryParse(jsonResponse['status'].toString());
+        }
+
+        bool vehicleDataFound = vehicleResponse.statusCode == 200;
+
+        if (licenseStatus == 1 && vehicleDataFound) {
+          Get.to(() => PostTrip());
+        } else {
+          _showStatusDialog(context, licenseStatus, vehicleDataFound);
+        }
+      } catch (e) {
+        _showErrorDialog(context, 'An error occurred. Please try again.');
+      }
+    } else {
+      print('Auth token not found');
+    }
+  }
+
+
+  void _showStatusDialog(BuildContext context, int? licenseStatus, bool vehicleDataFound) {
+    String message = '';
+    bool showLicenseAlert = licenseStatus != 1;
+    bool showVehicleAlert = !vehicleDataFound;
+
+    if (showLicenseAlert) {
+      message += 'Your license is either not uploaded or under approval.\n';
+    }
+
+    if (showVehicleAlert) {
+      message += 'You have not uploaded vehicle details. Please upload before posting a ride.\n';
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Status Alert'),
+          content: Text(message),
+          actions: [
+            if (showLicenseAlert)
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Get.to(() => VerifyLicense());
+                },
+                child: Text('Go to License'),
+              ),
+            if (showVehicleAlert)
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Get.to(() => VehicleDetails());
+                },
+                child: Text('Go to Vehicle Details'),
+              ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   @override
   void initState() {
@@ -541,80 +653,21 @@ class _FindScreenState extends State<FindScreen> {
           height: kBottomNavigationBarHeight,
           child: Row(
             children: [
-              Expanded(
-                child: Tooltip(
-                  message: 'Post a trip as driver',
-                  child: InkWell(
-                    onTap: () async {
-                      final prefs = await SharedPreferences.getInstance();
-                      final token = prefs.getString('authToken');
-
-                      if (token != null) {
-                        try {
-                          // Fetch vehicle data
-                          final vehicleResponse = await http.get(
-                            Uri.parse('${API.api1}/get-vehicle-data'),
-                            headers: {
-                              'Authorization': 'Bearer $token',
-                            },
-                          );
-
-                          // Fetch license response
-                          final licenseResponse = await http.get(
-                            Uri.parse('${API.api1}/images'),
-                            headers: {
-                              'Authorization': 'Bearer $token',
-                            },
-                          );
-
-                          int? licenseStatus;
-                          if (licenseResponse.statusCode == 200) {
-                            final jsonResponse =
-                                json.decode(licenseResponse.body);
-                            licenseStatus =
-                                int.tryParse(jsonResponse['status'].toString());
-                            print(
-                                'Retrieved license status: $licenseStatus'); // Debugging
-                          }
-
-                          if (vehicleResponse.statusCode == 200) {
-                            final vehicleData =
-                                json.decode(vehicleResponse.body);
-                            var vehicleStatus =
-                                vehicleData['vehicles'][0]['status'];
-                            print(
-                                'Retrieved vehicle status: $vehicleStatus'); // Debugging
-
-                            // Check both statuses before navigating
-                            if (licenseStatus == 1 && vehicleStatus == 1) {
-                              Get.to(() => PostTrip());
-                            } else {
-                              _showStatusDialog(
-                                  context, licenseStatus, vehicleStatus);
-                            }
-                          } else {
-                            // Call the new error handling method for vehicle data not found
-                            _showVehicleDataErrorDialog(context);
-                          }
-                        } catch (e) {
-                          print('Error: $e');
-                          _showErrorDialog(
-                              context, 'An error occurred. Please try again.');
-                        }
-                      } else {
-                        print('Auth token not found');
-                      }
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.directions_car, size: 20),
-                        Text('Driver', style: TextStyle(fontSize: 14)),
-                      ],
-                    ),
-                  ),
-                ),
+          Expanded(
+          child: Tooltip(
+          message: 'Post a trip as driver',
+            child: InkWell(
+              onTap: _checkTripPostConditions,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.directions_car, size: 20),
+                  Text('Driver', style: TextStyle(fontSize: 14)),
+                ],
               ),
+            ),
+          ),
+        ),
               Padding(
                 padding: const EdgeInsets.only(top: 15.0, bottom: 15),
                 child: VerticalDivider(
@@ -777,90 +830,4 @@ class _FindScreenState extends State<FindScreen> {
       onTap: () => _selectDate(context),
     );
   }
-}
-
-void _showStatusDialog(
-    BuildContext context, int? licenseStatus, int vehicleStatus) {
-  String message = 'Check your license.\n';
-  bool showLicenseAlert = licenseStatus != 1;
-
-  if (showLicenseAlert) {
-    message +=
-        'You have not uploaded your license or your license is under approval. Please recheck it before posting a trip.\n';
-  }
-
-  // Show dialog with redirection options based on status
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text('License Alert'),
-        content: Text(message),
-        actions: [
-          if (showLicenseAlert)
-            Column(
-              children: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close dialog before navigation
-                    Get.to(() =>
-                        VerifyLicense()); // Replace with your License screen
-                  },
-                  child: Text('Go to License'),
-                ),
-              ],
-            ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-            },
-            child: Text('Close'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-void _showVehicleDataErrorDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text('Upload details'),
-        content: Text(
-            'You have not uploaded vehicle details. Please upload before posting a ride.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog before navigation
-              Get.to(() =>
-                  VehicleDetails()); // Replace with your Vehicle Details screen
-            },
-            child: Text('Upload Details'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-void _showErrorDialog(BuildContext context, String message) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text('Error'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('Close'),
-          ),
-        ],
-      );
-    },
-  );
 }
