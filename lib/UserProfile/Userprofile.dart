@@ -325,7 +325,7 @@ class _UserProfileState extends State<UserProfile> {
         backgroundColor: Colors.transparent,
       ),
       body: Padding(
-        padding: const EdgeInsets.only(top: 30.0, left: 16, right: 16, bottom: 10),
+        padding: const EdgeInsets.only(top: 80.0, left: 16, right: 16, bottom: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -410,7 +410,7 @@ class _UserProfileState extends State<UserProfile> {
                       );
                     },
                   ),
-                  CylindricalTile(
+                  /*CylindricalTile(
                     leadingIcon: Icons.history,
                     title: 'Your posted rides',
                     onTap: () {
@@ -433,7 +433,7 @@ class _UserProfileState extends State<UserProfile> {
                         ),
                       );
                     },
-                  ),
+                  ),*/
                   CylindricalTile(
                     leadingIcon: Icons.perm_contact_calendar_outlined,
                     title: 'Profile settings',

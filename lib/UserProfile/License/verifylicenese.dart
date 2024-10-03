@@ -98,6 +98,7 @@ class _VerifyLicenseState extends State<VerifyLicense> {
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
+
         final base64Image = jsonResponse['image'];
         final status = jsonResponse['status'];
 

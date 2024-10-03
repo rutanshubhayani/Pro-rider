@@ -7,6 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/routes/transitions_type.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/Inbox/Inbox.dart';
 import 'package:travel/Trial/new.dart';
 import 'package:travel/Find/Passenger/postrequest.dart';
@@ -25,16 +26,17 @@ import '../widget/internet.dart';
 import 'notification.dart';
 
 class FindScreen extends StatefulWidget {
-
-
-  const FindScreen({Key? key,}) : super(key: key);
+  const FindScreen({
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<FindScreen> createState() => _FindScreenState();
 }
 
 class _FindScreenState extends State<FindScreen> {
-  final VehicleDetailsController vehicleDetailsController = Get.find(); // Access your controller
+  final VehicleDetailsController vehicleDetailsController =
+      Get.find(); // Access your controller
   late HttpHandler hs;
 
   TextEditingController departureController = TextEditingController();
@@ -47,17 +49,18 @@ class _FindScreenState extends State<FindScreen> {
   bool showDestinationContainer = false;
   List<dynamic> departureSuggestions = [];
   List<dynamic> destinationSuggestions = [];
-  late TextEditingController activeController; // Keep track of the active controller
+  late TextEditingController
+      activeController; // Keep track of the active controller
 
   List<String> recentSearches = []; // List to store recent searches
 
   int _selectedIndex = 0;
 
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      if (index == 1) { // Navigate to Trips screen
+      if (index == 1) {
+        // Navigate to Trips screen
         Get.to(() => HomeScreen(initialIndex: 1));
       }
     });
@@ -66,7 +69,8 @@ class _FindScreenState extends State<FindScreen> {
   // Fetch cities from API
   Future<List<dynamic>> fetchCities(String query) async {
     try {
-      final response = await http.get(Uri.parse('${API.api1}/cities')); // Replace with your API URL
+      final response = await http
+          .get(Uri.parse('${API.api1}/cities')); // Replace with your API URL
 
       if (response.statusCode == 200) {
         final List<dynamic> cities = json.decode(response.body);
@@ -74,7 +78,8 @@ class _FindScreenState extends State<FindScreen> {
           final cityName = city['city']?.toLowerCase() ?? '';
           final provinceName = city['pname']?.toLowerCase() ?? '';
           final searchQuery = query.toLowerCase();
-          return cityName.contains(searchQuery) || provinceName.contains(searchQuery);
+          return cityName.contains(searchQuery) ||
+              provinceName.contains(searchQuery);
         }).toList();
       } else {
         throw Exception('Failed to load cities: ${response.statusCode}');
@@ -85,7 +90,8 @@ class _FindScreenState extends State<FindScreen> {
     }
   }
 
-  void _updateSuggestions(String pattern, TextEditingController controller) async {
+  void _updateSuggestions(
+      String pattern, TextEditingController controller) async {
     if (pattern.isNotEmpty) {
       setState(() {
         if (controller == departureController) {
@@ -127,9 +133,9 @@ class _FindScreenState extends State<FindScreen> {
   void chkDB() async {
     bool chki = await hs.netconnection(true);
     if (chki == false) {
-      final res =  Navigator.of(context).pushAndRemoveUntil(
+      final res = Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const OnInternet()),
-              (Route<dynamic> route) => false);
+          (Route<dynamic> route) => false);
 
       if (res != null && res.toString() == 'done') {
         chkDB();
@@ -200,7 +206,6 @@ class _FindScreenState extends State<FindScreen> {
     );
   }
 
-
   Future<void> _performSearch() async {
     String departure = departureController.text;
     String destination = destinationController.text;
@@ -219,19 +224,37 @@ class _FindScreenState extends State<FindScreen> {
         setState(() {
           recentSearches.insert(0, searchQuery); // Add to the top of the list
           if (recentSearches.length > 5) {
-            recentSearches.removeLast(); // Maintain a maximum of 5 recent searches
+            recentSearches
+                .removeLast(); // Maintain a maximum of 5 recent searches
           }
         });
       }
 
-      // Perform API request
+      // Perform API request with token
       try {
-        final response = await http.get(Uri.parse(
-            '${API.api1}/find-trip?departure=$departure&destination=$destination&leaving_date=$date'));
+        // Retrieve token from SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        final authToken = prefs.getString('authToken') ?? '';
+
+        if (authToken.isEmpty) {
+          _showAlert('Authentication token not found.');
+          return;
+        }
+
+        final response = await http.get(
+          Uri.parse(
+            '${API.api1}/find-trip?departure=$departure&destination=$destination&leaving_date=$date',
+          ),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $authToken', // Add the token here
+          },
+        );
 
         if (response.statusCode == 200) {
           final List<dynamic> resultsJson = json.decode(response.body);
-          final List<Map<String, dynamic>> results = List<Map<String, dynamic>>.from(resultsJson);
+          final List<Map<String, dynamic>> results =
+              List<Map<String, dynamic>>.from(resultsJson);
           print('API called');
           if (results.isNotEmpty) {
             // Handle successful response and navigate to results page
@@ -240,7 +263,10 @@ class _FindScreenState extends State<FindScreen> {
               MaterialPageRoute(
                 builder: (context) => SearchResult(
                   results: results, // Pass the results to SearchResult
-                  selectedCities: [departure, destination], // Pass selected cities
+                  selectedCities: [
+                    departure,
+                    destination
+                  ], // Pass selected cities
                 ),
               ),
             );
@@ -248,12 +274,13 @@ class _FindScreenState extends State<FindScreen> {
             _showAlert('No trips found.');
           }
         } else if (response.statusCode == 404) {
-          _showAlert('No trips found for the specified query.');
+          _showAlert('No trips found for provided locations.');
         } else {
-          _showAlert('Error fetching data from the server. Status code: ${response.statusCode}');
+          _showAlert('Error fetching data from the server.');
         }
       } catch (e) {
-        _showAlert('An error occurred: $e');
+        print('An error occurred: $e');
+        _showAlert('An error occurred.');
       }
 
       // Clear input fields after search
@@ -263,50 +290,50 @@ class _FindScreenState extends State<FindScreen> {
     }
   }
 
-
   Future<bool> _showExitPrompt() async {
     return await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Exit App'),
-        content: Text('Are you sure you want to exit the app?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false), // Do not exit
-            child: Text('No'),
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Exit App'),
+            content: Text('Are you sure you want to exit the app?'),
+            actions: [
+              TextButton(
+                onPressed: () =>
+                    Navigator.of(context).pop(false), // Do not exit
+                child: Text('No'),
+              ),
+              TextButton(
+                onPressed: () {
+                  SystemNavigator.pop(); // Close the app
+                },
+                child: Text('Yes'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              SystemNavigator.pop(); // Close the app
-            },
-            child: Text('Yes'),
-          ),
-        ],
-      ),
-    ) ?? false; // In case the user dismisses the dialog by tapping outside
+        ) ??
+        false; // In case the user dismisses the dialog by tapping outside
   }
-
-
-
 
   void _selectRecentSearch(String search) {
     // The format is "Departure To Destination on Date"
-    List<String> parts = search.split(' on '); // Split the string into "Departure To Destination" and "Date"
+    List<String> parts = search.split(
+        ' on '); // Split the string into "Departure To Destination" and "Date"
     if (parts.length == 2) {
       String locationsPart = parts[0];
       String datePart = parts[1];
 
-      List<String> locations = locationsPart.split(' To '); // Split the "Departure To Destination"
+      List<String> locations =
+          locationsPart.split(' To '); // Split the "Departure To Destination"
       if (locations.length == 2) {
         setState(() {
           departureController.text = locations[0]; // Set the departure location
-          destinationController.text = locations[1]; // Set the destination location
+          destinationController.text =
+              locations[1]; // Set the destination location
           /* dateController.text = datePart;*/ // Set the date
         });
       }
     }
   }
-
 
   void _removeSearch(int index) {
     setState(() {
@@ -324,8 +351,7 @@ class _FindScreenState extends State<FindScreen> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: _showExitPrompt,
-      child:
-      Scaffold(
+      child: Scaffold(
         appBar: AppBar(
           leading: Padding(
             padding: const EdgeInsets.only(left: 20.0),
@@ -336,7 +362,8 @@ class _FindScreenState extends State<FindScreen> {
                 width: 40,
                 child: GestureDetector(
                   onTap: () {
-                    Get.to(() => UserProfile(),transition: Transition.leftToRight);
+                    Get.to(() => UserProfile(),
+                        transition: Transition.leftToRight);
                   },
                   child: Image.asset(
                     'images/blogo.png',
@@ -348,10 +375,11 @@ class _FindScreenState extends State<FindScreen> {
           actions: [
             Tooltip(
               message: 'Notifications',
-              child: IconButton(onPressed: (){
-                Get.to(NotificationScreen());
-              },
-                  icon:Icon(Icons.notifications_active)),
+              child: IconButton(
+                  onPressed: () {
+                    Get.to(NotificationScreen());
+                  },
+                  icon: Icon(Icons.notifications_active)),
             ),
             SizedBox(width: 15),
           ],
@@ -366,12 +394,14 @@ class _FindScreenState extends State<FindScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Find your ride!', // Use the user's name here
+                      Text(
+                        'Find your ride!', // Use the user's name here
                         style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold
-                        ),),
-                      SizedBox(height: 10,),
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
                       CitySearchField(
                         controller: departureController,
                         focusNode: departureFocusNode,
@@ -383,11 +413,13 @@ class _FindScreenState extends State<FindScreen> {
                           _updateSuggestions(value, departureController);
                         },
                         onSubmitted: (value) {
-                          FocusScope.of(context).requestFocus(destinationFocusNode);
+                          FocusScope.of(context)
+                              .requestFocus(destinationFocusNode);
                         },
                         onClear: () => handleClearClick(departureController),
                         onSuggestionTap: (suggestion) {
-                          departureController.text = '${suggestion['city']}, ${suggestion['pname']}';
+                          departureController.text =
+                              '${suggestion['city']}, ${suggestion['pname']}';
                           setState(() {
                             showDepartureContainer = false;
                           });
@@ -409,7 +441,8 @@ class _FindScreenState extends State<FindScreen> {
                         },
                         onClear: () => handleClearClick(destinationController),
                         onSuggestionTap: (suggestion) {
-                          destinationController.text = '${suggestion['city']}, ${suggestion['pname']}';
+                          destinationController.text =
+                              '${suggestion['city']}, ${suggestion['pname']}';
                           setState(() {
                             showDestinationContainer = false;
                           });
@@ -490,7 +523,9 @@ class _FindScreenState extends State<FindScreen> {
                     return ListTile(
                       title: Text(recentSearches[index]),
                       trailing: IconButton(
-                        icon: Icon(Icons.delete,),
+                        icon: Icon(
+                          Icons.delete,
+                        ),
                         onPressed: () => _removeSearch(index),
                       ),
                       onTap: () => _selectRecentSearch(recentSearches[index]),
@@ -510,83 +545,64 @@ class _FindScreenState extends State<FindScreen> {
                 child: Tooltip(
                   message: 'Post a trip as driver',
                   child: InkWell(
-                    onTap: () {
-                      final vehicleController = Get.put(VehicleDetailsController());
-                      final imageController = Get.put(ImageUploadController());
+                    onTap: () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      final token = prefs.getString('authToken');
 
-                      bool isDetailsPosted = vehicleController.isDetailsPosted.value;
-                      bool isImageUploaded = imageController.isImageUploaded.value;
+                      if (token != null) {
+                        try {
+                          // Fetch vehicle data
+                          final vehicleResponse = await http.get(
+                            Uri.parse('${API.api1}/get-vehicle-data'),
+                            headers: {
+                              'Authorization': 'Bearer $token',
+                            },
+                          );
 
-                      if (!isImageUploaded && !isDetailsPosted) {
-                        // Show alert if neither image nor details are uploaded
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: Text('Upload Required'),
-                              content: Text('Please upload both your vehicle image and vehicle details.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context); // Close the dialog
-                                    Get.to(() => VerifyLicense()); // Navigate to upload license page
-                                  },
-                                  child: Text('Upload License'),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context); // Close the dialog
-                                    Get.to(() => VehicleDetails()); // Navigate to upload details page
-                                  },
-                                  child: Text('Upload Details'),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      } else if (!isImageUploaded) {
-                        // Show alert if only image is not uploaded
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: Text('Upload Image'),
-                              content: Text('Please upload your driving license.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context); // Close the dialog
-                                    Get.to(() => VerifyLicense()); // Navigate to upload image page
-                                  },
-                                  child: Text('Upload License'),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      } else if (!isDetailsPosted) {
-                        // Show alert if only details are not uploaded
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: Text('Upload Details'),
-                              content: Text('Please upload your vehicle details.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context); // Close the dialog
-                                    Get.to(() => VehicleDetails()); // Navigate to upload details page
-                                  },
-                                  child: Text('Upload Details'),
-                                ),
-                              ],
-                            );
-                          },
-                        );
+                          // Fetch license response
+                          final licenseResponse = await http.get(
+                            Uri.parse('${API.api1}/images'),
+                            headers: {
+                              'Authorization': 'Bearer $token',
+                            },
+                          );
+
+                          int? licenseStatus;
+                          if (licenseResponse.statusCode == 200) {
+                            final jsonResponse =
+                                json.decode(licenseResponse.body);
+                            licenseStatus =
+                                int.tryParse(jsonResponse['status'].toString());
+                            print(
+                                'Retrieved license status: $licenseStatus'); // Debugging
+                          }
+
+                          if (vehicleResponse.statusCode == 200) {
+                            final vehicleData =
+                                json.decode(vehicleResponse.body);
+                            var vehicleStatus =
+                                vehicleData['vehicles'][0]['status'];
+                            print(
+                                'Retrieved vehicle status: $vehicleStatus'); // Debugging
+
+                            // Check both statuses before navigating
+                            if (licenseStatus == 1 && vehicleStatus == 1) {
+                              Get.to(() => PostTrip());
+                            } else {
+                              _showStatusDialog(
+                                  context, licenseStatus, vehicleStatus);
+                            }
+                          } else {
+                            // Call the new error handling method for vehicle data not found
+                            _showVehicleDataErrorDialog(context);
+                          }
+                        } catch (e) {
+                          print('Error: $e');
+                          _showErrorDialog(
+                              context, 'An error occurred. Please try again.');
+                        }
                       } else {
-                        // Navigate to PostTrip if both image and details are uploaded
-                        Get.to(() => PostTrip());
+                        print('Auth token not found');
                       }
                     },
                     child: Column(
@@ -599,10 +615,8 @@ class _FindScreenState extends State<FindScreen> {
                   ),
                 ),
               ),
-
-
               Padding(
-                padding: const EdgeInsets.only(top: 15.0,bottom: 15),
+                padding: const EdgeInsets.only(top: 15.0, bottom: 15),
                 child: VerticalDivider(
                   width: 1,
                   color: Colors.grey, // Color of the divider
@@ -612,22 +626,27 @@ class _FindScreenState extends State<FindScreen> {
                 child: Tooltip(
                   message: 'Inbox',
                   child: InkWell(
-                    onTap: ()
-                    {
+                    onTap: () {
                       Get.to(() => InboxList()); // Navigate to HomeScreen
                     },
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.inbox,size: 20,),
-                        Text('Inbox',style: TextStyle(fontSize: 14),),
+                        Icon(
+                          Icons.inbox,
+                          size: 20,
+                        ),
+                        Text(
+                          'Inbox',
+                          style: TextStyle(fontSize: 14),
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(top: 15.0,bottom: 15),
+                padding: const EdgeInsets.only(top: 15.0, bottom: 15),
                 child: VerticalDivider(
                   width: 1,
                   color: Colors.grey, // Color of the divider
@@ -635,7 +654,7 @@ class _FindScreenState extends State<FindScreen> {
               ),
               Expanded(
                 child: Tooltip(
-                  message: 'Trip details',
+                  message: 'Requests details',
                   child: InkWell(
                     onTap: () {
                       _onItemTapped(1); // Set index for Trips screen
@@ -643,15 +662,21 @@ class _FindScreenState extends State<FindScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.trip_origin,size: 20,),
-                        Text('Trips',style: TextStyle(fontSize: 14),),
+                        Icon(
+                          Icons.trip_origin,
+                          size: 20,
+                        ),
+                        Text(
+                          'Requests',
+                          style: TextStyle(fontSize: 14),
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(top: 15.0,bottom: 15),
+                padding: const EdgeInsets.only(top: 15.0, bottom: 15),
                 child: VerticalDivider(
                   width: 1,
                   color: Colors.grey, // Color of the divider
@@ -662,13 +687,19 @@ class _FindScreenState extends State<FindScreen> {
                   message: 'Reqeust a trip',
                   child: InkWell(
                     onTap: () {
-                      Get.to(Postrequest());
+                      Get.to(() => Postrequest());
                     },
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.person,size: 20,),
-                        Text('Passenger',style: TextStyle(fontSize: 14),),
+                        Icon(
+                          Icons.person,
+                          size: 20,
+                        ),
+                        Text(
+                          'Passenger',
+                          style: TextStyle(fontSize: 14),
+                        ),
                       ],
                     ),
                   ),
@@ -729,13 +760,13 @@ class _FindScreenState extends State<FindScreen> {
         prefixIcon: Icon(Icons.calendar_today),
         suffixIcon: dateController.text.isNotEmpty
             ? IconButton(
-          icon: Icon(FontAwesomeIcons.times),
-          onPressed: () {
-            setState(() {
-              dateController.clear();
-            });
-          },
-        )
+                icon: Icon(FontAwesomeIcons.times),
+                onPressed: () {
+                  setState(() {
+                    dateController.clear();
+                  });
+                },
+              )
             : null,
         border: OutlineInputBorder(
           borderSide: BorderSide.none,
@@ -746,4 +777,90 @@ class _FindScreenState extends State<FindScreen> {
       onTap: () => _selectDate(context),
     );
   }
+}
+
+void _showStatusDialog(
+    BuildContext context, int? licenseStatus, int vehicleStatus) {
+  String message = 'Check your license.\n';
+  bool showLicenseAlert = licenseStatus != 1;
+
+  if (showLicenseAlert) {
+    message +=
+        'You have not uploaded your license or your license is under approval. Please recheck it before posting a trip.\n';
+  }
+
+  // Show dialog with redirection options based on status
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('License Alert'),
+        content: Text(message),
+        actions: [
+          if (showLicenseAlert)
+            Column(
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close dialog before navigation
+                    Get.to(() =>
+                        VerifyLicense()); // Replace with your License screen
+                  },
+                  child: Text('Go to License'),
+                ),
+              ],
+            ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+            },
+            child: Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _showVehicleDataErrorDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Upload details'),
+        content: Text(
+            'You have not uploaded vehicle details. Please upload before posting a ride.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog before navigation
+              Get.to(() =>
+                  VehicleDetails()); // Replace with your Vehicle Details screen
+            },
+            child: Text('Upload Details'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _showErrorDialog(BuildContext context, String message) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
 }

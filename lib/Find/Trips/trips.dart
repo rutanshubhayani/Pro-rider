@@ -20,13 +20,14 @@ class Trips extends StatelessWidget {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
+          centerTitle: true,
           title: const Text(
-            'Trips',
+            'Requests',
             style: TextStyle(
               fontWeight: FontWeight.bold,
             ),
           ),
-          bottom: PreferredSize(
+         /* bottom: PreferredSize(
             preferredSize: const Size.fromHeight(40),
             child: Container(
               height: 40,
@@ -63,11 +64,12 @@ class Trips extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-             ActiveScreen(),
-            RecentScreen(),
+            *//* ActiveScreen(),
+            RecentScreen(),*//*
              RequestsScreen(),
-          ],
+          ],*/
         ),
+        body: RequestsScreen(),
       ),
     );
   }
@@ -75,6 +77,235 @@ class Trips extends StatelessWidget {
 
 
 
+
+
+class RequestsScreen extends StatefulWidget {
+  @override
+  _RequestsScreenState createState() => _RequestsScreenState();
+}
+
+class _RequestsScreenState extends State<RequestsScreen> {
+  List<dynamic> requests = [];
+  bool isLoading = true; // Add loading state
+
+  @override
+  void initState() {
+    super.initState();
+    fetchRequests();
+  }
+
+  Future<void> fetchRequests() async {
+    setState(() {
+      isLoading = true; // Set loading to true when fetching
+    });
+
+    try {
+      final response = await http.get(Uri.parse('${API.api1}/post_requests_get'));
+
+      print('requests response');
+      print(response.body);
+      if (response.statusCode == 200) {
+        List<dynamic> fetchedRequests = json.decode(response.body);
+
+        // Sort requests by departure_date in descending order
+        fetchedRequests.sort((a, b) {
+          DateTime dateA = DateTime.parse(a['departure_date']);
+          DateTime dateB = DateTime.parse(b['departure_date']);
+          return dateB.compareTo(dateA); // For descending order
+        });
+
+        setState(() {
+          requests = fetchedRequests;
+          isLoading = false; // Set loading to false after fetching
+        });
+      } else {
+        throw Exception('Failed to load requests');
+      }
+    } catch (error) {
+      print('Error fetching requests: $error');
+      setState(() {
+        isLoading = false; // Handle error and stop loading
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 13.0, right: 13, top: 13),
+      child: RefreshIndicator(
+        onRefresh: fetchRequests, // Call fetchRequests on refresh
+        child: isLoading // Show shimmer when loading
+            ? ListView.builder(
+          itemCount: 5, // Number of shimmer items
+          itemBuilder: (context, index) {
+            return TripShimmerCard(); // Your shimmer loading widget
+          },
+        )
+            : requests.isEmpty
+            ? Center(
+          child: Text(
+            'No requests found',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black54,
+            ),
+          ),
+        )
+            : ListView(
+          children: requests.map((request) {
+            // Parse the departure date from the API response
+            DateTime departureDate = DateTime.parse(request['departure_date']);
+            // Format the date into a readable format
+            String formattedDate = DateFormat('E, MMM d \'at\' h:mma').format(departureDate);
+
+            // Get only the first word (city name) from the location
+            String firstfromCity = request['from_location'].split(' ').first;
+            String firsttoCity = request['to_location'].split(' ').first;
+
+            return GestureDetector(
+              onTap: () {
+                // Handle tap
+              },
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(
+                    color: Color(0xFF51737A),
+                    width: 1.5,
+                  ),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 15.0, top: 10, bottom: 10),
+                            child: Row(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Color(0xFF51737A),
+                                      width: 3,
+                                    ),
+                                  ),
+                                  child:CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage: request['userImage'] != null && request['userImage'].isNotEmpty
+                                        ? NetworkImage(request['userImage'])
+                                        : AssetImage('images/Userpfp.png') as ImageProvider,
+                                  ),
+
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8.0),
+                                  child: Icon(Icons.verified, color: Colors.blue),
+                                ),
+                                Text(
+                                  ' ${request['uname']}', // You can replace with request['userName'] if available
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 60),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 35, bottom: 10.0),
+                              child: Text(
+                                '${request["seats_required"]} seats required',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 15),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: firstfromCity,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: '  ${request['from_location']}',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(top: 13, left: 15),
+                        child: RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: firsttoCity,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '  ${request['to_location']}',
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 13.0, left: 15),
+                        child: Text(
+                          formattedDate,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+
+/*
 
 
 class ActiveScreen extends StatefulWidget {
@@ -332,6 +563,7 @@ class _ActiveScreenState extends State<ActiveScreen> {
   }
 }
 
+*/
 
 
 
@@ -340,6 +572,7 @@ class _ActiveScreenState extends State<ActiveScreen> {
 
 
 
+/*
 
 
 class RecentScreen extends StatefulWidget {
@@ -614,6 +847,7 @@ class _RecentScreenState extends State<RecentScreen> {
   }
 }
 
+*/
 
 
 

@@ -13,6 +13,7 @@ import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../widget/City_search.dart';
+import '../../widget/configure.dart';
 
 class PostTrip extends StatefulWidget {
   @override
@@ -172,7 +173,7 @@ class _PostTripState extends State<PostTrip> {
         } else {
           print('Failed to post trip: ${response.body}');
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to post trip: ${response.body}')),
+            SnackBar(content: Text('Failed to post trip.')),
           );
         }
       } catch (e) {
@@ -1143,6 +1144,7 @@ class _PostTripState extends State<PostTrip> {
                         focusNode: descriptionFocusNode,
                         maxLength: 50,
                         maxLines: 2,
+                        inputFormatters: [NoEmojiInputFormatter()],
                         decoration: InputDecoration(
                             filled: true,
                             hintText: 'Add description',

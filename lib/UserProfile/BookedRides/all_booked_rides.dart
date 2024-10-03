@@ -87,10 +87,6 @@ class BookedUserRides extends StatelessWidget {
 
 
 
-
-
-
-
 class AllBookedRides extends StatefulWidget {
   const AllBookedRides({super.key});
 
@@ -121,7 +117,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
 
     try {
       final response = await http.get(
-        Uri.parse('${API.api1}/get-bookings'), // Updated API URL
+        Uri.parse('${API.api1}/get-bookings'),
         headers: {
           'Authorization': 'Bearer $authToken',
           'Content-Type': 'application/json',
@@ -129,7 +125,6 @@ class _AllBookedRidesState extends State<AllBookedRides> {
       );
 
       if (response.statusCode == 200) {
-        print('All booked rides of user: ${response.body}');
         setState(() {
           _bookedRides = jsonDecode(response.body);
           _isLoading = false;
@@ -151,8 +146,39 @@ class _AllBookedRidesState extends State<AllBookedRides> {
     }
   }
 
-  Future<void> _cancelRide(String postATripId) async {
-    // Show confirmation dialog
+  Future<void> cancelBooking(String bookingTripId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? authToken = prefs.getString('authToken');
+
+    if (authToken == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('User not authenticated')),
+      );
+      return;
+    }
+
+    final response = await http.post(
+      Uri.parse('${API.api1}/cancel-booking/$bookingTripId'),
+      headers: {
+        'Authorization': 'Bearer $authToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Booking canceled successfully')),
+      );
+      _fetchBookedRides();
+    } else {
+      print('Error cancelling ride: ${response.body}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error cancelling ride')),
+      );
+    }
+  }
+
+  Future<void> _cancelRide(String bookingTripId) async {
     bool confirm = await showDialog(
       context: context,
       builder: (context) {
@@ -173,50 +199,10 @@ class _AllBookedRidesState extends State<AllBookedRides> {
       },
     );
 
-    // If confirmed, proceed to cancel the booking
     if (confirm) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? authToken = prefs.getString('authToken');
-
-      if (authToken == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('User not authenticated')),
-        );
-        return;
-      }
-
-      final response = await http.post(
-        Uri.parse('${API.api1}/cancel-book-trip/$postATripId'),
-        headers: {
-          'Authorization': 'Bearer $authToken',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        // Store the cancelled ride temporarily
-        final cancelledRide = _bookedRides.firstWhere((ride) => ride['post_a_trip_id'].toString() == postATripId);
-
-        // Remove the cancelled ride from the _bookedRides list
-        setState(() {
-          _bookedRides.removeWhere((ride) => ride['post_a_trip_id'].toString() == postATripId);
-        });
-
-        // Show snackbar with undo option
-        Get.snackbar(
-          'Success',
-          'Trip cancelled successfully',
-          snackPosition: SnackPosition.BOTTOM,
-    );
-      } else {
-        print('Failed to cancel booking. ${response.body}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to cancel booking.')),
-        );
-      }
+      await cancelBooking(bookingTripId);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -234,10 +220,9 @@ class _AllBookedRidesState extends State<AllBookedRides> {
     );
   }
 
-  // Shimmer loading effect
   Widget _buildShimmerLoading() {
     return ListView.builder(
-      itemCount: 6, // Number of shimmer items
+      itemCount: 6,
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
           baseColor: Color(0xFFE5E5E5),
@@ -249,23 +234,11 @@ class _AllBookedRidesState extends State<AllBookedRides> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    height: 20,
-                    width: double.infinity,
-                    color: Colors.white,
-                  ),
+                  Container(height: 20, width: double.infinity, color: Colors.white),
                   const SizedBox(height: 10),
-                  Container(
-                    height: 20,
-                    width: 150,
-                    color: Colors.white,
-                  ),
+                  Container(height: 20, width: 150, color: Colors.white),
                   const SizedBox(height: 10),
-                  Container(
-                    height: 20,
-                    width: 100,
-                    color: Colors.white,
-                  ),
+                  Container(height: 20, width: 100, color: Colors.white),
                 ],
               ),
             ),
@@ -275,7 +248,6 @@ class _AllBookedRidesState extends State<AllBookedRides> {
     );
   }
 
-  // Booked rides list after data is loaded
   Widget _buildBookedRidesList(DateFormat dateFormat) {
     return ListView.builder(
       itemCount: _bookedRides.length,
@@ -285,133 +257,92 @@ class _AllBookedRidesState extends State<AllBookedRides> {
         String departureFirstName = getFirstNameOfCity(ride['departure']);
         String destinationFirstName = getFirstNameOfCity(ride['destination']);
 
-        return GestureDetector(
-          onTap: () {
-            // Add navigation or additional functionality here if needed
-            Get.to(() => GetBookedPreview(tripData: _bookedRides,));
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(
-                  color: Color(0xFF51737A),
-                  width: 1.5,
-                ),
-              ),
-              margin: index == 0 ? const EdgeInsets.only(top: 10, left: 10, right: 10) : const EdgeInsets.only(left: 10, right: 10, bottom: 0), // Remove bottom margin for all but the last card
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Color(0xFF51737A),
-                              width: 3,
-                            ),
-                          ),
-                          child: CircleAvatar(
-                            radius: 30,
-                            backgroundImage: ride['profile_photo'] != null && ride['profile_photo'].isNotEmpty
-                                ? NetworkImage(ride['profile_photo'])
-                                : AssetImage('images/Userpfp.png') as ImageProvider,
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        Text(
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+              side: BorderSide(color: Color(0xFF51737A), width: 1.5),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundImage: ride['profile_photo'] != null && ride['profile_photo'].isNotEmpty
+                            ? NetworkImage(ride['profile_photo'])
+                            : AssetImage('images/Userpfp.png') as ImageProvider,
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
                           ride['uname'],
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
-                        Spacer(),
-                        Text(
-                          ' ${ride['booked_seats']} Seats booked',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      ),
+                      Text(
+                        '${ride['booked_seats']} Seats booked',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: departureFirstName,
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                        ),
+                        TextSpan(
+                          text: '  ${ride['departure']}',
+                          style: TextStyle(color: Colors.black54),
                         ),
                       ],
                     ),
-                    SizedBox(height: 10),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: departureFirstName,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          TextSpan(
-                            text: '  ${ride['departure']}',
-                            style: TextStyle(
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ],
-                      ),
+                  ),
+                  SizedBox(height: 10),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: destinationFirstName,
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                        ),
+                        TextSpan(
+                          text: '  ${ride['destination']}',
+                          style: TextStyle(color: Colors.black54),
+                        ),
+                      ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 13.0),
-                      child: RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: destinationFirstName,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            TextSpan(
-                              text: '  ${ride['destination']}',
-                              style: TextStyle(
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    formattedDate,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _cancelRide(ride['booking_trip_id'].toString());
+                      },
+                      child: Text('Cancel Booking'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Color(0XFFd90000),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10, bottom: 10),
-                      child: Text(
-                        '$formattedDate',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          _cancelRide(ride['post_a_trip_id'].toString());
-                        },
-                        child: Text('Cancel Booking'),
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: Color(0XFFd90000),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -424,6 +355,8 @@ class _AllBookedRidesState extends State<AllBookedRides> {
     return city.split(' ').first;
   }
 }
+
+
 
 
 

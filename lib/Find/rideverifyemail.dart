@@ -22,6 +22,7 @@ class _RideEmailVerifyState extends State<RideEmailVerify> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   bool _isLoading = true;
+  bool _isSending = false;
 
   @override
   void initState() {
@@ -75,6 +76,9 @@ class _RideEmailVerifyState extends State<RideEmailVerify> {
 
   Future<void> _sendOtp() async {
     if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isSending = true;
+      });
       final email = _emailController.text;
       final url = Uri.parse('${API.api1}/verify-ride');
 
@@ -106,6 +110,11 @@ class _RideEmailVerifyState extends State<RideEmailVerify> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
         );
+      }
+      finally{
+        setState(() {
+          _isSending = false;
+        });
       }
     }
   }
@@ -220,16 +229,13 @@ class _RideEmailVerifyState extends State<RideEmailVerify> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                _sendOtp();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Sending OTP...'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: Text(
+              onPressed: _isSending ? null : () {_sendOtp();},
+              child:
+              _isSending
+                  ? CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              )
+                  : Text(
                 'Send code to mail',
                 style: TextStyle(
                   color: Colors.white,
@@ -479,3 +485,4 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
     );
   }
 }
+

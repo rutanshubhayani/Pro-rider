@@ -32,22 +32,10 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _getToken();
     _loadMessages();
-    // _reconnectWebSocket();
-
   }
-
-/*
-  void _reconnectWebSocket() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        _connectWebSocket();
-      }
-    });
-  }*/
 
   Future<void> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    print(prefs.getString('authToken'));
     setState(() {
       _token = prefs.getString('authToken');
       _connectWebSocket();
@@ -56,6 +44,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _loadMessages() async {
     final prefs = await SharedPreferences.getInstance();
+    // Load the stored messages for the current recipient (active chat partner)
     final storedMessages = prefs.getStringList('chatMessages_${widget.recipientId}') ?? [];
     setState(() {
       _messages = storedMessages;
@@ -64,48 +53,84 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _saveMessages() async {
     final prefs = await SharedPreferences.getInstance();
+    // Save messages specific to the current recipient
     await prefs.setStringList('chatMessages_${widget.recipientId}', _messages);
   }
 
   void _connectWebSocket() {
-    _channel = WebSocketChannel.connect(Uri.parse('ws://202.21.32.153:8081'));
-    print(_token);
-    if (_token != null) {
-      print("add method called");
-      _channel.sink.add(jsonEncode({'token': _token}));
+    try {
+      _channel = WebSocketChannel.connect(Uri.parse('ws://202.21.32.153:8081'));
+      if (_token != null) {
+        print('WebSocket connected');
+        _channel.sink.add(jsonEncode({'token': _token}));
+      }
+
+      _channel.stream.listen(
+            (message) {
+          print("Message received: $message"); // Log the message
+          _handleIncomingMessage(message);
+        },
+        onError: (error) {
+          _reconnectWebSocket();
+          print("WebSocket error: $error"); // Log error
+          // _showWarningDialog("Connection failed. Please check your network.");
+        },
+        onDone: () {
+          print("WebSocket connection closed. Reconnecting...");
+          _reconnectWebSocket(); // Reconnect if connection closes
+        },
+      );
+    } catch (e) {
+      print("WebSocket connection error: $e"); // Log connection error
+      _showWarningDialog("Unable to establish WebSocket connection.");
     }
-    print("connect");
-    _channel.stream.listen(
-          (message) {
-            print('channel');
-        _handleIncomingMessage(message);
-      },
-      onError: (error) {
-        print("WebSocket error: $error"); // Print error message
-      },
-      onDone: () {
-        print("WebSocket connection closed");
-        //_connectWebSocket(); // Reconnect if connection closes
-      },
-    );
   }
 
+  void _reconnectWebSocket() {
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        _connectWebSocket();
+      }
+    });
+  }
 
-  void _handleIncomingMessage(String message) {
+  void _handleIncomingMessage(String message) async {
     final parsedMessage = json.decode(message);
-    final sender = parsedMessage['from'];
+    final senderId = parsedMessage['from'];  // The ID of the sender
+    final receiverId = parsedMessage['to'];  // The ID of the recipient (User1 in this case)
     final content = parsedMessage['content'];
-    final error = parsedMessage['error']; // Handle error in the response if any
+    final error = parsedMessage['error'];
+
+    // Retrieve the logged-in user's UID from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final loggedInUserId = prefs.getString('userId');
 
     if (error != null) {
-      print("Error from server: $error"); // Print the error received from the server
-    } else if (sender != null && content != null) {
-      print("Response from server: $sender: $content"); // Print the response
-      setState(() {
-        _messages.insert(0, "$sender: $content"); // Add response to the top
-        _scrollToTop();
-      });
-      _saveMessages();
+      print("Error from server: $error");
+    } else if (senderId != null && content != null) {
+      // Prepare the message for storage and display
+      String messageDisplay = "$senderId: $content";
+
+      // Save the message to the sender's message list, whether it's displayed or not
+      List<String> storedMessages = prefs.getStringList('chatMessages_$senderId') ?? [];
+      storedMessages.insert(0, messageDisplay);
+      await prefs.setStringList('chatMessages_$senderId', storedMessages);
+
+      // Check if the message is meant for the logged-in user
+      if (loggedInUserId != null && receiverId.toString() == loggedInUserId) {
+        // Display the message only if the active chat partner is the sender
+        if (senderId.toString() == widget.recipientId) {
+          setState(() {
+            _messages.insert(0, messageDisplay);  // Insert the new message at the top
+            _scrollToTop();
+          });
+        } else {
+          // Message is from another user but stored for later retrieval
+          print("Message from $senderId stored but not displayed (not from active chat).");
+        }
+      } else {
+        print("Message not for this user. Ignoring...");
+      }
     }
   }
 
@@ -151,13 +176,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
       // Print the message that is being sent to WebSocket
       print("Sending message: $messageData");
-
       _channel.sink.add(jsonEncode(messageData));
-
       _saveMessages();
     }
   }
-
 
   bool _hasIntegers(String text) {
     return RegExp(r'\d').hasMatch(text);

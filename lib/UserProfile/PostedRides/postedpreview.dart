@@ -61,11 +61,6 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
         setState(() {
           isLoading = false;
         });
-        Get.snackbar(
-          'Error',
-          'Error fetching booked users',
-          snackPosition: SnackPosition.BOTTOM,
-        );
       }
     } catch (e) {
       setState(() {

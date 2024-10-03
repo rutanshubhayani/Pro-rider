@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:travel/Find/SearchResult/FindBook.dart';
+import 'package:travel/newinbox.dart';
 import '../Inbox/Inbox.dart';
 
 class FindTripPreview extends StatefulWidget {
@@ -505,7 +506,10 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                   borderSide: BorderSide.none,
                 ),
                 onPressed: () {
-                  Get.to(() => InboxChat(userId: uid, userName: userName), transition: Transition.leftToRight);
+                  Get.to(() => ChatScreen(
+                    recipientId: uid,
+                    recipientUserName: userName,
+                    recipientUserImage: userImage,), transition: Transition.leftToRight);
                 },
                 child: Icon(Icons.message, color: Colors.white, size: 30),
               ),

@@ -227,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Expanded(
               child: Tooltip(
-                message: 'Trip details',
+                message: 'Requests details',
                 child: InkWell(
                   onTap: () {
                   },
@@ -235,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.trip_origin,size: 20,),
-                      Text('Trips',style: TextStyle(fontSize: 14),),
+                      Text('Requests',style: TextStyle(fontSize: 14),),
                     ],
                   ),
                 ),

@@ -2,7 +2,7 @@
 
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show TextInputFormatter, rootBundle;
 
 
 const String oneSingalAPPID = "3afcec9d-d025-4c1a-81fe-b46d71cf6959";
@@ -105,3 +105,36 @@ const darkColorScheme = ColorScheme(
   outlineVariant: Color(0xFF3F4946),
   scrim: Color(0xFF000000),
 );
+
+
+
+class NoEmojiInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    // Regular expression to match emoji characters
+    final emojiRegExp = RegExp(
+      r'[\u{1F600}-\u{1F64F}' // emoticons
+      r'\u{1F300}-\u{1F5FF}' // symbols & pictographs
+      r'\u{1F680}-\u{1F6FF}' // transport & map symbols
+      r'\u{1F700}-\u{1F77F}' // alchemical symbols
+      r'\u{1F780}-\u{1F7FF}' // Geometric Shapes Extended
+      r'\u{1F800}-\u{1F8FF}' // Supplemental Arrows-C
+      r'\u{1F900}-\u{1F9FF}' // Supplemental Symbols and Pictographs
+      r'\u{1FA00}-\u{1FA6F}' // Chess Symbols
+      r'\u{1FA70}-\u{1FAFF}' // Symbols and Pictographs Extended-A
+      r'\u{2600}-\u{26FF}' // Miscellaneous Symbols
+      r'\u{2700}-\u{27BF}]', // Dingbats
+      unicode: true,
+      multiLine: true,
+    );
+
+    final newText = newValue.text.replaceAll(emojiRegExp, '');
+    return newText == newValue.text
+        ? newValue
+        : TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
+  }
+}

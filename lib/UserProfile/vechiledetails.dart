@@ -189,6 +189,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('vehicle data: $data');
         setState(() {
           vehicleDetails = data['vehicles'].isNotEmpty ? data['vehicles'][0] : null;
           if (vehicleDetails != null) {
@@ -202,6 +203,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
             // No vehicle details found
             _isLoadingImage = false;  // End loading
           }
+
         });
         /*ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(data['message']),
@@ -743,7 +745,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: toggleEditing,
-                        child: Text(isEditing ? 'Cancel' : 'Upload'),
+                        child: Text(isEditing ? 'Cancel' : 'Add'),
                         style: ElevatedButton.styleFrom(
                           elevation: 7,
                           backgroundColor: Color(0xFF2d7af7),
