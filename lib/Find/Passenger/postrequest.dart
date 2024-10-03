@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:travel/Find/find.dart';
+import 'package:travel/UserProfile/BookedRides/all_booked_rides.dart';
 import '../../widget/City_search.dart';
 import '../../api/api.dart';
 
@@ -177,8 +178,24 @@ class _PostrequestState extends State<Postrequest> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        centerTitle: true,
-        title: Text('Post a request'),
+        title: const Text('Post a request'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 5.0),
+            child: TextButton(
+                onPressed: (){
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => BookedUserRides()));
+                },
+                child:Row(
+                  children: [
+                    Icon(Icons.history,size: 20,color: Colors.black,),
+                    SizedBox(width: 3,),
+                    Text('History',style: TextStyle(color: Colors.black,fontSize: 15),),
+                  ],
+                )),
+          )
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 30.0, horizontal: 16),

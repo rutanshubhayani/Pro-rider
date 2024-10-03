@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/Trips/TripsHome.dart';
 import 'package:travel/Find/find.dart';
+import 'package:travel/UserProfile/PostedRides/all_posted_rides.dart';
 import 'package:travel/api/api.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -325,8 +326,24 @@ class _PostTripState extends State<PostTrip> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        centerTitle: true,
         title: const Text('Post a trip'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 5.0),
+            child: TextButton(
+                onPressed: (){
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => PostedUserRides()));
+                },
+                child:Row(
+                  children: [
+                    Icon(Icons.history,size: 20,color: Colors.black,),
+                    SizedBox(width: 3,),
+                    Text('History',style: TextStyle(color: Colors.black,fontSize: 15),),
+                  ],
+                )),
+          )
+        ],
       ),
       body: Material(
         child: Padding(
