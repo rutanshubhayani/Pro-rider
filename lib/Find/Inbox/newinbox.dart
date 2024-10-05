@@ -97,7 +97,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _handleIncomingMessage(String message) async {
     final parsedMessage = json.decode(message);
     final senderId = parsedMessage['from'];  // The ID of the sender
-    final receiverId = parsedMessage['to'];  // The ID of the recipient (User1 in this case)
+    final receiverId = parsedMessage['to'];  // The ID of the recipient
     final content = parsedMessage['content'];
     final error = parsedMessage['error'];
 
@@ -108,25 +108,22 @@ class _ChatScreenState extends State<ChatScreen> {
     if (error != null) {
       print("Error from server: $error");
     } else if (senderId != null && content != null) {
-      // Prepare the message for storage and display
-      String messageDisplay = "$senderId: $content";
+      // Store only the content of the message
+      String messageDisplay = content; // Only the content
 
-      // Save the message to the sender's message list, whether it's displayed or not
+      // Save the message to the sender's message list
       List<String> storedMessages = prefs.getStringList('chatMessages_$senderId') ?? [];
       storedMessages.insert(0, messageDisplay);
       await prefs.setStringList('chatMessages_$senderId', storedMessages);
 
       // Check if the message is meant for the logged-in user
       if (loggedInUserId != null && receiverId.toString() == loggedInUserId) {
-        // Display the message only if the active chat partner is the sender
+        // Only display the message if it is from the current recipient
         if (senderId.toString() == widget.recipientId) {
           setState(() {
-            _messages.insert(0, messageDisplay);  // Insert the new message at the top
-            _scrollToTop();
+            _messages.insert(0, messageDisplay);  // Insert the content at the top
+            _scrollToTop(); // Scroll to the top to show the new message
           });
-        } else {
-          // Message is from another user but stored for later retrieval
-          print("Message from $senderId stored but not displayed (not from active chat).");
         }
       } else {
         print("Message not for this user. Ignoring...");
@@ -240,29 +237,30 @@ class _ChatScreenState extends State<ChatScreen> {
                 reverse: true,
                 controller: _scrollController,
                 itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final message = _messages[index];
-                  final isSentByMe = message.startsWith('You:');
-                  return ListTile(
-                    title: Align(
-                      alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        padding: EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: isSentByMe ? Colors.blueGrey : Colors.white70,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          message,
-                          style: TextStyle(
-                            color: isSentByMe ? Colors.white : Colors.black,
-                            fontSize: 16,
+                  itemBuilder: (context, index) {
+                    final message = _messages[index]; // This will now be just the content
+                    final isSentByMe = message.startsWith('You:'); // Check if the message is sent by the user
+
+                    return ListTile(
+                      title: Align(
+                        alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isSentByMe ? Colors.blueGrey : Colors.white70,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            message, // This is now just the content
+                            style: TextStyle(
+                              color: isSentByMe ? Colors.white : Colors.black,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
               ),
             ),
           ),

@@ -316,6 +316,7 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
     setState(() {
       bookedSeats = prefs.getInt('bookedSeats');
       postATripId = prefs.getInt('post_a_trip_id');
+      print('Post trip id:$postATripId');
     });
   }
 
