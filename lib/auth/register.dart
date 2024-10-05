@@ -71,10 +71,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             MaterialPageRoute(builder: (context) => LoginScreen()),
           );
         } else {
+          print('Registration failed: ${response.body}');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               behavior: SnackBarBehavior.floating,
-              content: Text('Registration failed: ${response.body}'),
+              content: Text('Registration failed.'),
             ),
           );
         }

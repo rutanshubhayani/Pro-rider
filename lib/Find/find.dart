@@ -155,7 +155,7 @@ class _FindScreenState extends State<FindScreen> {
           _showStatusDialog(context, licenseStatus, vehicleDataFound);
         }
       } catch (e) {
-        _showErrorDialog(context, 'An error occurred. Please try again.');
+        _showErrorDialog(context, 'Please check your connection and try again.');
       }
     } else {
       print('Auth token not found');

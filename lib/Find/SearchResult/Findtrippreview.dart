@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:travel/Find/SearchResult/FindBook.dart';
-import 'package:travel/newinbox.dart';
+import 'package:travel/Find/Inbox/newinbox.dart';
 import '../Inbox/Inbox.dart';
 
 class FindTripPreview extends StatefulWidget {
@@ -471,6 +471,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.7, // 80% of screen width
               child: FloatingActionButton(
+                heroTag: "btn1",  // removes error : There are multiple heroes that share the same tag within a subtree.
                 backgroundColor: Color(0xFFff4400),
                 onPressed: () {
                   Get.to(() => FindBook(tripData: widget.tripData,seats: BookSeats,), transition: Transition.fade);
@@ -500,6 +501,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.15, // 20% of screen width
               child: FloatingActionButton(
+                heroTag: "btn2",
                 backgroundColor: Color(0xFF2d7af7),
                 shape: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(60),

@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:travel/Find/find.dart';
 import 'package:travel/UserProfile/BookedRides/all_booked_rides.dart';
+import 'package:travel/widget/configure.dart';
 import '../../widget/City_search.dart';
 import '../../api/api.dart';
 
@@ -36,7 +37,8 @@ class _PostrequestState extends State<Postrequest> {
   bool showDestinationContainer = false;
   List<dynamic> departureSuggestions = [];
   List<dynamic> destinationSuggestions = [];
-  late TextEditingController activeController; // Keep track of the active controller
+  late TextEditingController
+      activeController; // Keep track of the active controller
 
   int _selectedSeat = 1;
 
@@ -89,26 +91,27 @@ class _PostrequestState extends State<Postrequest> {
 
     if (response.statusCode == 201) {
       _clearFields();
-      Get.snackbar('Success', 'Ride requested successfully', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Success', 'Ride requested successfully',
+          snackPosition: SnackPosition.BOTTOM);
 
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => FindScreen()),
       );
     } else {
-      _showErrorSnackbar(jsonDecode(response.body)['error'] ?? 'Failed to submit request');
+      _showErrorSnackbar(
+          jsonDecode(response.body)['error'] ?? 'Failed to submit request');
     }
   }
 
-
-  void _clearFields(){
-   setState(() {
-     departureController.clear();
-     destinationController.clear();
-     dateController.clear();
-     descriptionController.clear();
-     _selectedSeat = 1;
-   });
+  void _clearFields() {
+    setState(() {
+      departureController.clear();
+      destinationController.clear();
+      dateController.clear();
+      descriptionController.clear();
+      _selectedSeat = 1;
+    });
   }
 
   void _showErrorSnackbar(String message) {
@@ -116,7 +119,8 @@ class _PostrequestState extends State<Postrequest> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red, // Optional: customize the background color
-        behavior: SnackBarBehavior.floating, // Optional: floating or fixed position
+        behavior:
+            SnackBarBehavior.floating, // Optional: floating or fixed position
       ),
     );
   }
@@ -124,7 +128,8 @@ class _PostrequestState extends State<Postrequest> {
   // Fetch cities from API
   Future<List<dynamic>> fetchCities(String query) async {
     try {
-      final response = await http.get(Uri.parse('${API.api1}/cities')); // Replace with your API URL
+      final response = await http
+          .get(Uri.parse('${API.api1}/cities')); // Replace with your API URL
 
       if (response.statusCode == 200) {
         final List<dynamic> cities = json.decode(response.body);
@@ -132,7 +137,8 @@ class _PostrequestState extends State<Postrequest> {
           final cityName = city['city']?.toLowerCase() ?? '';
           final provinceName = city['pname']?.toLowerCase() ?? '';
           final searchQuery = query.toLowerCase();
-          return cityName.contains(searchQuery) || provinceName.contains(searchQuery);
+          return cityName.contains(searchQuery) ||
+              provinceName.contains(searchQuery);
         }).toList();
       } else {
         throw Exception('Failed to load cities: ${response.statusCode}');
@@ -143,7 +149,8 @@ class _PostrequestState extends State<Postrequest> {
     }
   }
 
-  void _updateSuggestions(String pattern, TextEditingController controller) async {
+  void _updateSuggestions(
+      String pattern, TextEditingController controller) async {
     if (pattern.isNotEmpty) {
       setState(() {
         if (controller == departureController) {
@@ -173,29 +180,40 @@ class _PostrequestState extends State<Postrequest> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         title: const Text('Post a request'),
-        actions: [
+       /* actions: [
           Padding(
             padding: const EdgeInsets.only(right: 5.0),
             child: TextButton(
-                onPressed: (){
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => BookedUserRides()));
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => BookedUserRides()));
                 },
-                child:Row(
+                child: Row(
                   children: [
-                    Icon(Icons.history,size: 20,color: Colors.black,),
-                    SizedBox(width: 3,),
-                    Text('History',style: TextStyle(color: Colors.black,fontSize: 15),),
+                    Icon(
+                      Icons.history,
+                      size: 20,
+                      color: Colors.black,
+                    ),
+                    SizedBox(
+                      width: 3,
+                    ),
+                    Text(
+                      'History',
+                      style: TextStyle(color: Colors.black, fontSize: 15),
+                    ),
                   ],
                 )),
           )
-        ],
+        ],*/
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 30.0, horizontal: 16),
@@ -206,12 +224,11 @@ class _PostrequestState extends State<Postrequest> {
             children: [
               Text(
                 'From',
-                style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold
-                ),
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 10,),
+              SizedBox(
+                height: 10,
+              ),
               CitySearchField(
                 controller: departureController,
                 focusNode: departureFocusNode,
@@ -227,12 +244,13 @@ class _PostrequestState extends State<Postrequest> {
                 },
                 onClear: () => handleClearClick(departureController),
                 onSuggestionTap: (suggestion) {
-                  departureController.text = '${suggestion['city']}, ${suggestion['pname']}';
+                  departureController.text =
+                      '${suggestion['city']}, ${suggestion['pname']}';
                   setState(() {
                     showDepartureContainer = false;
                   });
                 },
-                validator: (value){
+                validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter departure';
                   }
@@ -263,12 +281,13 @@ class _PostrequestState extends State<Postrequest> {
                 },
                 onClear: () => handleClearClick(destinationController),
                 onSuggestionTap: (suggestion) {
-                  destinationController.text = '${suggestion['city']}, ${suggestion['pname']}';
+                  destinationController.text =
+                      '${suggestion['city']}, ${suggestion['pname']}';
                   setState(() {
                     showDestinationContainer = false;
                   });
                 },
-                validator: (value){
+                validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter destination';
                   }
@@ -283,7 +302,9 @@ class _PostrequestState extends State<Postrequest> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 10,),
+              SizedBox(
+                height: 10,
+              ),
               TextFormField(
                 controller: dateController,
                 focusNode: dateFocusNode,
@@ -291,9 +312,9 @@ class _PostrequestState extends State<Postrequest> {
                   hintText: 'Pick departure date',
                   suffixIcon: dateController.text.isNotEmpty
                       ? IconButton(
-                    icon: Icon(Icons.close_rounded),
-                    onPressed: () => handleClearClick(dateController),
-                  )
+                          icon: Icon(Icons.close_rounded),
+                          onPressed: () => handleClearClick(dateController),
+                        )
                       : null, // Only show the clear icon if there's text in the field
                   filled: true,
                   prefixIcon: Icon(Icons.calendar_today),
@@ -315,15 +336,16 @@ class _PostrequestState extends State<Postrequest> {
                   return null;
                 },
               ),
-              SizedBox(height: 20,),
+              SizedBox(
+                height: 20,
+              ),
               Text(
                 'Seats required',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
               ),
-              SizedBox(height: 10,),
+              SizedBox(
+                height: 10,
+              ),
               DropdownButtonFormField<int>(
                 focusNode: seatFocusNode,
                 value: _selectedSeat,
@@ -336,10 +358,9 @@ class _PostrequestState extends State<Postrequest> {
                 ),
                 items: List.generate(3, (index) => index + 1)
                     .map((seat) => DropdownMenuItem<int>(
-
-                  value: seat,
-                  child: Text(seat.toString()),
-                ))
+                          value: seat,
+                          child: Text(seat.toString()),
+                        ))
                     .toList(),
                 onChanged: (newValue) {
                   FocusScope.of(context).requestFocus(descriptionFocusNode);
@@ -349,7 +370,9 @@ class _PostrequestState extends State<Postrequest> {
                 },
                 icon: Icon(Icons.arrow_forward_ios_rounded),
               ),
-              SizedBox(height: 20,),
+              SizedBox(
+                height: 20,
+              ),
               Text(
                 'Description',
                 style: TextStyle(
@@ -357,19 +380,21 @@ class _PostrequestState extends State<Postrequest> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 10,),
+              SizedBox(
+                height: 10,
+              ),
               TextFormField(
                 controller: descriptionController,
                 focusNode: descriptionFocusNode,
                 maxLines: 5,
                 decoration: InputDecoration(
                     filled: true,
-                    hintText: 'Tell driver a little bit more about you and why you\'re\ travelling.',
+                    hintText:
+                        'Tell driver a little bit more about you and why you\'re\ travelling.',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
-                    )
-                ),
+                    )),
               ),
             ],
           ),
@@ -377,7 +402,8 @@ class _PostrequestState extends State<Postrequest> {
       ),
       bottomNavigationBar: BottomAppBar(
         child: SizedBox(
-          height: kBottomNavigationBarHeight, // Ensure this height fits your design
+          height:
+              kBottomNavigationBarHeight, // Ensure this height fits your design
           child: GestureDetector(
             onTap: () {
               if (_formKey.currentState!.validate()) {
@@ -386,7 +412,8 @@ class _PostrequestState extends State<Postrequest> {
                 _focusFirstEmptyField();
               }
             },
-            behavior: HitTestBehavior.opaque, // Ensures GestureDetector covers all tappable area
+            behavior: HitTestBehavior
+                .opaque, // Ensures GestureDetector covers all tappable area
             child: Container(
               padding: const EdgeInsets.all(16.0), // Adjust padding as needed
               alignment: Alignment.center,
@@ -402,8 +429,33 @@ class _PostrequestState extends State<Postrequest> {
             ),
           ),
         ),
-      )
-
+      ),
+      floatingActionButton: Container(
+        width: 100,
+        child: FloatingActionButton(
+          backgroundColor: kPrimaryColor,
+          onPressed: () {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => BookedUserRides()));
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.history, color: Colors.white), // Your history icon
+              const Padding(
+                padding: EdgeInsets.only(left: 5),
+                child: Text(
+                  'History',
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -423,7 +475,8 @@ class _PostrequestState extends State<Postrequest> {
       return;
     }
 
-    if (_selectedSeat == 1) { // Assuming default seat value of 1 is invalid, adjust as necessary
+    if (_selectedSeat == 1) {
+      // Assuming default seat value of 1 is invalid, adjust as necessary
       FocusScope.of(context).requestFocus(seatFocusNode);
       return;
     }

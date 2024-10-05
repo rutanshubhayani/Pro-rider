@@ -459,24 +459,48 @@ class _UserProfileState extends State<UserProfile> {
                       );
                     },
                   ),
-                  CylindricalTile(
-                    leadingIcon: Icons.logout,
-                    title: 'Log Out',
-                    onTap: () async {
-                      // Clear the token from SharedPreferences
-                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                      await prefs.remove('authToken');
+              CylindricalTile(
+                leadingIcon: Icons.logout,
+                title: 'Log Out',
+                onTap: () async {
+                  // Show confirmation dialog
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Text('Confirm Logout'),
+                        content: Text('Are you sure you want to log out?'),
+                        actions: <Widget>[
+                          TextButton(
+                            child: Text('Cancel'),
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close the dialog
+                            },
+                          ),
+                          TextButton(
+                            child: Text('Log Out'),
+                            onPressed: () async {
+                              // Clear the token from SharedPreferences
+                              SharedPreferences prefs = await SharedPreferences.getInstance();
+                              await prefs.remove('authToken');
 
-                      // Navigate to LoginScreen and clear the navigation stack
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => LoginScreen(),
-                        ),
-                            (route) => false, // This will remove all the previous routes
+                              // Navigate to LoginScreen and clear the navigation stack
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => LoginScreen(),
+                                ),
+                                    (route) => false, // This will remove all the previous routes
+                              );
+                            },
+                          ),
+                        ],
                       );
                     },
-                  ),
+                  );
+                },
+              ),
+
                 ],
               ),
             ),
