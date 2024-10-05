@@ -62,6 +62,8 @@ class _PostTripState extends State<PostTrip> {
     Icons.pets
   ];
   List<bool> isSelected2 = [false, false, false, false];
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolled = false;
 
   int _selectedChoice = 1;
   int selectedSeats = 1;
@@ -80,8 +82,14 @@ class _PostTripState extends State<PostTrip> {
   void initState() {
     super.initState();
     fetchVehicleData();
+    // Add a listener to the scroll controller
+    _scrollController.addListener(() {
+      setState(() {
+        _isScrolled =
+            _scrollController.offset > 100; // Adjust the offset as needed
+      });
+    });
   }
-
 
   Future<void> fetchVehicleData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -113,8 +121,6 @@ class _PostTripState extends State<PostTrip> {
       print('Failed to fetch vehicle data: ${response.statusCode}');
     }
   }
-
-
 
   Future<void> _postTrip() async {
     if (_formKey.currentState?.validate() ?? false) {
@@ -164,10 +170,11 @@ class _PostTripState extends State<PostTrip> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Trip posted successfully!')),
           );
-         Navigator.pushAndRemoveUntil(
-             context,
-             MaterialPageRoute(builder: (context) => FindScreen()),
-             (route) => false,);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => FindScreen()),
+            (route) => false,
+          );
 
           // Navigate to search results or another page if needed
         } else {
@@ -185,9 +192,6 @@ class _PostTripState extends State<PostTrip> {
     }
   }
 
-
-
-
   void _showErrorSnackbar(String message) {
     final snackBar = SnackBar(
       content: Text(message),
@@ -198,10 +202,6 @@ class _PostTripState extends State<PostTrip> {
 
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
-
-
-
-
 
   // Fetch cities from API
   Future<List<dynamic>> fetchCities(String query) async {
@@ -226,10 +226,6 @@ class _PostTripState extends State<PostTrip> {
       return []; // Return an empty list in case of an error
     }
   }
-
-
-
-
 
   void _updateSuggestions(
       String pattern, TextEditingController controller) async {
@@ -293,7 +289,6 @@ class _PostTripState extends State<PostTrip> {
     }
   }
 
-
   Future<void> _selectTime() async {
     TimeOfDay? pickedTime = await showTimePicker(
       context: context,
@@ -306,9 +301,6 @@ class _PostTripState extends State<PostTrip> {
       });
     }
   }
-
-
-
 
   @override
   void dispose() {
@@ -327,29 +319,42 @@ class _PostTripState extends State<PostTrip> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle:true,
         title: const Text('Post a trip'),
-        actions: [
+       /* actions: [
           Padding(
             padding: const EdgeInsets.only(right: 5.0),
             child: TextButton(
-                onPressed: (){
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => PostedUserRides()));
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => PostedUserRides()));
                 },
-                child:Row(
+                child: Row(
                   children: [
-                    Icon(Icons.history,size: 20,color: Colors.black,),
-                    SizedBox(width: 3,),
-                    Text('History',style: TextStyle(color: Colors.black,fontSize: 15),),
+                    Icon(
+                      Icons.history,
+                      size: 20,
+                      color: Colors.black,
+                    ),
+                    SizedBox(
+                      width: 3,
+                    ),
+                    Text(
+                      'History',
+                      style: TextStyle(color: Colors.black, fontSize: 15),
+                    ),
                   ],
                 )),
           )
-        ],
+        ],*/
       ),
       body: Material(
         child: Padding(
           padding: const EdgeInsets.only(top: 30.0, left: 16, right: 16),
           child: SingleChildScrollView(
+            controller: _scrollController,
             child: Form(
               key: _formKey,
               child: Column(
@@ -400,17 +405,19 @@ class _PostTripState extends State<PostTrip> {
                           _updateSuggestions(value, departureController);
                         },
                         onSubmitted: (value) {
-                          FocusScope.of(context).requestFocus(destinationFocusNode);
+                          FocusScope.of(context)
+                              .requestFocus(destinationFocusNode);
                         },
                         onClear: () => handleClearClick(departureController),
-                        validator: (value){
+                        validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter departure';
                           }
                           return null;
                         },
                         onSuggestionTap: (suggestion) {
-                          departureController.text = '${suggestion['city']}, ${suggestion['pname']}';
+                          departureController.text =
+                              '${suggestion['city']}, ${suggestion['pname']}';
                           setState(() {
                             showDepartureContainer = false;
                           });
@@ -436,15 +443,15 @@ class _PostTripState extends State<PostTrip> {
                               focusNode: destinationFocusNode,
                               decoration: InputDecoration(
                                 filled: true,
-                                prefixIcon:
-                                Icon(Icons.location_on),
+                                prefixIcon: Icon(Icons.location_on),
                                 hintText: 'Destination Location',
-                                suffixIcon: destinationController.text.isNotEmpty
+                                suffixIcon: destinationController
+                                        .text.isNotEmpty
                                     ? IconButton(
-                                  icon: Icon(Icons.close_rounded),
-                                  onPressed: () => handleClearClick(
-                                      destinationController),
-                                )
+                                        icon: Icon(Icons.close_rounded),
+                                        onPressed: () => handleClearClick(
+                                            destinationController),
+                                      )
                                     : null, // Only show the clear icon if there's text in the field
                                 border: OutlineInputBorder(
                                   borderSide: BorderSide.none,
@@ -457,9 +464,10 @@ class _PostTripState extends State<PostTrip> {
                                     .requestFocus(dpriceFocusNode);
                               },
                               onChanged: (value) {
-                                _updateSuggestions(value, destinationController);
+                                _updateSuggestions(
+                                    value, destinationController);
                               },
-                              validator: (value){
+                              validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter destination';
                                 }
@@ -480,7 +488,7 @@ class _PostTripState extends State<PostTrip> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
-                              validator: (value){
+                              validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Enter price';
                                 }
@@ -503,7 +511,7 @@ class _PostTripState extends State<PostTrip> {
                           child: ListView.builder(
                             shrinkWrap: true,
                             physics:
-                            NeverScrollableScrollPhysics(), // Prevent scrolling within the Container
+                                NeverScrollableScrollPhysics(), // Prevent scrolling within the Container
                             itemCount: destinationSuggestions.length,
                             itemBuilder: (context, index) {
                               final suggestion = destinationSuggestions[index];
@@ -513,10 +521,10 @@ class _PostTripState extends State<PostTrip> {
                                     '${suggestion['city']}, ${suggestion['pname']}'),
                                 onTap: () {
                                   destinationController.text =
-                                  '${suggestion['city']}, ${suggestion['pname']}';
+                                      '${suggestion['city']}, ${suggestion['pname']}';
                                   setState(() {
                                     showDestinationContainer =
-                                    false; // Hide the suggestions after selection
+                                        false; // Hide the suggestions after selection
                                   });
                                 },
                               );
@@ -706,7 +714,7 @@ class _PostTripState extends State<PostTrip> {
                           borderWidth: 1,
                           selectedBorderColor: Colors.white,
                           selectedColor: Colors.white,
-                          fillColor: Color(0xFF2d7af7),
+                          fillColor: kPrimaryColor,
                           color: Colors.black,
                           constraints:
                               BoxConstraints(minHeight: 30, minWidth: 130),
@@ -782,7 +790,7 @@ class _PostTripState extends State<PostTrip> {
                             ),
                           ), // Add some space between the two text fields
                           Expanded(
-                            child:TextFormField(
+                            child: TextFormField(
                               focusNode: timeFocusNode,
                               onTap: _selectTime,
                               decoration: InputDecoration(
@@ -798,7 +806,8 @@ class _PostTripState extends State<PostTrip> {
                               ),
                               textInputAction: TextInputAction.next,
                               onFieldSubmitted: (_) {
-                                FocusScope.of(context).requestFocus(modelFocusNode);
+                                FocusScope.of(context)
+                                    .requestFocus(modelFocusNode);
                               },
                               readOnly: true,
                               controller: timeController,
@@ -1071,19 +1080,23 @@ class _PostTripState extends State<PostTrip> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(top: 15.0,bottom: 15),
+                        padding: const EdgeInsets.only(top: 15.0, bottom: 15),
                         child: Row(
                           children: [
                             Padding(
                               padding: const EdgeInsets.only(right: 2.0),
-                              child: Icon(Icons.info_outline_rounded,color: Colors.black54,size: 15,),
+                              child: Icon(
+                                Icons.info_outline_rounded,
+                                color: Colors.black54,
+                                size: 15,
+                              ),
                             ),
-
-                            Text('Note: You can select maximum 7 seats',
+                            Text(
+                              'Note: You can select maximum 7 seats',
                               style: TextStyle(
                                   color: Colors.black54,
-                                  fontStyle: FontStyle.italic
-                              ),),
+                                  fontStyle: FontStyle.italic),
+                            ),
                           ],
                         ),
                       ),
@@ -1185,11 +1198,11 @@ class _PostTripState extends State<PostTrip> {
                           decoration: InputDecoration(
                             filled: true,
                             hintText: 'License plate',
-                            hintStyle: TextStyle(color: Colors.grey), // Grey hint text color
+                            hintStyle: TextStyle(
+                                color: Colors.grey), // Grey hint text color
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none
-                            ),
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none),
                           ),
                         ),
                       ),
@@ -1197,14 +1210,18 @@ class _PostTripState extends State<PostTrip> {
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(right: 2.0),
-                            child: Icon(Icons.info_outline_rounded,color: Colors.black54,size: 15,),
+                            child: Icon(
+                              Icons.info_outline_rounded,
+                              color: Colors.black54,
+                              size: 15,
+                            ),
                           ),
-
-                          Text('Note: You can\'t edit license plate',
-                          style: TextStyle(
-                            color: Colors.black54,
-                            fontStyle: FontStyle.italic
-                          ),),
+                          Text(
+                            'Note: You can\'t edit license plate',
+                            style: TextStyle(
+                                color: Colors.black54,
+                                fontStyle: FontStyle.italic),
+                          ),
                         ],
                       ),
                       SizedBox(
@@ -1426,7 +1443,7 @@ class _PostTripState extends State<PostTrip> {
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
-                      color: _isChecked ? Colors.black :  Colors.black54,
+                      color: _isChecked ? Colors.black : Colors.black54,
                     ),
                   ),
                 ],
@@ -1434,8 +1451,35 @@ class _PostTripState extends State<PostTrip> {
             ),
           ),
         ),
-      )
-
+      ),
+      floatingActionButton:
+      AnimatedContainer(
+        duration: Duration(milliseconds: 300),
+        width: _isScrolled ? 56 : 100,
+        child: FloatingActionButton(
+          backgroundColor: kPrimaryColor,
+          onPressed: () {
+            // Navigate to History screen or perform action
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => PostedUserRides()));
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.history,color: Colors.white), // Your history icon
+              if (!_isScrolled) // Only show label if not scrolled
+                const Padding(
+                  padding: EdgeInsets.only(left: 5),
+                  child: Text(
+                    'History',
+                    style: TextStyle(fontSize: 15,color: Colors.white,fontWeight: FontWeight.bold),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -1450,7 +1494,7 @@ class _PostTripState extends State<PostTrip> {
       return;
     }
 
-     if (dateController == null) {
+    if (dateController == null) {
       FocusScope.of(context).requestFocus(dateFocusNode);
       return;
     }
