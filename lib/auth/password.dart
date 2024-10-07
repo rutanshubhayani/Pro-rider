@@ -10,10 +10,6 @@ import 'package:travel/auth/verifyotp.dart';
 import '../api/api.dart'; // For converting response to JSON
 
 
-
-
-
-
 class ChangePassword extends StatefulWidget {
   const ChangePassword({super.key});
 
@@ -265,7 +261,7 @@ class _ChangePasswordState extends State<ChangePassword> {
                   ),
                   style: ElevatedButton.styleFrom(
                     elevation: 7,
-                    backgroundColor: Color(0xFF2d7af7),
+                    backgroundColor: Color(0xFF3d5a80),
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -283,6 +279,8 @@ class _ChangePasswordState extends State<ChangePassword> {
 
 
 
+
+
 class ForgotPassword extends StatefulWidget {
   const ForgotPassword({super.key});
 
@@ -293,6 +291,7 @@ class ForgotPassword extends StatefulWidget {
 class _ForgotPasswordState extends State<ForgotPassword> {
   final TextEditingController _emailController = TextEditingController();
   final String _apiUrl = '${API.api1}/forgot-password';
+  bool _isLoading = false; // Loading state
 
   Future<void> _sendForgotPasswordRequest() async {
     final email = _emailController.text;
@@ -303,14 +302,11 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         SnackBar(content: Text('Please enter an email address')),
       );
       return;
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Sending OTP...'),
-          duration: Duration(seconds: 2),
-        ),
-      );
     }
+
+    setState(() {
+      _isLoading = true; // Set loading to true
+    });
 
     try {
       final response = await http.post(
@@ -320,16 +316,18 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       );
 
       if (response.statusCode == 200) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('OTP sent successfully')),
-        );
+        // Navigate to the OTP verification screen
         Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => Verifyotp(
-                  email: email,
-                )));
+          context,
+          MaterialPageRoute(
+            builder: (context) => Verifyotp(email: email),
+          ),
+        );
+      } else if (response.statusCode == 404) {
+        // Show error message based on response
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Email not registered.')),
+        );
       } else {
         // Show error message based on response
         final errorMessage = json.decode(response.body);
@@ -344,6 +342,10 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to send OTP: Server Error')),
       );
+    } finally {
+      setState(() {
+        _isLoading = false; // Set loading to false
+      });
     }
   }
 
@@ -374,14 +376,18 @@ class _ForgotPasswordState extends State<ForgotPassword> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _sendForgotPasswordRequest,
-                child: Text(
+                onPressed: _isLoading ? null : _sendForgotPasswordRequest,
+                child: _isLoading
+                    ? CircularProgressIndicator(
+                  color: Colors.white,
+                )
+                    : Text(
                   'Send OTP',
                   style: TextStyle(fontSize: 17, color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
                   elevation: 7,
-                  backgroundColor: Color(0xFF2d7af7),
+                  backgroundColor: Color(0xFF3d5a80),
                   padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),

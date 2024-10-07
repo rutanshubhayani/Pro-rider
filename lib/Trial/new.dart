@@ -198,7 +198,7 @@ class _VerifyRotateLicenseState extends State<VerifyRotateLicense> {
                             ],
                           ),
                           backgroundColor:
-                          Color(0xFF2d7af7), // Background color of the snackbar
+                          Color(0xFF3d5a80), // Background color of the snackbar
                           behavior:
                           SnackBarBehavior.floating, // Makes the snackbar float above content
                         ),
@@ -225,7 +225,7 @@ class _VerifyRotateLicenseState extends State<VerifyRotateLicense> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF2d7af7),
+                    backgroundColor: Color(0xFF3d5a80),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

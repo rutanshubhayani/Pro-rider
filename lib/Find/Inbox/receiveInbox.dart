@@ -1,8 +1,10 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/io.dart';
+import '../../api/api.dart';
 import 'newinbox.dart'; // Adjust import based on your structure
 
 class InboxList extends StatefulWidget {
@@ -84,26 +86,29 @@ class _InboxListState extends State<InboxList> {
         final senderId = parsedMessage['from'];  // Sender of the message
         final content = parsedMessage['content'];
         final recipientId = parsedMessage['to'];
-        final timestamp = DateTime.now().toString();
+
+        // Format the current time
+        String formattedTime = DateFormat('HH:mm').format(DateTime.now());
 
         if (senderId != null && content != null && recipientId != null) {
           // Fetch user details based on senderId
           final userDetails = await _fetchUserDetails(senderId);
 
-          // If userDetails is not null, proceed to store the message and update the conversation list
           if (userDetails != null) {
             final userName = userDetails['uname'] ?? 'Unknown';
-            final userImage = userDetails['profile_photo'] ?? 'assets/images/default_avatar.png';
+            final userImage = userDetails['profile_photo'] ?? 'images/Userpfp.png';
 
-            // Proceed to store message
+            // Store message
             final prefs = await SharedPreferences.getInstance();
             List<String> storedMessages = prefs.getStringList('chatMessages_$senderId') ?? [];
-            storedMessages.insert(0, jsonEncode({
+           /* storedMessages.insert(0, jsonEncode({
               'content': content,
               'read': false,
-              'timestamp': timestamp,
-            }));
+              'timestamp': formattedTime, // Use formatted time here
+            }));*/
+            storedMessages.insert(0, content);
             await prefs.setStringList('chatMessages_$senderId', storedMessages);
+            print('Store messages: $storedMessages');
 
             // Update the conversation list
             List<String> conversations = prefs.getStringList('conversations') ?? [];
@@ -113,7 +118,7 @@ class _InboxListState extends State<InboxList> {
               'recipientUserImage': userImage,
               'lastMessage': content,
               'lastMessageUnread': true,
-              'timestamp': timestamp,
+              'timestamp': formattedTime, // Use formatted time here
             };
 
             // Check if conversation with this sender already exists
@@ -123,18 +128,18 @@ class _InboxListState extends State<InboxList> {
             });
 
             if (conversationExists) {
-              // If conversation exists, update it with the latest message
+              // Update existing conversation
               conversations = conversations.map((conv) {
                 final convMap = json.decode(conv) as Map<String, dynamic>;
                 if (convMap['recipientId'] == senderId) {
                   convMap['lastMessage'] = content;
                   convMap['lastMessageUnread'] = true;
-                  convMap['timestamp'] = timestamp;
+                  convMap['timestamp'] = formattedTime; // Update to formatted time
                 }
                 return json.encode(convMap);
               }).toList();
             } else {
-              // If conversation doesn't exist, create a new one for this user
+              // Create a new conversation
               conversations.add(json.encode(conversationMap));
             }
 
@@ -155,7 +160,7 @@ class _InboxListState extends State<InboxList> {
 // Method to fetch user details from the API
   Future<Map<String, dynamic>?> _fetchUserDetails(int uid) async {
     final prefs = await SharedPreferences.getInstance();
-    final String baseUrl = 'http://202.21.32.153:8081/user-details/$uid'; // Your API endpoint
+    final String baseUrl = '${API.api1}/user-details/$uid'; // Your API endpoint
 
     try {
       final response = await http.get(Uri.parse(baseUrl), headers: {
@@ -278,20 +283,28 @@ class _InboxListState extends State<InboxList> {
                   : Colors.transparent,
               child: ListTile(
                 leading: CircleAvatar(
+                  radius: 30,
                   backgroundImage: conversation['recipientUserImage'] != null && conversation['recipientUserImage'].isNotEmpty
                       ? NetworkImage(conversation['recipientUserImage'])
                       : AssetImage('assets/images/default_avatar.png') as ImageProvider,
                 ),
                 title: Row(
                   children: [
-                    Expanded(child: Text(conversation['recipientUserName'])),
+                    Expanded(child: Text(conversation['recipientUserName'],
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold
+                    ),)),
                     if (isSelected)
                       const Icon(Icons.check, color: Colors.green),
                     if (isUnread)
                       const Icon(Icons.circle, color: Colors.red, size: 8),
                   ],
                 ),
-                subtitle: Text(conversation['lastMessage']),
+                subtitle: Text(conversation['lastMessage'],
+                style: TextStyle(
+                  fontSize: 14,
+                ),),
                 trailing: Text(conversation['timestamp']),
                 onTap: () {
                   if (_isMultiSelectMode) {

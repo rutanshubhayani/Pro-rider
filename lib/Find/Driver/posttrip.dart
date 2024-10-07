@@ -871,7 +871,7 @@ class _PostTripState extends State<PostTrip> {
                           borderWidth: 1,
                           selectedBorderColor: Colors.white,
                           selectedColor: Colors.white,
-                          fillColor: Color(0xFF2d7af7),
+                          fillColor: Color(0xFF3d5a80),
                           color: Colors.black,
                           constraints:
                               BoxConstraints(minHeight: 33.0, minWidth: 110.0),
@@ -961,7 +961,7 @@ class _PostTripState extends State<PostTrip> {
                           borderWidth: 1,
                           selectedBorderColor: Colors.white,
                           selectedColor: Colors.white,
-                          fillColor: Color(0xFF2d7af7),
+                          fillColor: Color(0xFF3d5a80),
                           color: Colors.black,
                           constraints:
                               BoxConstraints(minHeight: 30, minWidth: 170),
@@ -1028,7 +1028,7 @@ class _PostTripState extends State<PostTrip> {
                                   ),
                                   label: Text(choices[index]),
                                   selected: isSelected2[index],
-                                  selectedColor: Color(0xFF2d7af7),
+                                  selectedColor: Color(0xFF3d5a80),
                                   showCheckmark: false,
                                   onSelected: (bool selected) {
                                     setState(() {

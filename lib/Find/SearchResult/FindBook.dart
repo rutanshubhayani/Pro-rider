@@ -198,7 +198,7 @@ class _FindBookState extends State<FindBook> {
           onTap: () {
             if (_isSwitchOn) {
               print('Next tapped');
-              Get.to(FindReviewTrip(tripData: widget.tripData,bookedSeats : widget.seats),transition: Transition.fade);
+              Get.to(() => FindReviewTrip(tripData: widget.tripData,bookedSeats : widget.seats),transition: Transition.fade);
             } else {
               print('Switch is off');
               // Optionally, you can show a message or indication to the user
@@ -264,6 +264,7 @@ class _FindMeetDriverState extends State<FindMeetDriver> {
   void initState() {
     super.initState();
     fetchDriverData();
+
   }
 
   Future<void> fetchDriverData() async {

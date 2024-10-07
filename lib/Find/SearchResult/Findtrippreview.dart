@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/SearchResult/FindBook.dart';
 import 'package:travel/Find/Inbox/newinbox.dart';
 import '../Inbox/Inbox.dart';
@@ -26,6 +27,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
 
     print('--------------------------------------------');
     print(widget.tripData);
+    _savePostATripId(widget.tripData['post_a_trip_id'].toString());
 
     // Format date and time from API
     String dateString = widget.tripData['leaving_date_time'] ?? '';
@@ -47,6 +49,23 @@ class _FindTripPreviewState extends State<FindTripPreview> {
           otherItemsString.split(',').map((item) => item.trim()).toList();
     }
   }
+
+  void _savePostATripId(String postATripIdStr) async {
+    // Try to parse the post_a_trip_id as an integer
+    int? postATripId = int.tryParse(postATripIdStr);
+
+    if (postATripId != null) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('post_a_trip_id', postATripId);
+
+      // Retrieve and print the saved post_a_trip_id
+      int? savedId = prefs.getInt('post_a_trip_id');
+      print('Saved post_a_trip_id: $savedId');
+    } else {
+      print('Invalid post_a_trip_id: Unable to convert to int.');
+    }
+  }
+
 
   void _printStops() {
     // Extract and print stops
@@ -502,7 +521,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
               width: MediaQuery.of(context).size.width * 0.15, // 20% of screen width
               child: FloatingActionButton(
                 heroTag: "btn2",
-                backgroundColor: Color(0xFF2d7af7),
+                backgroundColor: Color(0xFF3d5a80),
                 shape: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(60),
                   borderSide: BorderSide.none,

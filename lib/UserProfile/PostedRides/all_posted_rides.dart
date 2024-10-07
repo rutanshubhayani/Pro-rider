@@ -475,7 +475,7 @@ class _AllPostedRidesState extends State<AllPostedRides> {
                                   child: Text('Edit Ride'),
                                   style: ElevatedButton.styleFrom(
                                     foregroundColor: Colors.white,
-                                    backgroundColor: Color(0xFF2d7af7),
+                                    backgroundColor: Color(0xFF3d5a80),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10)
                                     )

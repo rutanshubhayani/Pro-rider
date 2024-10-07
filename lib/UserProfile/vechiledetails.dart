@@ -509,7 +509,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                       height: 200,
                       width: double.infinity,
                       child: Center(
-                        child: Text('No Image Uploaded'),
+                        child: Text('Click here to upload Image.'),
                       ),
                     ),
                 ),
@@ -734,7 +734,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                               : Text('Save & Continue'),
                           style: ElevatedButton.styleFrom(
                             elevation: 7,
-                            backgroundColor: Color(0xFF2d7af7),
+                            backgroundColor: Color(0xFF3d5a80),
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -751,7 +751,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                         child: Text(isEditing ? 'Cancel' : 'Add'),
                         style: ElevatedButton.styleFrom(
                           elevation: 7,
-                          backgroundColor: Color(0xFF2d7af7),
+                          backgroundColor: Color(0xFF3d5a80),
                           foregroundColor: Colors.white,
                           padding: EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(

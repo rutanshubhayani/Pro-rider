@@ -389,7 +389,7 @@ class _UserInfoState extends State<UserInfo> {
             ),
             style: ElevatedButton.styleFrom(
               elevation: 7,
-              backgroundColor: Color(0xFF2d7af7),
+              backgroundColor: Color(0xFF3d5a80),
               padding: EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

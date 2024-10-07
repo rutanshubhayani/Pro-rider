@@ -490,7 +490,7 @@ class _GetTripPreviewState extends State<GetTripPreview> {
               width: MediaQuery.of(context).size.width * 0.15, // 20% of screen width
               child: FloatingActionButton(
                 heroTag: "btn2",
-                backgroundColor: Color(0xFF2d7af7),
+                backgroundColor: Color(0xFF3d5a80),
                 shape: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(60),
                   borderSide: BorderSide.none,

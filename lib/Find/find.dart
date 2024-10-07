@@ -568,7 +568,7 @@ class _FindScreenState extends State<FindScreen> {
                     top: 75,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Color(0xFF2d7af7),
+                        color: Color(0xFF3d5a80),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
@@ -596,7 +596,7 @@ class _FindScreenState extends State<FindScreen> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF2d7af7),
+                    backgroundColor: Color(0xFF3d5a80),
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),

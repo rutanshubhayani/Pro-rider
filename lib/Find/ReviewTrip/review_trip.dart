@@ -162,7 +162,7 @@ class FindReviewTrip extends StatelessWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () {
-            Get.to(FindMeetDriver(tripData: tripData,),transition: Transition.fade);
+            Get.to(() => FindMeetDriver(tripData: tripData,),transition: Transition.fade);
           },
           child: Center(
             child: Text(

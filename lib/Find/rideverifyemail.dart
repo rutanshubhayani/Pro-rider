@@ -243,7 +243,7 @@ class _RideEmailVerifyState extends State<RideEmailVerify> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF2d7af7),
+                backgroundColor: Color(0xFF3d5a80),
                 padding: EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -472,7 +472,7 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
                 ),
                 style: ElevatedButton.styleFrom(
                   elevation: 7,
-                  backgroundColor: Color(0xFF2d7af7),
+                  backgroundColor: Color(0xFF3d5a80),
                   padding: EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
