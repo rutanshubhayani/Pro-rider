@@ -111,7 +111,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
   void _showToast(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),
-      duration: Duration(seconds: 2),
+      duration: Duration(seconds: 1),
     ));
   }
 
@@ -509,7 +509,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                       height: 200,
                       width: double.infinity,
                       child: Center(
-                        child: Text('Click here to upload Image.'),
+                        child: isEditing ? Text('Click here to upload Image.') : Text('Click on Add to upload Image.'),
                       ),
                     ),
                 ),

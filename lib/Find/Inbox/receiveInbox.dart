@@ -35,6 +35,8 @@ class _InboxListState extends State<InboxList> {
     super.dispose();
   }
 
+
+
   void _connectToWebSocket() async {
     String socketUrl = 'ws://202.21.32.153:8081/socket'; // Replace with your socket URL
     _channel = IOWebSocketChannel.connect(socketUrl);
@@ -83,32 +85,28 @@ class _InboxListState extends State<InboxList> {
       print('Parsed message: $parsedMessage');
 
       if (parsedMessage.containsKey('content')) {
-        final senderId = parsedMessage['from'];  // Sender of the message
+        final senderId = parsedMessage['from']; // Sender of the message
         final content = parsedMessage['content'];
         final recipientId = parsedMessage['to'];
+        final isSentMessage = senderId == recipientId; // Assuming sender and receiver are the same for sent messages
 
         // Format the current time
         String formattedTime = DateFormat('HH:mm').format(DateTime.now());
 
         if (senderId != null && content != null && recipientId != null) {
-          // Fetch user details based on senderId
-          final userDetails = await _fetchUserDetails(senderId);
+          // Fetch user details based on senderId for incoming messages
+          final userDetails = isSentMessage ? null : await _fetchUserDetails(senderId);
 
-          if (userDetails != null) {
-            final userName = userDetails['uname'] ?? 'Unknown';
-            final userImage = userDetails['profile_photo'] ?? 'images/Userpfp.png';
+          if (userDetails != null || isSentMessage) {
+            final userName = isSentMessage ? 'You' : userDetails?['uname'] ?? 'Unknown';
+            final userImage = isSentMessage ? 'assets/images/default_avatar.png' : userDetails?['profile_photo'] ?? 'images/Userpfp.png';
 
             // Store message
             final prefs = await SharedPreferences.getInstance();
             List<String> storedMessages = prefs.getStringList('chatMessages_$senderId') ?? [];
-           /* storedMessages.insert(0, jsonEncode({
-              'content': content,
-              'read': false,
-              'timestamp': formattedTime, // Use formatted time here
-            }));*/
-            storedMessages.insert(0, content);
+            storedMessages.insert(0, content); // Store message content only
             await prefs.setStringList('chatMessages_$senderId', storedMessages);
-            print('Store messages: $storedMessages');
+            print('Stored messages: $storedMessages');
 
             // Update the conversation list
             List<String> conversations = prefs.getStringList('conversations') ?? [];
@@ -117,8 +115,8 @@ class _InboxListState extends State<InboxList> {
               'recipientUserName': userName,
               'recipientUserImage': userImage,
               'lastMessage': content,
-              'lastMessageUnread': true,
-              'timestamp': formattedTime, // Use formatted time here
+              'lastMessageUnread': !isSentMessage, // Mark as unread for received messages
+              'timestamp': formattedTime,
             };
 
             // Check if conversation with this sender already exists
@@ -133,8 +131,8 @@ class _InboxListState extends State<InboxList> {
                 final convMap = json.decode(conv) as Map<String, dynamic>;
                 if (convMap['recipientId'] == senderId) {
                   convMap['lastMessage'] = content;
-                  convMap['lastMessageUnread'] = true;
-                  convMap['timestamp'] = formattedTime; // Update to formatted time
+                  convMap['lastMessageUnread'] = !isSentMessage;
+                  convMap['timestamp'] = formattedTime;
                 }
                 return json.encode(convMap);
               }).toList();
@@ -144,7 +142,7 @@ class _InboxListState extends State<InboxList> {
             }
 
             await prefs.setStringList('conversations', conversations);
-            _loadConversations();  // Refresh conversation list in the UI
+            _loadConversations(); // Refresh conversation list in the UI
           } else {
             print('User details could not be fetched for senderId: $senderId');
           }
@@ -180,6 +178,7 @@ class _InboxListState extends State<InboxList> {
     }
   }
 
+
   Future<void> _loadConversations() async {
     final prefs = await SharedPreferences.getInstance();
     final storedConversations = prefs.getStringList('conversations') ?? [];
@@ -197,9 +196,13 @@ class _InboxListState extends State<InboxList> {
     print('Conversations: $_conversations');
   }
 
+
+
   Future<void> _refreshConversations() async {
     await _loadConversations();
   }
+
+
 
   void _navigateToChat(String recipientId, String recipientUserName, String recipientUserImage) {
     print('Navigating to chat with: $recipientUserName'); // Debug line
@@ -214,7 +217,7 @@ class _InboxListState extends State<InboxList> {
       ),
     ).then((_) {
       // Optional: You can add any additional logic to execute after returning to InboxList
-      print('Returned from chat screen'); // Debug line
+      print('Returned from chat screen.'); // Debug line
     });
   }
 

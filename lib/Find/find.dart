@@ -9,6 +9,7 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/routes/transitions_type.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/Inbox/Inbox.dart';
+import 'package:travel/Find/Passenger/findrequests.dart';
 import 'package:travel/Trial/new.dart';
 import 'package:travel/Find/Passenger/postrequest.dart';
 import 'package:travel/Find/Driver/posttrip.dart';
@@ -16,11 +17,13 @@ import 'package:travel/Find/Inbox/receiveInbox.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:http/http.dart' as http;
 import 'package:travel/UserProfile/License/verifylicenese.dart';
+import '../UserProfile/BookedRides/all_booked_rides.dart';
 import '../UserProfile/vechiledetails.dart';
 import '../widget/City_search.dart';
 import '../widget/HttpHandler.dart';
 import '../UserProfile/Userprofile.dart';
 import '../api/api.dart';
+import '../widget/configure.dart';
 import 'Trips/TripsHome.dart';
 import '../widget/internet.dart';
 import 'notification.dart';
@@ -368,6 +371,7 @@ class _FindScreenState extends State<FindScreen> {
           final List<Map<String, dynamic>> results =
               List<Map<String, dynamic>>.from(resultsJson);
           print('API called');
+          print('Find trip data:${response.body}');
           if (results.isNotEmpty) {
             // Handle successful response and navigate to results page
             Navigator.push(
@@ -592,6 +596,7 @@ class _FindScreenState extends State<FindScreen> {
                   child: Text(
                     'Search',
                     style: TextStyle(
+                      fontSize: 16,
                       color: Colors.white,
                     ),
                   ),
@@ -707,9 +712,10 @@ class _FindScreenState extends State<FindScreen> {
               ),
               Expanded(
                 child: Tooltip(
-                  message: 'Requests details',
+                  message: 'Find Requests',
                   child: InkWell(
                     onTap: () {
+                      // Get.to(() => FindRequests());
                       _onItemTapped(1); // Set index for Trips screen
                     },
                     child: Column(
@@ -735,7 +741,7 @@ class _FindScreenState extends State<FindScreen> {
                   color: Colors.grey, // Color of the divider
                 ),
               ),
-              Expanded(
+              /*Expanded(
                 child: Tooltip(
                   message: 'Reqeust a trip',
                   child: InkWell(
@@ -757,10 +763,43 @@ class _FindScreenState extends State<FindScreen> {
                     ),
                   ),
                 ),
-              ),
+              ),*/
             ],
           ),
         ),
+          floatingActionButton: Container(
+            width: 100,
+            child: Tooltip(
+              preferBelow: false,
+              message: 'Booking history',
+              child: Container(
+                padding: EdgeInsets.only(top: 10),
+                child: FloatingActionButton(
+                  backgroundColor: kPrimaryColor,
+                  onPressed: () {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => BookedUserRides()));
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.history, color: Colors.white), // Your history icon
+                      const Padding(
+                        padding: EdgeInsets.only(left: 5),
+                        child: Text(
+                          'History',
+                          style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )
       ),
     );
   }

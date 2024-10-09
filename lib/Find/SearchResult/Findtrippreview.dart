@@ -411,20 +411,25 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                     itemBuilder: (context, index) {
                       final stop = stopsData[index] as Map<String, dynamic>; // Cast to Map
                       final stopName = stop['stop_name'] ?? 'Unknown Stop';
-                      final stopPrice = stop['stop_price'] ?? '0';
+                      // final stopPrice = stop['stop_price'] ?? '0';
                       return ListTile(
-                        title: Text(stopName),
-                        subtitle: Text('Price: \$${stopPrice}'),
+                        title: Row(
+                          children: [
+                            Icon(Icons.location_on),
+                            SizedBox(width: 5,),
+                            Text(stopName),
+                          ],
+                        ),
+                        // subtitle: Text('Price: \$${stopPrice}'),
                       );
                     },
                   ),
                 ],
-                Divider(thickness: 15, color: Colors.black12),
               ],
             ),
 
 
-            // Assuming otherItems is a list of strings
+           /* // Assuming otherItems is a list of strings
             Padding(
               padding: const EdgeInsets.only(right: 150.0, bottom: 100),
               child: Column(
@@ -476,7 +481,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                   ),
                 ],
               ),
-            ),
+            ),*/
 
 
           ],

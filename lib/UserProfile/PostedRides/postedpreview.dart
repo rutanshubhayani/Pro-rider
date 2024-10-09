@@ -357,10 +357,16 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
                     itemBuilder: (context, index) {
                       final stop = stopsData[index] as Map<String, dynamic>; // Cast to Map
                       final stopName = stop['stop_name'] ?? 'Unknown Stop';
-                      final stopPrice = stop['stop_price'] ?? '0';
+                      // final stopPrice = stop['stop_price'] ?? '0';
                       return ListTile(
-                        title: Text(stopName),
-                        subtitle: Text('Price: \$${stopPrice}'),
+                        title: Row(
+                          children: [
+                            Icon(Icons.location_on),
+                            SizedBox(width: 5,),
+                            Text(stopName),
+                          ],
+                        ),
+                        // subtitle: Text('Price: \$${stopPrice}'),
                       );
                     },
                   ),
@@ -368,57 +374,56 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
                 Divider(thickness: 15, color: Colors.black12),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(right: 150.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      'Other:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 25.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: otherItems.map((item) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10.0),
-                          child: Container(
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.grey, width: 1),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  itemsIcons[item] ?? Icons.help,
-                                  color: Colors.black,
-                                ),
-                                SizedBox(width: 10),
-                                Text(
-                                  item,
-                                  style: TextStyle(fontSize: 15),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Divider(thickness: 15, color: Colors.black12),
+            // Padding(
+            //   padding: const EdgeInsets.only(right: 150.0),
+            //   child: Column(
+            //     crossAxisAlignment: CrossAxisAlignment.start,
+            //     children: <Widget>[
+            //       Padding(
+            //         padding: const EdgeInsets.all(20),
+            //         child: Text(
+            //           'Other:',
+            //           style: TextStyle(
+            //             fontWeight: FontWeight.bold,
+            //             fontSize: 17,
+            //           ),
+            //         ),
+            //       ),
+            //       Padding(
+            //         padding: const EdgeInsets.only(left: 25.0),
+            //         child: Column(
+            //           crossAxisAlignment: CrossAxisAlignment.start,
+            //           children: otherItems.map((item) {
+            //             return Padding(
+            //               padding: const EdgeInsets.only(bottom: 10.0),
+            //               child: Container(
+            //                 padding: EdgeInsets.all(8),
+            //                 decoration: BoxDecoration(
+            //                   color: Colors.white,
+            //                   borderRadius: BorderRadius.circular(20),
+            //                   border: Border.all(color: Colors.grey, width: 1),
+            //                 ),
+            //                 child: Row(
+            //                   children: [
+            //                     Icon(
+            //                       itemsIcons[item] ?? Icons.help,
+            //                       color: Colors.black,
+            //                     ),
+            //                     SizedBox(width: 10),
+            //                     Text(
+            //                       item,
+            //                       style: TextStyle(fontSize: 15),
+            //                     ),
+            //                   ],
+            //                 ),
+            //               ),
+            //             );
+            //           }).toList(),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
 
             Padding(
               padding: const EdgeInsets.all(20.0),

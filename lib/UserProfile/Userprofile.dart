@@ -468,7 +468,7 @@ class _UserProfileState extends State<UserProfile> {
                     context: context,
                     builder: (BuildContext context) {
                       return AlertDialog(
-                        title: Text('Confirm Logout'),
+                        title: Text('Logout'),
                         content: Text('Are you sure you want to log out?'),
                         actions: <Widget>[
                           TextButton(

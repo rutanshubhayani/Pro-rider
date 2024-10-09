@@ -10,17 +10,6 @@ import 'package:travel/api/api.dart';
 import 'dart:convert';
 import 'package:travel/auth/verifyotp.dart'; // For converting response to JSON
 
-
-
-
-
-
-
-
-
-
-
-
 class UserInfo extends StatefulWidget {
   const UserInfo({super.key});
 
@@ -316,14 +305,27 @@ class _UserInfoState extends State<UserInfo> {
         SizedBox(height: 16),
         TextFormField(
           controller: _phoneController,
-          readOnly: !isEditing,
-          focusNode: _phoneFocusNode, // Set focus node
+          readOnly: true,
+          focusNode: _phoneFocusNode,
           keyboardType: TextInputType.phone,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.transparent,
             labelText: 'Number',
-            prefixIcon: Icon(Icons.phone),
+            prefixIcon: Padding(
+              padding: EdgeInsets.only(right: 8.0,left: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.phone),
+                  SizedBox(width: 4), // Add some spacing
+                  Text('+1',
+                  style: TextStyle(
+                    fontSize: 16
+                  ),),
+                ],
+              ),
+            ),
             border: OutlineInputBorder(
               borderSide: BorderSide(
                 color: Color(0xFF51737A),
@@ -344,6 +346,25 @@ class _UserInfoState extends State<UserInfo> {
           onFieldSubmitted: (value) {
             FocusScope.of(context).requestFocus(_addressFocusNode);
           },
+        ),
+        SizedBox(height: 5,),
+        Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 2.0),
+              child: Icon(
+                Icons.info_outline_rounded,
+                color: Colors.black54,
+                size: 15,
+              ),
+            ),
+            Text(
+              'Note: You can\'t edit mobile number',
+              style: TextStyle(
+                  color: Colors.black54,
+                  fontStyle: FontStyle.italic),
+            ),
+          ],
         ),
         SizedBox(height: 16),
         TextFormField(
@@ -401,15 +422,3 @@ class _UserInfoState extends State<UserInfo> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-

@@ -139,3 +139,49 @@ class NoEmojiInputFormatter extends TextInputFormatter {
     );
   }
 }
+
+
+class ActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const ActionButton({
+    Key? key,
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      preferBelow: false,
+      message: label,
+      child: MaterialButton(
+        color: kPrimaryColor,
+        onPressed: onPressed,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15), // Adjust as needed
+        ),
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20), // Adjust padding as needed
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white), // Icon passed as a parameter
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

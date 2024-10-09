@@ -11,8 +11,6 @@ import '../../Find/Trips/trips.dart';
 import '../../api/api.dart';
 import '../Userprofile.dart';
 
-
-
 class BookedUserRides extends StatelessWidget {
   const BookedUserRides({super.key});
 
@@ -22,16 +20,6 @@ class BookedUserRides extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back),
-            onPressed: () {
-              // Navigate directly to UserProfile screen
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => UserProfile()),
-              );
-            },
-          ),
           title: const Text(
             'All Booked Rides',
             style: TextStyle(
@@ -42,7 +30,7 @@ class BookedUserRides extends StatelessWidget {
             preferredSize: const Size.fromHeight(40),
             child: Container(
               height: 40,
-              margin: const EdgeInsets.symmetric(horizontal: 20),
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
                 borderRadius: const BorderRadius.all(Radius.circular(20)),
                 color: Colors.transparent,
@@ -51,7 +39,8 @@ class BookedUserRides extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.transparent, // change background color of whole tabbar
+                    color: Colors
+                        .transparent, // change background color of whole tabbar
                   ),
                   child: const TabBar(
                     indicatorSize: TabBarIndicatorSize.tab,
@@ -87,6 +76,10 @@ class BookedUserRides extends StatelessWidget {
 
 
 
+
+
+
+
 class AllBookedRides extends StatefulWidget {
   const AllBookedRides({super.key});
 
@@ -109,9 +102,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
     String? authToken = prefs.getString('authToken');
 
     if (authToken == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User not authenticated')),
-      );
+      Get.snackbar('Authentication Error', 'User not authenticated');
       return;
     }
 
@@ -125,6 +116,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
       );
 
       if (response.statusCode == 200) {
+        print('All booked rides: ${response.body}');
         setState(() {
           _bookedRides = jsonDecode(response.body);
           _isLoading = false;
@@ -140,9 +132,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
         _isLoading = false;
       });
       print(e);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: Internal server error.')),
-      );
+      Get.snackbar('Error', 'Internal server error.');
     }
   }
 
@@ -151,9 +141,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
     String? authToken = prefs.getString('authToken');
 
     if (authToken == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('User not authenticated')),
-      );
+      Get.snackbar('Authentication Error', 'User not authenticated');
       return;
     }
 
@@ -166,15 +154,51 @@ class _AllBookedRidesState extends State<AllBookedRides> {
     );
 
     if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Booking canceled successfully')),
+      Get.snackbar(
+        'Success',
+        'Booking canceled successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        mainButton: TextButton(
+          onPressed: () {
+            _restoreBooking(bookingTripId);
+          },
+          child: Text('Undo', style: TextStyle(color: Colors.blue)),
+        ),
       );
       _fetchBookedRides();
     } else {
       print('Error cancelling ride: ${response.body}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error cancelling ride')),
+      Get.snackbar('Error', 'Error cancelling ride');
+    }
+  }
+
+  Future<void> _restoreBooking(String bookingTripId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? authToken = prefs.getString('authToken');
+
+    if (authToken == null) {
+      Get.snackbar('Authentication Error', 'User not authenticated');
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('${API.api1}/restore-booking/$bookingTripId'),
+        headers: {
+          'Authorization': 'Bearer $authToken',
+          'Content-Type': 'application/json',
+        },
       );
+
+      if (response.statusCode == 200) {
+        _fetchBookedRides();
+      } else {
+        print('Error restoring booking: ${response.body}');
+        Get.snackbar('Error', 'Error restoring booking.');
+      }
+    } catch (e) {
+      print('Error: $e');
+      Get.snackbar('Error', 'Error restoring booking.');
     }
   }
 
@@ -253,7 +277,8 @@ class _AllBookedRidesState extends State<AllBookedRides> {
       itemCount: _bookedRides.length,
       itemBuilder: (context, index) {
         final ride = _bookedRides[index];
-        String formattedDate = dateFormat.format(DateTime.parse(ride['leaving_date_time']));
+        String formattedDate =
+        dateFormat.format(DateTime.parse(ride['leaving_date_time']));
         String departureFirstName = getFirstNameOfCity(ride['departure']);
         String destinationFirstName = getFirstNameOfCity(ride['destination']);
 
@@ -273,7 +298,8 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundImage: ride['profile_photo'] != null && ride['profile_photo'].isNotEmpty
+                        backgroundImage: ride['profile_photo'] != null &&
+                            ride['profile_photo'].isNotEmpty
                             ? NetworkImage(ride['profile_photo'])
                             : AssetImage('images/Userpfp.png') as ImageProvider,
                       ),
@@ -281,12 +307,14 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                       Expanded(
                         child: Text(
                           ride['uname'],
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ),
                       Text(
                         '${ride['booked_seats']} Seats booked',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -296,7 +324,8 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                       children: [
                         TextSpan(
                           text: departureFirstName,
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, color: Colors.black),
                         ),
                         TextSpan(
                           text: '  ${ride['departure']}',
@@ -311,7 +340,8 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                       children: [
                         TextSpan(
                           text: destinationFirstName,
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, color: Colors.black),
                         ),
                         TextSpan(
                           text: '  ${ride['destination']}',
@@ -366,6 +396,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
 
 
 
+
 class CancelledBookedRides extends StatefulWidget {
   const CancelledBookedRides({super.key});
 
@@ -388,9 +419,8 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
     String? authToken = prefs.getString('authToken');
 
     if (authToken == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User not authenticated')),
-      );
+      Get.snackbar('Error', 'User not authenticated',
+          snackPosition: SnackPosition.BOTTOM);
       return;
     }
 
@@ -406,36 +436,93 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
       );
 
       if (response.statusCode == 200) {
-        print(response.body);
         setState(() {
           _cancelledRides = jsonDecode(response.body);
 
           // Sort rides by date to ensure the most recent is on top
-          _cancelledRides.sort((a, b) => DateTime.parse(b['leaving_date_time']).compareTo(DateTime.parse(a['leaving_date_time'])));
+          _cancelledRides.sort((a, b) => DateTime.parse(b['leaving_date_time'])
+              .compareTo(DateTime.parse(a['leaving_date_time'])));
 
           // Limit to the last 5 cancelled rides
           if (_cancelledRides.length > 5) {
-            _cancelledRides = _cancelledRides.take(5).toList(); // Keep only the last 5
+            _cancelledRides =
+                _cancelledRides.take(5).toList(); // Keep only the last 5
           }
 
           _isLoading = false;
         });
       } else {
-        print('Error fetching cancelled rides: ${response.body}');
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error fetching cancelled rides.')),
-        );
+        Get.snackbar('Error', 'Error fetching cancelled rides.',
+            snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+      Get.snackbar('Error', 'Error.', snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  Future<void> _showRestoreConfirmationDialog(String bookingTripId) async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Restore'),
+          content: const Text('Are you sure you want to restore this booking?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                _restoreBooking(bookingTripId); // Proceed with restoring the booking
+              },
+              child: const Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _restoreBooking(String bookingTripId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? authToken = prefs.getString('authToken');
+
+    if (authToken == null) {
+      Get.snackbar('Error', 'User not authenticated',
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('${API.api1}/restore-booking/$bookingTripId'),
+        headers: {
+          'Authorization': 'Bearer $authToken',
+          'Content-Type': 'application/json',
+        },
       );
+
+      if (response.statusCode == 200) {
+        Get.snackbar('Success', 'Booking restored successfully.',
+            snackPosition: SnackPosition.BOTTOM);
+        _fetchCancelledRides();
+      } else {
+        Get.snackbar('Error', 'Error restoring booking.',
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Error restoring booking.',
+          snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -452,10 +539,9 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
     );
   }
 
-  // Shimmer loading effect
   Widget _buildShimmerLoading() {
     return ListView.builder(
-      itemCount: 6, // Number of shimmer items
+      itemCount: 6,
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
           baseColor: Color(0xFFE5E5E5),
@@ -493,13 +579,13 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
     );
   }
 
-  // Cancelled rides list after data is loaded
   Widget _buildCancelledRidesList(DateFormat dateFormat) {
     return ListView.builder(
       itemCount: _cancelledRides.length,
       itemBuilder: (context, index) {
         final ride = _cancelledRides[index];
-        String formattedDate = dateFormat.format(DateTime.parse(ride['leaving_date_time']));
+        String formattedDate =
+        dateFormat.format(DateTime.parse(ride['leaving_date_time']));
         String departureFirstName = getFirstNameOfCity(ride['departure']);
         String destinationFirstName = getFirstNameOfCity(ride['destination']);
 
@@ -530,7 +616,6 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
                       ),
                       child: CircleAvatar(
                         radius: 30,
-                        // Placeholder image for demonstration
                         backgroundImage: AssetImage('images/Userpfp.png'),
                       ),
                     ),
@@ -604,6 +689,26 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
                     ),
                   ),
                 ),
+                SizedBox(
+                  height: 10,
+                ),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _showRestoreConfirmationDialog(
+                          ride['booking_trip_id'].toString());
+                    },
+                    child: Text('Restore Booking'),
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Color(0xFF3d5a80),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                )
               ],
             ),
           ),

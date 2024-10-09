@@ -304,62 +304,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         },
                       ),
                       SizedBox(height: 16),
-                      TextFormField(
-                        controller: _passwordcontroller,
-                        focusNode: _passwordFocusNode,
-                        obscureText: _obsecureText,
-                        keyboardType: TextInputType.visiblePassword,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.transparent,
-                          labelText: 'Password',
-                          prefixIcon: Icon(Icons.lock),
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _obsecureText = !_obsecureText;
-                              });
-                            },
-                            icon: Icon(
-                              _obsecureText ? Icons.visibility_off : Icons.visibility,
-                            ),
-                          ),
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: Colors.black,
-                              width: 1.0,
-                            ),
-                            borderRadius: BorderRadius.circular(10.0),
+                    TextFormField(
+                      controller: _passwordcontroller,
+                      focusNode: _passwordFocusNode,
+                      obscureText: _obsecureText,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.transparent,
+                        labelText: 'Password',
+                        prefixIcon: Icon(Icons.lock),
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _obsecureText = !_obsecureText;
+                            });
+                          },
+                          icon: Icon(
+                            _obsecureText ? Icons.visibility_off : Icons.visibility,
                           ),
                         ),
-                        textInputAction: TextInputAction.next,
-                        onFieldSubmitted: (_) {
-                          FocusScope.of(context).requestFocus(_confirmpasswordFocusNode);
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
-                          }
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Colors.black,
+                            width: 1.0,
+                          ),
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                      ),
+                      validator: (value) {
+                        List<String> errors = [];
+
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your password'; // Only show this for empty passwords
+                        } else {
                           if (value.length < 8) {
-                            return 'Password must be at least 8 characters long';
+                            errors.add('• At least 8 characters long');
                           }
                           if (!RegExp(r'[A-Z]').hasMatch(value)) {
-                            return 'Password must contain at least one uppercase letter';
+                            errors.add('• One uppercase letter');
                           }
                           if (!RegExp(r'[a-z]').hasMatch(value)) {
-                            return 'Password must contain at least one lowercase letter';
+                            errors.add('• One lowercase letter');
                           }
                           if (!RegExp(r'[0-9]').hasMatch(value)) {
-                            return 'Password must contain at least one digit';
+                            errors.add('• One digit');
                           }
                           if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
-                            return 'Password must contain at least one special character';
+                            errors.add('• One special character');
                           }
-                          return null;
-                        },
+                         /* // Check for only numbers
+                          if (RegExp(r'^[0-9]+$').hasMatch(value)) {
+                            errors.add('• At least one uppercase letter, one lowercase letter, and one special character');
+                          }*/
+                        }
 
-                      ),
-                      SizedBox(height: 16),
+                        if (errors.isNotEmpty) {
+                          return 'Password must contain at least:\n' + errors.join('\n'); // Only show the common error message if there are other errors
+                        }
+                        return null; // No errors
+                      },
+                    ),
+
+                                          SizedBox(height: 16),
                       TextFormField(
                         controller: _confirmpasswordcontroller,
                         focusNode: _confirmpasswordFocusNode,

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/Inbox/Inbox.dart';
+import 'package:travel/Find/Passenger/findrequests.dart';
 import 'package:travel/Find/find.dart';
 import 'package:travel/auth/login.dart';
 import 'package:travel/Find/Passenger/postrequest.dart';
@@ -221,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onPageChanged: _onPageChanged,
         children: [
           // Inbox1(), // Index 0
-          Trips(), // Index 1
+          FindRequests(), // Index 1
           // UserProfile(), // Index 2
         ],
       ),
@@ -312,7 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: Colors.grey, // Color of the divider
               ),
             ),
-            Expanded(
+/*            Expanded(
               child: Tooltip(
                 message: 'Reqeust a trip',
                 child: InkWell(
@@ -334,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-            ),
+            )*/
           ],
         ),
       ),

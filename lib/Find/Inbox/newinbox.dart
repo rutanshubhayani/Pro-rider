@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -51,11 +52,7 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  Future<void> _saveMessages() async {
-    final prefs = await SharedPreferences.getInstance();
-    // Save messages specific to the current recipient
-    await prefs.setStringList('chatMessages_${widget.recipientId}', _messages);
-  }
+
 
   void _connectWebSocket() {
     try {
@@ -175,8 +172,52 @@ class _ChatScreenState extends State<ChatScreen> {
       print("Sending message: $messageData");
       _channel.sink.add(jsonEncode(messageData));
       _saveMessages();
+      _updateInboxConversation(widget.recipientId, messageText);
     }
   }
+
+
+  Future<void> _saveMessages() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Save messages specific to the current recipient
+    await prefs.setStringList('chatMessages_${widget.recipientId}', _messages);
+  }
+
+  void _updateInboxConversation(String recipientId, String content) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> conversations = prefs.getStringList('conversations') ?? [];
+
+    bool conversationExists = conversations.any((conv) {
+      final convMap = json.decode(conv) as Map<String, dynamic>;
+      return convMap['recipientId'] == recipientId;
+    });
+
+    if (conversationExists) {
+      conversations = conversations.map((conv) {
+        final convMap = json.decode(conv) as Map<String, dynamic>;
+        if (convMap['recipientId'] == recipientId) {
+          convMap['lastMessage'] = content; // Update last message
+          convMap['lastMessageUnread'] = true; // Mark as unread
+          convMap['timestamp'] = DateFormat('HH:mm').format(DateTime.now()); // Update timestamp
+        }
+        return json.encode(convMap);
+      }).toList();
+    } else {
+      // If the conversation doesn't exist, create a new one
+      Map<String, dynamic> newConversation = {
+        'recipientId': recipientId,
+        'recipientUserName': widget.recipientUserName,
+        'recipientUserImage': widget.recipientUserImage,
+        'lastMessage': content,
+        'lastMessageUnread': true,
+        'timestamp': DateFormat('HH:mm').format(DateTime.now()),
+      };
+      conversations.add(json.encode(newConversation));
+    }
+    await prefs.setStringList('conversations', conversations);
+    print('Saved conversations:$conversations');
+  }
+
 
   bool _hasIntegers(String text) {
     return RegExp(r'\d').hasMatch(text);

@@ -155,7 +155,7 @@ class _AllPostedRidesState extends State<AllPostedRides> {
           isLoading = false;
         });
       } else {
-        print('Failed to load user posts. Status code: ${response.statusCode}');
+        print('Failed to load user posts. Status code: ${response.body}');
         setState(() {
           isLoading = false;
         });

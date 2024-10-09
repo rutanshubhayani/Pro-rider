@@ -275,20 +275,19 @@ class _UpdateTripState extends State<UpdateTrip> {
 
   void addStopAndPrice() {
     final stop = stopsController.text;
-    final price = spriceController.text;
+    // final price = spriceController.text;
 
-    if (stop.isNotEmpty && price.isNotEmpty) {
+    if (stop.isNotEmpty) {
       setState(() {
         // Append the new stop to the existing list
         stopsAndPrices.add({
           'stop': stop,
-          'price': price,
+          // 'price': price,
         });
       });
 
       // Clear the input fields
       stopsController.clear();
-      spriceController.clear();
       FocusScope.of(context).requestFocus(stopsFocusNode);
     }
   }
@@ -337,13 +336,13 @@ class _UpdateTripState extends State<UpdateTrip> {
         'ride_schedule': isSelectedTrip[0] ? 'One-time trip' : 'Recurring trip',
         'leaving_date_time': '${dateController.text} ${timeController.text}', // Ensure the format is YYYY-MM-DD HH:mm
         'luggage': isSelected1.indexWhere((element) => element),
-        'back_row_sitting': isSelectedPeople[0] ? 'Max 2 people' : '3 people',
+        /*'back_row_sitting': isSelectedPeople[0] ? 'Max 2 people' : '3 people',
         'other_items': choices
             .asMap()
             .entries
             .where((entry) => isSelected2[entry.key])
             .map((entry) => entry.value)
-            .join(', '),
+            .join(', '),*/
         'empty_seats': selectedSeats,
         'description': descriptionController.text,
         'stops': mergedStops, // Include the properly formatted stops here
@@ -687,64 +686,36 @@ class _UpdateTripState extends State<UpdateTrip> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: TextFormField(
-                                    controller: stopsController,
-                                    focusNode: stopsFocusNode,
-                                    decoration: InputDecoration(
-                                      filled: true,
-                                      prefixIcon:
-                                          Icon(Icons.add_location_alt_sharp),
-                                      hintText: 'Stops Location',
-                                      suffixIcon: stopsController
-                                              .text.isNotEmpty
-                                          ? IconButton(
-                                              icon: Icon(Icons.close_rounded),
-                                              onPressed: () => handleClearClick(
-                                                  stopsController),
-                                            )
-                                          : null, // Only show the clear icon if there's text in the field
-                                      border: OutlineInputBorder(
-                                        borderSide: BorderSide.none,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                    textInputAction: TextInputAction.next,
-                                    onFieldSubmitted: (value) {
-                                      FocusScope.of(context)
-                                          .requestFocus(spriceFocusNode);
-                                    },
-                                    onChanged: (value) {
-                                      _updateSuggestions(
-                                          value, stopsController);
-                                    },
-                                  ),
+                            TextFormField(
+                              controller: stopsController,
+                              focusNode: stopsFocusNode,
+                              decoration: InputDecoration(
+                                filled: true,
+                                prefixIcon:
+                                    Icon(Icons.add_location_alt_sharp),
+                                hintText: 'Stops Location',
+                                suffixIcon: stopsController
+                                        .text.isNotEmpty
+                                    ? IconButton(
+                                        icon: Icon(Icons.close_rounded),
+                                        onPressed: () => handleClearClick(
+                                            stopsController),
+                                      )
+                                    : null, // Only show the clear icon if there's text in the field
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                                SizedBox(width: 10),
-                                Expanded(
-                                  child: TextFormField(
-                                    focusNode: spriceFocusNode,
-                                    controller: spriceController,
-                                    decoration: InputDecoration(
-                                      filled: true,
-                                      hintText: 'Enter price',
-                                      border: OutlineInputBorder(
-                                        borderSide: BorderSide.none,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    textInputAction: TextInputAction.next,
-                                    onFieldSubmitted: (_) {
-                                      FocusScope.of(context)
-                                          .requestFocus(dateFocusNode);
-                                    },
-                                  ),
-                                ),
-                              ],
+                              ),
+                              textInputAction: TextInputAction.next,
+                              onFieldSubmitted: (value) {
+                                FocusScope.of(context)
+                                    .requestFocus(spriceFocusNode);
+                              },
+                              onChanged: (value) {
+                                _updateSuggestions(
+                                    value, stopsController);
+                              },
                             ),
                             // Container for suggestions
                             if (showStopsContainer)
@@ -801,22 +772,26 @@ class _UpdateTripState extends State<UpdateTrip> {
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.all(10.0),
-                                  child: ElevatedButton(
+                                  child: stopsController.text
+                                      .isNotEmpty // Check if there's text in the field
+                                      ? ElevatedButton(
                                     style: ButtonStyle(
                                       shape: MaterialStateProperty.all(
                                         RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12.0),
+                                          borderRadius: BorderRadius.circular(
+                                              12.0), // Adjust the radius as needed
                                         ),
                                       ),
-                                      elevation: MaterialStateProperty.all(5.0),
+                                      elevation: MaterialStateProperty.all(
+                                          5.0), // Adjust the elevation as needed
                                     ),
                                     onPressed: addStopAndPrice,
                                     child: Text(
                                       'Add',
                                       style: TextStyle(color: Colors.black),
                                     ),
-                                  ),
+                                  )
+                                      : Container(), // Return an empty container if there's no text
                                 ),
                               ],
                             ),
@@ -833,7 +808,7 @@ class _UpdateTripState extends State<UpdateTrip> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                          '${stop['stop_name']} - \$${stop['stop_price']}'),
+                                          '${stop['stop_name']} '),
                                     ),
                                     if (_isEditingStops) // Show delete icon only in edit mode
                                       IconButton(
@@ -863,7 +838,7 @@ class _UpdateTripState extends State<UpdateTrip> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                          '${item['stop']} - \$${item['price']}'), // Correctly reference 'stop' and 'price'
+                                          '${item['stop']}'), // Correctly reference 'stop' and 'price'
                                     ),
                                     if (_isEditingStops) // Show delete icon only in edit mode
                                       IconButton(
@@ -1127,7 +1102,7 @@ class _UpdateTripState extends State<UpdateTrip> {
                             fontStyle: FontStyle.italic,
                           ),
                         ),
-                        Padding(
+                       /* Padding(
                           padding: const EdgeInsets.only(
                               left: 3.0, top: 15, bottom: 10),
                           child: Text(
@@ -1242,7 +1217,7 @@ class _UpdateTripState extends State<UpdateTrip> {
                               ).toList(),
                             ),
                           ],
-                        ),
+                        ),*/
                         SizedBox(
                           height: 40,
                         ),

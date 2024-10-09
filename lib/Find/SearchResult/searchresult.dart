@@ -157,7 +157,7 @@ class _AllScreenState extends State<AllScreen> {
                               backgroundImage: NetworkImage(trip['profile_photo'] ?? 'images/Userpfp.png'),
                             ),
                             SizedBox(width: 5),
-                            Icon(Icons.verified, color: Colors.blue),
+                            const Icon(Icons.verified, color: Colors.blue),
                             SizedBox(width: 5),
                             Text(userName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                             Spacer(),

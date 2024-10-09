@@ -133,13 +133,13 @@ class _PostTripState extends State<PostTrip> {
         'ride_schedule': isSelectedTrip[0] ? 'One-time trip' : 'Recurring trip',
         'leaving_date_time': '${dateController.text} ${timeController.text}',
         'luggage': isSelected1.indexWhere((element) => element),
-        'back_row_sitting': isSelectedPeople[0] ? 'Max 2 people' : '3 people',
-        'other_items': choices
+        // 'back_row_sitting': isSelectedPeople[0] ? 'Max 2 people' : '3 people',
+        /*'other_items': choices
             .asMap()
             .entries
             .where((entry) => isSelected2[entry.key])
             .map((entry) => entry.value)
-            .join(', '),
+            .join(', '),*/
         'empty_seats': selectedSeats,
         'description': descriptionController.text,
         'stops': stopsAndPrices
@@ -272,19 +272,19 @@ class _PostTripState extends State<PostTrip> {
 
   void addStopAndPrice() {
     final stop = stopsController.text;
-    final price = spriceController.text;
+    // final price = spriceController.text;
 
-    if (stop.isNotEmpty && price.isNotEmpty) {
+    if (stop.isNotEmpty /*&& price.isNotEmpty*/) {
       setState(() {
         stopsAndPrices.add({
           'stop': stop,
-          'price': price,
+          // 'price': '',
         });
       });
 
       // Clear the input fields
       stopsController.clear();
-      spriceController.clear();
+      // spriceController.clear();
       FocusScope.of(context).requestFocus(stopsFocusNode);
     }
   }
@@ -319,9 +319,9 @@ class _PostTripState extends State<PostTrip> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        centerTitle:true,
+        centerTitle: true,
         title: const Text('Post a trip'),
-       /* actions: [
+        /* actions: [
           Padding(
             padding: const EdgeInsets.only(right: 5.0),
             child: TextButton(
@@ -586,7 +586,7 @@ class _PostTripState extends State<PostTrip> {
                                 ),
                               ),
                               SizedBox(width: 10),
-                              Expanded(
+                             /* Expanded(
                                 child: TextFormField(
                                   focusNode: spriceFocusNode,
                                   controller: spriceController,
@@ -605,7 +605,7 @@ class _PostTripState extends State<PostTrip> {
                                         .requestFocus(dateFocusNode);
                                   },
                                 ),
-                              ),
+                              ),*/
                             ],
                           ),
                           // Container for suggestions
@@ -635,24 +635,28 @@ class _PostTripState extends State<PostTrip> {
                               ),
                             ),
                           Padding(
-                              padding: const EdgeInsets.all(10.0),
-                              child: ElevatedButton(
-                                style: ButtonStyle(
-                                  shape: MaterialStateProperty.all(
-                                    RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                          12.0), // Adjust the radius as needed
+                            padding: const EdgeInsets.all(10.0),
+                            child: stopsController.text
+                                    .isNotEmpty // Check if there's text in the field
+                                ? ElevatedButton(
+                                    style: ButtonStyle(
+                                      shape: MaterialStateProperty.all(
+                                        RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              12.0), // Adjust the radius as needed
+                                        ),
+                                      ),
+                                      elevation: MaterialStateProperty.all(
+                                          5.0), // Adjust the elevation as needed
                                     ),
-                                  ),
-                                  elevation: MaterialStateProperty.all(
-                                      5.0), // Adjust the elevation as needed
-                                ),
-                                onPressed: addStopAndPrice,
-                                child: Text(
-                                  'Add',
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                              )),
+                                    onPressed: addStopAndPrice,
+                                    child: Text(
+                                      'Add',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                  )
+                                : Container(), // Return an empty container if there's no text
+                          ),
                           SizedBox(
                               height:
                                   20), // Optional: Add space between fields and list
@@ -665,7 +669,7 @@ class _PostTripState extends State<PostTrip> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                        '${item['stop']} - ${item['price']}'),
+                                        '${item['stop']}'),
                                   ),
                                   IconButton(
                                     icon: Icon(Icons.delete),
@@ -933,7 +937,7 @@ class _PostTripState extends State<PostTrip> {
                           fontStyle: FontStyle.italic,
                         ),
                       ),
-                      Padding(
+                     /* Padding(
                         padding: const EdgeInsets.only(
                             left: 3.0, top: 15, bottom: 10),
                         child: Text(
@@ -1054,7 +1058,7 @@ class _PostTripState extends State<PostTrip> {
                             ).toList(),
                           ),
                         ],
-                      ),
+                      ),*/
                       SizedBox(
                         height: 40,
                       ),
@@ -1217,7 +1221,7 @@ class _PostTripState extends State<PostTrip> {
                             ),
                           ),
                           Text(
-                            'Note: You can\'t edit license plate',
+                            'Note: You can edit license plate from vehicle details',
                             style: TextStyle(
                                 color: Colors.black54,
                                 fontStyle: FontStyle.italic),
@@ -1452,8 +1456,7 @@ class _PostTripState extends State<PostTrip> {
           ),
         ),
       ),
-      floatingActionButton:
-      AnimatedContainer(
+      floatingActionButton: AnimatedContainer(
         duration: Duration(milliseconds: 300),
         width: _isScrolled ? 56 : 100,
         child: FloatingActionButton(
@@ -1466,13 +1469,16 @@ class _PostTripState extends State<PostTrip> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.history,color: Colors.white), // Your history icon
+              Icon(Icons.history, color: Colors.white), // Your history icon
               if (!_isScrolled) // Only show label if not scrolled
                 const Padding(
                   padding: EdgeInsets.only(left: 5),
                   child: Text(
                     'History',
-                    style: TextStyle(fontSize: 15,color: Colors.white,fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
             ],

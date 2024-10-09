@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/gestures.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:http/http.dart' as http;
@@ -9,6 +10,7 @@ import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:travel/Find/find.dart';
 import 'package:travel/UserProfile/BookedRides/all_booked_rides.dart';
 import 'package:travel/widget/configure.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../widget/City_search.dart';
 import '../../api/api.dart';
 
@@ -30,6 +32,7 @@ class _PostrequestState extends State<Postrequest> {
   TextEditingController departureController = TextEditingController();
   TextEditingController destinationController = TextEditingController();
   TextEditingController dateController = TextEditingController();
+  TextEditingController timeController = TextEditingController();
   TextEditingController seatController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
 
@@ -41,6 +44,8 @@ class _PostrequestState extends State<Postrequest> {
       activeController; // Keep track of the active controller
 
   int _selectedSeat = 1;
+  bool _isChecked = false;
+
 
   @override
   void dispose() {
@@ -55,6 +60,31 @@ class _PostrequestState extends State<Postrequest> {
     descriptionController.dispose();
     super.dispose();
   }
+
+  void _launchURL(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      print('Could not launch $url');
+    }
+  }
+
+
+  Future<void> _selectTime() async {
+    TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (pickedTime != null) {
+      setState(() {
+        timeController.text = pickedTime.format(context);
+      });
+    }
+  }
+
+
 
   void handleClearClick(TextEditingController controller) {
     setState(() {
@@ -72,6 +102,9 @@ class _PostrequestState extends State<Postrequest> {
       return;
     }
 
+    // Concatenate date and time with a space in between
+    final departureDateTime = '${dateController.text} ${timeController.text}';
+
     final response = await http.post(
       Uri.parse('${API.api1}/post_a_request'),
       headers: {
@@ -81,7 +114,7 @@ class _PostrequestState extends State<Postrequest> {
       body: jsonEncode({
         'from_location': departureController.text,
         'to_location': destinationController.text,
-        'departure_date': dateController.text,
+        'departure_date': departureDateTime, // Use the corrected value here
         'seats_required': _selectedSeat,
         'description': descriptionController.text,
       }),
@@ -186,34 +219,6 @@ class _PostrequestState extends State<Postrequest> {
       appBar: AppBar(
         centerTitle: true,
         title: const Text('Post a request'),
-       /* actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 5.0),
-            child: TextButton(
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => BookedUserRides()));
-                },
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.history,
-                      size: 20,
-                      color: Colors.black,
-                    ),
-                    SizedBox(
-                      width: 3,
-                    ),
-                    Text(
-                      'History',
-                      style: TextStyle(color: Colors.black, fontSize: 15),
-                    ),
-                  ],
-                )),
-          )
-        ],*/
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 30.0, horizontal: 16),
@@ -226,9 +231,7 @@ class _PostrequestState extends State<Postrequest> {
                 'From',
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
               ),
-              SizedBox(
-                height: 10,
-              ),
+              SizedBox(height: 10),
               CitySearchField(
                 controller: departureController,
                 focusNode: departureFocusNode,
@@ -245,7 +248,7 @@ class _PostrequestState extends State<Postrequest> {
                 onClear: () => handleClearClick(departureController),
                 onSuggestionTap: (suggestion) {
                   departureController.text =
-                      '${suggestion['city']}, ${suggestion['pname']}';
+                  '${suggestion['city']}, ${suggestion['pname']}';
                   setState(() {
                     showDepartureContainer = false;
                   });
@@ -282,7 +285,7 @@ class _PostrequestState extends State<Postrequest> {
                 onClear: () => handleClearClick(destinationController),
                 onSuggestionTap: (suggestion) {
                   destinationController.text =
-                      '${suggestion['city']}, ${suggestion['pname']}';
+                  '${suggestion['city']}, ${suggestion['pname']}';
                   setState(() {
                     showDestinationContainer = false;
                   });
@@ -302,77 +305,112 @@ class _PostrequestState extends State<Postrequest> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(
-                height: 10,
-              ),
-              TextFormField(
-                controller: dateController,
-                focusNode: dateFocusNode,
-                decoration: InputDecoration(
-                  hintText: 'Pick departure date',
-                  suffixIcon: dateController.text.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(Icons.close_rounded),
-                          onPressed: () => handleClearClick(dateController),
-                        )
-                      : null, // Only show the clear icon if there's text in the field
-                  filled: true,
-                  prefixIcon: Icon(Icons.calendar_today),
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(10),
+              SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    controller: dateController,
+                    focusNode: dateFocusNode,
+                    decoration: InputDecoration(
+                      hintText: 'Pick departure date',
+                      suffixIcon: dateController.text.isNotEmpty
+                          ? IconButton(
+                        icon: Icon(Icons.close_rounded),
+                        onPressed: () => handleClearClick(dateController),
+                      )
+                          : null,
+                      filled: true,
+                      prefixIcon: Icon(Icons.calendar_today),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide.none,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) {
+                      FocusScope.of(context).requestFocus(seatFocusNode);
+                    },
+                    readOnly: true,
+                    onTap: () => _selectDate(context),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please pick a date';
+                      }
+                      return null;
+                    },
                   ),
                 ),
-                textInputAction: TextInputAction.next,
-                onFieldSubmitted: (_) {
-                  FocusScope.of(context).requestFocus(seatFocusNode);
-                },
-                readOnly: true,
-                onTap: () => _selectDate(context),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please pick a date';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(
-                height: 20,
-              ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: timeController,
+                    decoration: InputDecoration(
+                      hintText: 'Time',
+                     /* suffixIcon: timeController.text.isNotEmpty
+                          ? IconButton(
+                        icon: Icon(Icons.close_rounded),
+                        onPressed: () => handleClearClick(timeController),
+                      )
+                          : null,*/
+                      filled: true,
+                      prefixIcon: Icon(Icons.watch_later_outlined),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide.none,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    textInputAction: TextInputAction.next,
+                    readOnly: true,
+                    onTap: () => _selectTime(),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Pick time';
+                      }
+                      return null;
+                    },
+                  ),
+                )
+              ],
+            ),
+              SizedBox(height: 20),
               Text(
                 'Seats required',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
               ),
-              SizedBox(
-                height: 10,
-              ),
-              DropdownButtonFormField<int>(
-                focusNode: seatFocusNode,
-                value: _selectedSeat,
-                decoration: InputDecoration(
-                  filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                    borderSide: BorderSide.none,
+              SizedBox(height: 10),
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.remove,
+                      size: 30,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        if (_selectedSeat > 1) _selectedSeat--;
+                      });
+                    },
                   ),
-                ),
-                items: List.generate(3, (index) => index + 1)
-                    .map((seat) => DropdownMenuItem<int>(
-                          value: seat,
-                          child: Text(seat.toString()),
-                        ))
-                    .toList(),
-                onChanged: (newValue) {
-                  FocusScope.of(context).requestFocus(descriptionFocusNode);
-                  setState(() {
-                    _selectedSeat = newValue!;
-                  });
-                },
-                icon: Icon(Icons.arrow_forward_ios_rounded),
+                  Text(
+                    '$_selectedSeat',
+                    style: TextStyle(fontSize: 17),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.add,
+                      size: 30,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        if (_selectedSeat < 3) _selectedSeat++;
+                      });
+                    },
+                  ),
+                ],
               ),
-              SizedBox(
-                height: 20,
-              ),
+              SizedBox(height: 20),
               Text(
                 'Description',
                 style: TextStyle(
@@ -380,57 +418,128 @@ class _PostrequestState extends State<Postrequest> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(
-                height: 10,
-              ),
+              SizedBox(height: 10),
               TextFormField(
                 controller: descriptionController,
                 focusNode: descriptionFocusNode,
                 maxLines: 5,
                 decoration: InputDecoration(
-                    filled: true,
-                    hintText:
-                        'Tell driver a little bit more about you and why you\'re\ travelling.',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    )),
+                  filled: true,
+                  hintText:
+                  'Tell driver a little bit more about you and why you\'re travelling.',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
               ),
+              SizedBox(height: 40,),
+              Row(
+                children: <Widget>[
+                  Checkbox(
+                    value: _isChecked,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _isChecked = value!;
+                      });
+                    },
+                  ),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'I agree to these rules, to the ',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                          TextSpan(
+                            text: 'Driver Cancellation Policy',
+                            style: TextStyle(color: Colors.blue),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () =>
+                                  _launchURL('https://www.google.com/'),
+                          ),
+                          TextSpan(
+                            text: ', ',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                          TextSpan(
+                            text: 'Terms of Service',
+                            style: TextStyle(color: Colors.blue),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () =>
+                                  _launchURL('https://www.google.com/'),
+                          ),
+                          TextSpan(
+                            text: ' and the ',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                          TextSpan(
+                            text: 'Privacy Policy',
+                            style: TextStyle(color: Colors.blue),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () =>
+                                  _launchURL('https://www.google.com/'),
+                          ),
+                          TextSpan(
+                            text:
+                            ', and I understand that my account could be suspended if I break the rules',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              )
             ],
           ),
         ),
       ),
+
+
       bottomNavigationBar: BottomAppBar(
+        color: Color(0xFFdfdfdf),
         child: SizedBox(
-          height:
-              kBottomNavigationBarHeight, // Ensure this height fits your design
+          height: kBottomNavigationBarHeight, // Adjust if needed
           child: GestureDetector(
             onTap: () {
-              if (_formKey.currentState!.validate()) {
-                _postRequest();
+              if (_isChecked) {
+                if (_formKey.currentState?.validate() ?? false) {
+                  _postRequest();
+                } else {
+                  _focusFirstEmptyField();
+                }
               } else {
-                _focusFirstEmptyField();
+                // Provide feedback if checkbox is not checked
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Please agree to the terms and conditions.'),
+                  ),
+                );
               }
             },
-            behavior: HitTestBehavior
-                .opaque, // Ensures GestureDetector covers all tappable area
-            child: Container(
-              padding: const EdgeInsets.all(16.0), // Adjust padding as needed
-              alignment: Alignment.center,
-              child: Text(
-                'Post request',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black54,
-                ),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Post request',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: _isChecked ? Colors.black : Colors.black54,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         ),
       ),
-      floatingActionButton: Container(
+      /*floatingActionButton: Container(
         width: 100,
         child: FloatingActionButton(
           backgroundColor: kPrimaryColor,
@@ -455,7 +564,7 @@ class _PostrequestState extends State<Postrequest> {
             ],
           ),
         ),
-      ),
+      ),*/
     );
   }
 
