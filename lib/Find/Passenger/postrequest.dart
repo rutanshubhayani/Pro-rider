@@ -11,6 +11,7 @@ import 'package:travel/Find/find.dart';
 import 'package:travel/UserProfile/BookedRides/all_booked_rides.dart';
 import 'package:travel/widget/configure.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../home.dart';
 import '../../widget/City_search.dart';
 import '../../api/api.dart';
 
@@ -129,7 +130,7 @@ class _PostrequestState extends State<Postrequest> {
 
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => FindScreen()),
+        MaterialPageRoute(builder: (context) => MyHomePage()),
       );
     } else {
       _showErrorSnackbar(

@@ -4,6 +4,7 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/UserProfile/Userprofile.dart';
+import 'package:travel/auth/login.dart';
 import 'dart:convert';
 import 'package:travel/auth/verifyotp.dart';
 
@@ -95,13 +96,21 @@ class _ChangePasswordState extends State<ChangePassword> {
           _newPasswordController.clear();
           _currentPasswordController.clear();
           _confirmPasswordController.clear();
-          Get.to(UserProfile());
+          // Clear the token from SharedPreferences
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.remove('authToken');
+
+          Get.offAll(() => LoginScreen());
+        } else if (response.statusCode == 401) {
+          // Handle incorrect current password
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Current password is incorrect')),
+          );
         } else {
+          print('Error: ${response.body}');
           final responseBody = jsonDecode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    'Error: ${responseBody['message'] ?? 'Unknown error'}')),
+            SnackBar(content: Text('Error: Unknown error')),
           );
           print(responseBody);
         }
@@ -109,7 +118,7 @@ class _ChangePasswordState extends State<ChangePassword> {
         print(e);
         // Handle any exceptions
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Server error occured')),
+          SnackBar(content: Text('Server error occurred')),
         );
         print(e);
       }
@@ -198,25 +207,36 @@ class _ChangePasswordState extends State<ChangePassword> {
                   ),
                 ),
                 validator: (value) {
+                  List<String> errors = [];
+
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
+                    return 'Please enter your password'; // Only show this for empty passwords
+                  } else {
+                    if (value.length < 8) {
+                      errors.add('• 8 characters long');
+                    }
+                    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                      errors.add('• One uppercase letter');
+                    }
+                    if (!RegExp(r'[a-z]').hasMatch(value)) {
+                      errors.add('• One lowercase letter');
+                    }
+                    if (!RegExp(r'[0-9]').hasMatch(value)) {
+                      errors.add('• One digit');
+                    }
+                    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                      errors.add('• One special character');
+                    }
+                    /* // Check for only numbers
+                          if (RegExp(r'^[0-9]+$').hasMatch(value)) {
+                            errors.add('• At least one uppercase letter, one lowercase letter, and one special character');
+                          }*/
                   }
-                  if (value.length < 8) {
-                    return 'Password must be at least 8 characters long';
+
+                  if (errors.isNotEmpty) {
+                    return 'Password must contain at least:\n' + errors.join('\n'); // Only show the common error message if there are other errors
                   }
-                  if (!RegExp(r'[A-Z]').hasMatch(value)) {
-                    return 'Password must contain at least one uppercase letter';
-                  }
-                  if (!RegExp(r'[a-z]').hasMatch(value)) {
-                    return 'Password must contain at least one lowercase letter';
-                  }
-                  if (!RegExp(r'[0-9]').hasMatch(value)) {
-                    return 'Password must contain at least one digit';
-                  }
-                  if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
-                    return 'Password must contain at least one special character';
-                  }
-                  return null;
+                  return null; // No errors
                 },
                 onEditingComplete: () {
                   FocusScope.of(context).requestFocus(confirmPasswordFocusNode);

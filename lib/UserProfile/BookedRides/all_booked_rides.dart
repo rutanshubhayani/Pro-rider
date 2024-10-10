@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:travel/UserProfile/BookedRides/BookedPreview.dart';
+import 'package:travel/auth/login.dart';
 import '../../Find/Trips/trips.dart';
 import '../../api/api.dart';
 import '../Userprofile.dart';
@@ -419,6 +420,7 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
     String? authToken = prefs.getString('authToken');
 
     if (authToken == null) {
+      Get.to(() => LoginScreen());
       Get.snackbar('Error', 'User not authenticated',
           snackPosition: SnackPosition.BOTTOM);
       return;
@@ -455,10 +457,11 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
         setState(() {
           _isLoading = false;
         });
-        Get.snackbar('Error', 'Error fetching cancelled rides.',
-            snackPosition: SnackPosition.BOTTOM);
+        /*Get.snackbar('Error', 'Error fetching cancelled rides.',
+            snackPosition: SnackPosition.BOTTOM);*/
       }
     } catch (e) {
+      print(e);
       setState(() {
         _isLoading = false;
       });

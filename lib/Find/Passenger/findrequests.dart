@@ -251,7 +251,7 @@ class _FindRequestsState extends State<FindRequests> {
 
         final response = await http.get(
           Uri.parse(
-            '${API.api1}/find_requests?from_location=$departure&to_location=$destination&departure_date =$date',
+            '${API.api1}/find_requests?from_location=$departure&to_location=$destination&departure_date=$date',
           ),
           headers: {
             'Content-Type': 'application/json',
@@ -263,6 +263,7 @@ class _FindRequestsState extends State<FindRequests> {
           final List<dynamic> resultsJson = json.decode(response.body);
           final List<Map<String, dynamic>> results =
           List<Map<String, dynamic>>.from(resultsJson);
+          print('date : $date');
           print('API called');
           print('Find request data:${response.body}');
           if (results.isNotEmpty) {
@@ -347,7 +348,7 @@ class _FindRequestsState extends State<FindRequests> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Find requests of user!', // Use the user's name here
+                      'Find requests of passenger!', // Use the user's name here
                       style: TextStyle(
                           fontSize: 20, fontWeight: FontWeight.bold),
                     ),

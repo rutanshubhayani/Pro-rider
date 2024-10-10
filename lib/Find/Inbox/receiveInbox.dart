@@ -19,8 +19,19 @@ class _InboxListState extends State<InboxList> {
   Set<int> _selectedIndices = {};
   bool _isMultiSelectMode = false;
   IOWebSocketChannel? _channel;
+  Set<int> _clickedIndices = {};
 
   bool get isWebSocketConnected => _channel != null && _channel!.closeCode == null;
+
+  String _formatDateAndTime(String time) {
+    // Get today's date
+    DateTime now = DateTime.now();
+
+    // Combine today's date with the time
+    String formattedDate = DateFormat('dd-MM-yyyy').format(now);
+
+    return '$formattedDate'; // Combine date and time
+  }
 
   @override
   void initState() {
@@ -122,14 +133,14 @@ class _InboxListState extends State<InboxList> {
             // Check if conversation with this sender already exists
             bool conversationExists = conversations.any((conv) {
               final convMap = json.decode(conv) as Map<String, dynamic>;
-              return convMap['recipientId'] == senderId;
+              return convMap['recipientId'] == (isSentMessage ? recipientId : senderId);
             });
 
             if (conversationExists) {
               // Update existing conversation
               conversations = conversations.map((conv) {
                 final convMap = json.decode(conv) as Map<String, dynamic>;
-                if (convMap['recipientId'] == senderId) {
+                if (convMap['recipientId'] == (isSentMessage ? recipientId : senderId)) {
                   convMap['lastMessage'] = content;
                   convMap['lastMessageUnread'] = !isSentMessage;
                   convMap['timestamp'] = formattedTime;
@@ -140,6 +151,7 @@ class _InboxListState extends State<InboxList> {
               // Create a new conversation
               conversations.add(json.encode(conversationMap));
             }
+
 
             await prefs.setStringList('conversations', conversations);
             _loadConversations(); // Refresh conversation list in the UI
@@ -278,12 +290,11 @@ class _InboxListState extends State<InboxList> {
             bool isSelected = _selectedIndices.contains(index);
             bool isUnread = conversation['lastMessageUnread'] == true;
 
+            // Check if this message has been clicked
+            bool isClicked = _clickedIndices.contains(index);
+
             return Container(
-              color: isSelected
-                  ? Colors.grey[300]
-                  : isUnread
-                  ? Colors.blue[50]
-                  : Colors.transparent,
+              color: isSelected ? Colors.grey[300] : Colors.transparent,
               child: ListTile(
                 leading: CircleAvatar(
                   radius: 30,
@@ -293,26 +304,43 @@ class _InboxListState extends State<InboxList> {
                 ),
                 title: Row(
                   children: [
-                    Expanded(child: Text(conversation['recipientUserName'],
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold
-                    ),)),
-                    if (isSelected)
-                      const Icon(Icons.check, color: Colors.green),
-                    if (isUnread)
-                      const Icon(Icons.circle, color: Colors.red, size: 8),
+                    Expanded(
+                      child: Text(
+                        conversation['recipientUserName'],
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                subtitle: Text(conversation['lastMessage'],
-                style: TextStyle(
-                  fontSize: 14,
-                ),),
-                trailing: Text(conversation['timestamp']),
+                subtitle: Text(
+                  conversation['lastMessage'],
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isUnread && !isClicked ? FontWeight.bold : FontWeight.normal, // Adjust based on state
+                  ),
+                ),
+                trailing: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _formatDateAndTime(conversation['timestamp']), // Format and display date and time
+                    ),
+                    Text(
+                      conversation['timestamp'], // This still shows just the time
+                    ),
+                  ],
+                ),
                 onTap: () {
                   if (_isMultiSelectMode) {
                     _toggleSelection(index);
                   } else {
+                    setState(() {
+                      _clickedIndices.add(index); // Mark as clicked
+                    });
                     _navigateToChat(
                       conversation['recipientId'].toString(),
                       conversation['recipientUserName'],

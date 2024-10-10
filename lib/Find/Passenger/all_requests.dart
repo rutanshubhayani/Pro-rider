@@ -193,6 +193,7 @@ class _AllPostRequestsState extends State<AllPostRequests> {
           mainButton: TextButton(
             onPressed: () async {
               await _restorePostRequest(postId);
+              Get.closeCurrentSnackbar(); // Close the snackbar
             },
             child: Text('Undo'),
           ),

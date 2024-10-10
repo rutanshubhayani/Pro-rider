@@ -17,6 +17,7 @@ import 'package:travel/Find/Inbox/receiveInbox.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:http/http.dart' as http;
 import 'package:travel/UserProfile/License/verifylicenese.dart';
+import 'package:travel/UserProfile/PostedRides/all_posted_rides.dart';
 import '../UserProfile/BookedRides/all_booked_rides.dart';
 import '../UserProfile/vechiledetails.dart';
 import '../widget/City_search.dart';
@@ -653,7 +654,7 @@ class _FindScreenState extends State<FindScreen> {
             ],
           ),
         ),
-        bottomNavigationBar: Container(
+/*        bottomNavigationBar: Container(
           color: Colors.white, // Background color of the bottom navigation bar
           height: kBottomNavigationBarHeight,
           child: Row(
@@ -741,7 +742,7 @@ class _FindScreenState extends State<FindScreen> {
                   color: Colors.grey, // Color of the divider
                 ),
               ),
-              /*Expanded(
+              *//*Expanded(
                 child: Tooltip(
                   message: 'Reqeust a trip',
                   child: InkWell(
@@ -763,10 +764,51 @@ class _FindScreenState extends State<FindScreen> {
                     ),
                   ),
                 ),
-              ),*/
+              ),*//*
             ],
           ),
-        ),
+        ),*/
+          floatingActionButton: Align(
+            child: Container(
+              padding: EdgeInsets.only(top: 10),
+              child: Align(
+                alignment: Alignment.bottomRight,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 180,
+                      child: ActionButton(
+                        tootltipmessage: 'Booking history',
+                        label: 'History',
+                        icon: Icons.history,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => BookedUserRides()),
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 10,),
+
+                    Container(
+                      width: 180,
+                      child: ActionButton(
+                        tootltipmessage: 'Add ride',
+                        label: 'Add Ride',
+                        icon: Icons.add,
+                        onPressed: () {
+                         _checkTripPostConditions();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+/*
           floatingActionButton: Container(
             width: 100,
             child: Tooltip(
@@ -800,6 +842,7 @@ class _FindScreenState extends State<FindScreen> {
               ),
             ),
           )
+*/
       ),
     );
   }

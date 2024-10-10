@@ -22,12 +22,32 @@ class _VerifyotpState extends State<Verifyotp> {
   final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool _isOtpVerified = false;
-  bool _isPasswordVisible = false; // Variable to manage password visibility
+  bool _isPasswordVisible = false;
+  bool _isButtonDisabled = false; // Variable to manage button state
 
   @override
   void initState() {
     super.initState();
     _emailController = TextEditingController(text: widget.email);
+    _otpController.addListener(_otpFieldListener); // Listen to OTP field changes
+  }
+
+  @override
+  void dispose() {
+    _otpController.removeListener(_otpFieldListener); // Clean up listener
+    _otpController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  void _otpFieldListener() {
+    if (_isButtonDisabled) {
+      setState(() {
+        _isButtonDisabled = false; // Enable button if OTP field is edited
+      });
+    }
   }
 
   @override
@@ -69,7 +89,7 @@ class _VerifyotpState extends State<Verifyotp> {
                 Text('Please check your provided email'),
                 SizedBox(height: 10),
                 SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.50, // 50% of screen width
+                  width: MediaQuery.of(context).size.width * 0.50,
                   child: TextFormField(
                     maxLength: 6,
                     controller: _otpController,
@@ -107,7 +127,7 @@ class _VerifyotpState extends State<Verifyotp> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _verifyOtp,
+                    onPressed: _isButtonDisabled ? null : _verifyOtp, // Disable button if needed
                     child: Text(
                       'Verify OTP',
                       style: TextStyle(
@@ -137,7 +157,7 @@ class _VerifyotpState extends State<Verifyotp> {
                   SizedBox(height: 10),
                   TextFormField(
                     controller: _passwordController,
-                    obscureText: !_isPasswordVisible, // Toggle visibility
+                    obscureText: !_isPasswordVisible,
                     decoration: InputDecoration(
                       filled: true,
                       hintText: 'Enter New Password',
@@ -152,29 +172,36 @@ class _VerifyotpState extends State<Verifyotp> {
                         ),
                         onPressed: () {
                           setState(() {
-                            _isPasswordVisible = !_isPasswordVisible; // Toggle password visibility
+                            _isPasswordVisible = !_isPasswordVisible;
                           });
                         },
                       ),
                     ),
                     validator: (value) {
+                      List<String> errors = [];
+
                       if (value == null || value.isEmpty) {
                         return 'Please enter your password';
+                      } else {
+                        if (value.length < 8) {
+                          errors.add('• 8 characters long');
+                        }
+                        if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                          errors.add('• One uppercase letter');
+                        }
+                        if (!RegExp(r'[a-z]').hasMatch(value)) {
+                          errors.add('• One lowercase letter');
+                        }
+                        if (!RegExp(r'[0-9]').hasMatch(value)) {
+                          errors.add('• One digit');
+                        }
+                        if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                          errors.add('• One special character');
+                        }
                       }
-                      if (value.length < 8) {
-                        return 'Password must be at least 8 characters long';
-                      }
-                      if (!RegExp(r'[A-Z]').hasMatch(value)) {
-                        return 'Password must contain at least one uppercase letter';
-                      }
-                      if (!RegExp(r'[a-z]').hasMatch(value)) {
-                        return 'Password must contain at least one lowercase letter';
-                      }
-                      if (!RegExp(r'[0-9]').hasMatch(value)) {
-                        return 'Password must contain at least one digit';
-                      }
-                      if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
-                        return 'Password must contain at least one special character';
+
+                      if (errors.isNotEmpty) {
+                        return 'Password must contain at least:\n' + errors.join('\n');
                       }
                       return null;
                     },
@@ -189,9 +216,8 @@ class _VerifyotpState extends State<Verifyotp> {
                   ),
                   SizedBox(height: 10),
                   TextFormField(
-
                     controller: _confirmPasswordController,
-                    obscureText: true, // Toggle visibility to match the new password field
+                    obscureText: true,
                     decoration: InputDecoration(
                       filled: true,
                       hintText: 'Confirm New Password',
@@ -243,9 +269,9 @@ class _VerifyotpState extends State<Verifyotp> {
 
   void _verifyOtp() {
     if (_formKey.currentState?.validate() ?? false) {
-      // OTP validation successful
       setState(() {
         _isOtpVerified = true;
+        _isButtonDisabled = true; // Disable button after click
       });
     }
   }

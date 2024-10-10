@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:travel/UserProfile/Userprofile.dart';
+import 'package:travel/widget/configure.dart';
 
 class RequestResult extends StatefulWidget {
   final List<Map<String, dynamic>> results;
@@ -24,11 +25,17 @@ class RequestResult extends StatefulWidget {
 class _RequestResultState extends State<RequestResult> {
   late List<Map<String, dynamic>> filteredTrips;
 
+  // Filter options
+  bool _morningSelected = false;
+  bool _afternoonSelected = false;
+  bool _eveningSelected = false;
+
   @override
   void initState() {
     super.initState();
     _filterTrips();
   }
+
 
   void _filterTrips() {
     filteredTrips = widget.results.where((trip) {
@@ -42,7 +49,14 @@ class _RequestResultState extends State<RequestResult> {
           (trip['departure_date'] != null &&
               DateTime.parse(trip['departure_date']).isAtSameMomentAs(widget.selectedDate!));
 
-      return cityMatches && dateMatches; // Return true only if both match
+      // Check for time of day filters
+      DateTime dateTime = DateTime.parse(trip['departure_date'] ?? DateTime.now().toString());
+      bool timeMatches = false;
+      if (_morningSelected && dateTime.hour < 12) timeMatches = true;
+      if (_afternoonSelected && dateTime.hour >= 12 && dateTime.hour < 17) timeMatches = true;
+      if (_eveningSelected && dateTime.hour >= 17) timeMatches = true;
+
+      return cityMatches && dateMatches && (timeMatches || (!_morningSelected && !_afternoonSelected && !_eveningSelected));
     }).toList();
 
     // Sort the filtered trips by departure date
@@ -52,6 +66,77 @@ class _RequestResultState extends State<RequestResult> {
       return dateA.compareTo(dateB);
     });
   }
+
+
+
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Filter by Time of Day", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  CheckboxListTile(
+                    title: Text("Morning"),
+                    value: _morningSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _morningSelected = value ?? false;
+                      });
+                    },
+                  ),
+                  CheckboxListTile(
+                    title: Text("Afternoon"),
+                    value: _afternoonSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _afternoonSelected = value ?? false;
+                      });
+                    },
+                  ),
+                  CheckboxListTile(
+                    title: Text("Evening"),
+                    value: _eveningSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _eveningSelected = value ?? false;
+                      });
+                    },
+                  ),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        // Update filters and re-filter trips immediately
+                        setState(() {
+                          _filterTrips();
+                        });
+                      },
+                      child: Text('Apply filters'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: kPrimaryColor, // Use your primary color here
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
 
   Future<void> _refreshData() async {
     await Future.delayed(Duration(seconds: 1));
@@ -67,24 +152,16 @@ class _RequestResultState extends State<RequestResult> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: Text('Request Results'),
+        title: Text('Request Results'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 10.0),
+            child: IconButton(
+              icon: Icon(Icons.filter_list),
+              onPressed: _showFilterBottomSheet,
             ),
-            TextButton(
-              onPressed: () {
-                Get.to(UserProfile(), transition: Transition.rightToLeft);
-              },
-              child: Text(
-                'Settings',
-                style: TextStyle(color: Colors.black),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 13),

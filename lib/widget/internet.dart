@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:travel/widget/Themeclass.dart';
 import 'package:travel/auth/login.dart';
+import '../home.dart';
 import 'HttpHandler.dart';
 import 'Size.dart';
 import '../Find/find.dart';
@@ -51,7 +52,7 @@ class _OnInternetState extends State<OnInternet> {
     if (token != null && token.isNotEmpty) {
       // Token exists, navigate to FindScreen
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => FindScreen()),
+        MaterialPageRoute(builder: (context) => MyHomePage()),
             (Route<dynamic> route) => false,
       );
     } else {

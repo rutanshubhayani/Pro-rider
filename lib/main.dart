@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travel/home.dart';
 import 'package:travel/home/first.dart';
 import 'package:travel/Find/find.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -44,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (token != null && token.isNotEmpty) {
       // User is logged in, navigate to FindScreen
-      Get.off(() => FindScreen());
+      Get.off(() => MyHomePage());
     } else {
       // User is not logged in, navigate to FirstScreen
       Get.off(() => First());

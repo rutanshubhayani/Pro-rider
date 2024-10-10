@@ -12,6 +12,7 @@ import 'package:travel/api/api.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../home.dart';
 import '../../widget/City_search.dart';
 import '../../widget/configure.dart';
 
@@ -172,7 +173,7 @@ class _PostTripState extends State<PostTrip> {
           );
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => FindScreen()),
+            MaterialPageRoute(builder: (context) => MyHomePage()),
             (route) => false,
           );
 

@@ -143,6 +143,7 @@ class NoEmojiInputFormatter extends TextInputFormatter {
 
 class ActionButton extends StatelessWidget {
   final String label;
+  final String? tootltipmessage;
   final IconData icon;
   final VoidCallback onPressed;
 
@@ -150,6 +151,7 @@ class ActionButton extends StatelessWidget {
     Key? key,
     required this.label,
     required this.icon,
+     this.tootltipmessage,
     required this.onPressed,
   }) : super(key: key);
 
@@ -157,7 +159,7 @@ class ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       preferBelow: false,
-      message: label,
+      message: tootltipmessage ?? '',
       child: MaterialButton(
         color: kPrimaryColor,
         onPressed: onPressed,

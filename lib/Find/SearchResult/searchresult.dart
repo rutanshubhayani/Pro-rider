@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:travel/UserProfile/Userprofile.dart';
+import '../../widget/configure.dart';
 import 'Findtrippreview.dart';
 
 class SearchResult extends StatefulWidget {
@@ -21,78 +21,111 @@ class SearchResult extends StatefulWidget {
 }
 
 class _SearchResultState extends State<SearchResult> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: Text('Search Results'),
-            ),
-            TextButton(
-              onPressed: () {
-                Get.to(UserProfile(), transition: Transition.rightToLeft);
-              },
-              child: Text(
-                'Settings',
-                style: TextStyle(color: Colors.black),
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: AllScreen(trips: widget.results, selectedCities: widget.selectedCities),
-    );
-  }
-}
-
-class AllScreen extends StatefulWidget {
-  final List<Map<String, dynamic>> trips;
-  final List<String> selectedCities;
-
-  AllScreen({required this.trips, required this.selectedCities});
-
-  @override
-  _AllScreenState createState() => _AllScreenState();
-}
-
-class _AllScreenState extends State<AllScreen> {
-  late List<Map<String, dynamic>> filteredTrips;
+  bool _morningSelected = false;
+  bool _afternoonSelected = false;
+  bool _eveningSelected = false;
+  List<Map<String, dynamic>> filteredTrips = []; // Initialize as an empty list
 
   @override
   void initState() {
     super.initState();
-    _filterTrips();
+    filteredTrips = widget.results; // Initially show all results
+  }
+
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Filter by Time of Day", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  CheckboxListTile(
+                    title: Text("Morning"),
+                    value: _morningSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _morningSelected = value ?? false;
+                      });
+                    },
+                  ),
+                  CheckboxListTile(
+                    title: Text("Afternoon"),
+                    value: _afternoonSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _afternoonSelected = value ?? false;
+                      });
+                    },
+                  ),
+                  CheckboxListTile(
+                    title: Text("Evening"),
+                    value: _eveningSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _eveningSelected = value ?? false;
+                      });
+                    },
+                  ),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: ()  {
+                  Navigator.pop(context);
+                  _filterTrips(); // Re-filter the trips based on selected time
+                },
+                child: Text('Apply filters'),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: kPrimaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            )
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _filterTrips() {
-    filteredTrips = widget.trips.where((trip) {
-      String departureCity = trip['departure'] ?? '';
-      String destinationCity = trip['destination'] ?? '';
-      return widget.selectedCities.contains(departureCity) || widget.selectedCities.contains(destinationCity);
-    }).toList();
-
-    filteredTrips.sort((a, b) {
-      DateTime dateA = DateTime.tryParse(a['leaving_date_time'] ?? '') ?? DateTime.now();
-      DateTime dateB = DateTime.tryParse(b['leaving_date_time'] ?? '') ?? DateTime.now();
-      return dateB.compareTo(dateA);
-    });
-  }
-
-  Future<void> _refreshData() async {
-    // Add your data fetching logic here
-    // For example, you might fetch new results from a server
-    // After fetching, make sure to call setState to update the UI
-    // Here, I'll just simulate a refresh with a delay
-    await Future.delayed(Duration(seconds: 1));
-
-    // You can add logic to refetch trips if needed.
     setState(() {
-      _filterTrips(); // Re-filter trips if necessary
+      if (!_morningSelected && !_afternoonSelected && !_eveningSelected) {
+        // If no filters are selected, show all results
+        filteredTrips = widget.results;
+      } else {
+        filteredTrips = widget.results.where((trip) {
+          String departureCity = trip['departure'] ?? '';
+          String destinationCity = trip['destination'] ?? '';
+          bool isInSelectedCities = widget.selectedCities.contains(departureCity) || widget.selectedCities.contains(destinationCity);
+
+          if (!isInSelectedCities) return false;
+
+          DateTime dateTime = DateTime.parse(trip['leaving_date_time'] ?? DateTime.now().toString());
+
+          if (_morningSelected && dateTime.hour < 12) return true;
+          if (_afternoonSelected && dateTime.hour >= 12 && dateTime.hour < 17) return true;
+          if (_eveningSelected && dateTime.hour >= 17) return true;
+
+          return false;
+        }).toList();
+      }
+
+      filteredTrips.sort((a, b) {
+        DateTime dateA = DateTime.tryParse(a['leaving_date_time'] ?? '') ?? DateTime.now();
+        DateTime dateB = DateTime.tryParse(b['leaving_date_time'] ?? '') ?? DateTime.now();
+        return dateB.compareTo(dateA);
+      });
     });
   }
 
@@ -100,10 +133,22 @@ class _AllScreenState extends State<AllScreen> {
   Widget build(BuildContext context) {
     DateFormat dateFormat = DateFormat('E, MMM d \'at\' h:mma');
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 13),
-      child: RefreshIndicator(
-        onRefresh: _refreshData,
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        title: Text('Search Results'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 10.0),
+            child: IconButton(
+              onPressed: _showFilterBottomSheet,
+              icon: Icon(Icons.filter_list),
+            ),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 13),
         child: ListView.builder(
           itemCount: filteredTrips.length,
           itemBuilder: (context, index) {

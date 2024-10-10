@@ -17,6 +17,7 @@ import '../../UserProfile/License/verifylicenese.dart';
 import '../../UserProfile/Userprofile.dart';
 import '../../UserProfile/vechiledetails.dart';
 import '../../api/api.dart';
+import '../../home.dart';
 import '../Inbox/receiveInbox.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -206,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => FindScreen()),
+                MaterialPageRoute(builder: (context) => MyHomePage()),
               );
             },
             label: Text(

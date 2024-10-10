@@ -8,6 +8,7 @@ import 'package:travel/auth/password.dart';
 import 'package:travel/Find/find.dart';
 import 'package:travel/auth/register.dart';
 import 'package:travel/UserProfile/userinfo.dart';
+import 'package:travel/home.dart';
 
 import '../api/api.dart';
 import '../widget/internet.dart';
@@ -114,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Get.snackbar('Success', 'Login successful', snackPosition: SnackPosition.BOTTOM);
           Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (context) => FindScreen()
+              MaterialPageRoute(builder: (context) => MyHomePage()
               ),
               (route) => false);
         } else {

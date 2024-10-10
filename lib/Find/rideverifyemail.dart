@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'package:travel/Find/find.dart';
 
 import '../api/api.dart';
+import '../home.dart';
 
 
 class RideEmailVerify extends StatefulWidget {
@@ -358,7 +359,7 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
         );
 
         if (bookSeatsResponse.statusCode == 201) {
-          Get.to(() => FindScreen());
+          Get.to(() => MyHomePage());
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Ride booked successfully')),
           );
