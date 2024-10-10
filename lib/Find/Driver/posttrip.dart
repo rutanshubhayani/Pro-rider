@@ -319,6 +319,7 @@ class _PostTripState extends State<PostTrip> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         centerTitle: true,
         title: const Text('Post a trip'),
@@ -1201,20 +1202,20 @@ class _PostTripState extends State<PostTrip> {
                           readOnly: true,
                           controller: licenseController,
                           decoration: InputDecoration(
-                            filled: true,
                             hintText: 'License plate',
-                            hintStyle: TextStyle(
+                            hintStyle: const TextStyle(
                                 color: Colors.grey), // Grey hint text color
-                            border: OutlineInputBorder(
+                            border:
+                            OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none),
+                                borderSide: const BorderSide(color: Colors.teal)                            ),
                           ),
                         ),
                       ),
-                      Row(
+                      const Row(
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(right: 2.0),
+                            padding: EdgeInsets.only(right: 2.0),
                             child: Icon(
                               Icons.info_outline_rounded,
                               color: Colors.black54,
@@ -1222,7 +1223,7 @@ class _PostTripState extends State<PostTrip> {
                             ),
                           ),
                           Text(
-                            'Note: You can edit license plate from vehicle details',
+                            'Note: Edit license plate from vehicle details',
                             style: TextStyle(
                                 color: Colors.black54,
                                 fontStyle: FontStyle.italic),

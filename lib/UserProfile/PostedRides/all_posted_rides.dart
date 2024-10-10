@@ -87,6 +87,7 @@ class _AllPostedRidesState extends State<AllPostedRides> {
   List<Map<String, dynamic>> userTrips = [];
   bool isLoading = true;
 
+
   @override
   void initState() {
     super.initState();
@@ -670,10 +671,11 @@ class _CancelledPostedRidesState extends State<CancelledPostedRides> {
 
     if (response.statusCode == 200) {
       // Successfully restored the trip
-      fetchCanceledTrips(); // Refresh the list of canceled trips
+      await fetchCanceledTrips(); // Refresh the list of canceled trips
       Get.snackbar('Success', 'Trip restored successfully', snackPosition: SnackPosition.BOTTOM);
 
-    } else {
+    }
+    else {
       // Handle error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to restore trip')),
@@ -697,7 +699,10 @@ class _CancelledPostedRidesState extends State<CancelledPostedRides> {
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Dismiss the dialog
+                Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => PostedUserRides()),
+                        (Route<dynamic> route) => route.isFirst,);
                 restoreTrip(postATripId, context); // Restore the trip
               },
               child: Text('Restore'),

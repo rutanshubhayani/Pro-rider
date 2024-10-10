@@ -438,6 +438,7 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
       );
 
       if (response.statusCode == 200) {
+        print('all cancelled ride: ${response.body}');
         setState(() {
           _cancelledRides = jsonDecode(response.body);
 
@@ -520,10 +521,13 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
             snackPosition: SnackPosition.BOTTOM);
         _fetchCancelledRides();
       } else {
+        print('Error restoring booking:${response.body}');
         Get.snackbar('Error', 'Error restoring booking.',
             snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
+      print('Error restoring booking:$e');
+
       Get.snackbar('Error', 'Error restoring booking.',
           snackPosition: SnackPosition.BOTTOM);
     }
@@ -619,7 +623,7 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
                       ),
                       child: CircleAvatar(
                         radius: 30,
-                        backgroundImage: AssetImage('images/Userpfp.png'),
+                        backgroundImage: NetworkImage(ride['profile_photo']),
                       ),
                     ),
                     SizedBox(width: 10),

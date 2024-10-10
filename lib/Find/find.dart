@@ -8,16 +8,10 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/routes/transitions_type.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:travel/Find/Inbox/Inbox.dart';
-import 'package:travel/Find/Passenger/findrequests.dart';
-import 'package:travel/Trial/new.dart';
-import 'package:travel/Find/Passenger/postrequest.dart';
 import 'package:travel/Find/Driver/posttrip.dart';
-import 'package:travel/Find/Inbox/receiveInbox.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:http/http.dart' as http;
 import 'package:travel/UserProfile/License/verifylicenese.dart';
-import 'package:travel/UserProfile/PostedRides/all_posted_rides.dart';
 import '../UserProfile/BookedRides/all_booked_rides.dart';
 import '../UserProfile/vechiledetails.dart';
 import '../widget/City_search.dart';
@@ -60,6 +54,7 @@ class _FindScreenState extends State<FindScreen> {
 
   int _selectedIndex = 0;
 
+  bool _isLoading = false; // Define a loading state
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -126,6 +121,9 @@ class _FindScreenState extends State<FindScreen> {
   }
 
   Future<void> _checkTripPostConditions() async {
+    setState(() {
+      _isLoading = true; // Start loading
+    });
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('authToken');
 
@@ -159,15 +157,19 @@ class _FindScreenState extends State<FindScreen> {
           _showStatusDialog(context, licenseStatus, vehicleDataFound);
         }
       } catch (e) {
-        _showErrorDialog(context, 'Please check your connection and try again.');
+        _showErrorDialog(
+            context, 'Please check your connection and try again.');
       }
     } else {
       print('Auth token not found');
     }
+    setState(() {
+      _isLoading = false; // Stop loading
+    });
   }
 
-
-  void _showStatusDialog(BuildContext context, int? licenseStatus, bool vehicleDataFound) {
+  void _showStatusDialog(
+      BuildContext context, int? licenseStatus, bool vehicleDataFound) {
     String message = '';
     bool showLicenseAlert = licenseStatus != 1;
     bool showVehicleAlert = !vehicleDataFound;
@@ -177,7 +179,8 @@ class _FindScreenState extends State<FindScreen> {
     }
 
     if (showVehicleAlert) {
-      message += 'You have not uploaded vehicle details. Please upload before posting a ride.\n';
+      message +=
+          'You have not uploaded vehicle details. Please upload before posting a ride.\n';
     }
 
     showDialog(
@@ -215,7 +218,6 @@ class _FindScreenState extends State<FindScreen> {
     );
   }
 
-
   void _showErrorDialog(BuildContext context, String message) {
     showDialog(
       context: context,
@@ -236,7 +238,6 @@ class _FindScreenState extends State<FindScreen> {
     );
   }
 
-
   @override
   void initState() {
     super.initState();
@@ -244,6 +245,42 @@ class _FindScreenState extends State<FindScreen> {
     destinationController.addListener(updateEraseController);
     hs = HttpHandler(ctx: context);
     chkDB();
+    _loadRecentSearches();
+  }
+
+  Future<void> _loadRecentSearches() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      recentSearches = prefs.getStringList('recentSearches') ?? [];
+    });
+  }
+
+  Future<void> _saveRecentSearches(List<String> recentSearches) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setStringList('recentSearches', recentSearches);
+  }
+
+  void _addNewSearch(String searchQuery) {
+    setState(() {
+      if (!recentSearches.contains(searchQuery)) {
+        recentSearches.add(searchQuery);
+        _saveRecentSearches(recentSearches);
+      }
+    });
+  }
+
+  void _removeSearch(int index) {
+    setState(() {
+      recentSearches.removeAt(index);
+      _saveRecentSearches(recentSearches);
+    });
+  }
+
+  void _clearAllSearches() {
+    setState(() {
+      recentSearches.clear();
+      _saveRecentSearches(recentSearches);
+    });
   }
 
   void chkDB() async {
@@ -338,11 +375,13 @@ class _FindScreenState extends State<FindScreen> {
       String searchQuery = "$departure To $destination on $date";
       if (!recentSearches.contains(searchQuery)) {
         setState(() {
-          recentSearches.insert(0, searchQuery); // Add to the top of the list
-          if (recentSearches.length > 5) {
+          recentSearches.insert(0, searchQuery);
+          if (recentSearches.length > 3) {
             recentSearches
-                .removeLast(); // Maintain a maximum of 5 recent searches
+                .removeLast(); // Maintain a maximum of 3 recent searches
           }
+          _saveRecentSearches(
+              recentSearches); // Save updated searches to shared preferences
         });
       }
 
@@ -452,23 +491,12 @@ class _FindScreenState extends State<FindScreen> {
     }
   }
 
-  void _removeSearch(int index) {
-    setState(() {
-      recentSearches.removeAt(index);
-    });
-  }
-
-  void _clearAllSearches() {
-    setState(() {
-      recentSearches.clear();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: _showExitPrompt,
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           leading: Padding(
             padding: const EdgeInsets.only(left: 20.0),
@@ -502,7 +530,7 @@ class _FindScreenState extends State<FindScreen> {
           ],
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 30.0, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -515,6 +543,10 @@ class _FindScreenState extends State<FindScreen> {
                         'Find your ride!', // Use the user's name here
                         style: TextStyle(
                             fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Find your desired trip by providing departure and destination locations.',
+                        style: TextStyle(color: Colors.black54),
                       ),
                       SizedBox(
                         height: 10,
@@ -570,7 +602,7 @@ class _FindScreenState extends State<FindScreen> {
                   ),
                   Positioned(
                     right: 50,
-                    top: 75,
+                    top: 115,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Color(0xFF3d5a80),
@@ -742,7 +774,7 @@ class _FindScreenState extends State<FindScreen> {
                   color: Colors.grey, // Color of the divider
                 ),
               ),
-              *//*Expanded(
+              */ /*Expanded(
                 child: Tooltip(
                   message: 'Reqeust a trip',
                   child: InkWell(
@@ -764,50 +796,78 @@ class _FindScreenState extends State<FindScreen> {
                     ),
                   ),
                 ),
-              ),*//*
+              ),*/ /*
             ],
           ),
         ),*/
-          floatingActionButton: Align(
-            child: Container(
-              padding: EdgeInsets.only(top: 10),
-              child: Align(
-                alignment: Alignment.bottomRight,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      width: 180,
-                      child: ActionButton(
-                        tootltipmessage: 'Booking history',
-                        label: 'History',
-                        icon: Icons.history,
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => BookedUserRides()),
-                          );
-                        },
+        floatingActionButton: Align(
+          child: Container(
+            padding: EdgeInsets.only(top: 10),
+            child: Align(
+              alignment: Alignment.bottomRight,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                    width: 165,
+                    child: ActionButton(
+                      tootltipmessage: 'Booking history',
+                      label: 'History',
+                      icon: Icons.history,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => BookedUserRides()),
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                    width: 165,
+                    height: 50,
+                    child: FloatingActionButton(
+                      backgroundColor: kPrimaryColor,
+                      onPressed: _checkTripPostConditions,
+                      child: Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center, // Center the content
+                        children: [
+                          if (!_isLoading)
+                            Icon(
+                              Icons.add,
+                              color: Colors.white,
+                            ), // Show the icon only if not loading
+                          if (_isLoading)
+                            SizedBox(
+                              height: 30,
+                                width: 30,
+                                child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 4,
+                            )), // Show loading indicator when loading
+                          if (!_isLoading) ...[
+                            // Only show text if not loading
+                            SizedBox(width: 5),
+                            Text(
+                              'Add ride',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    SizedBox(height: 10,),
-
-                    Container(
-                      width: 180,
-                      child: ActionButton(
-                        tootltipmessage: 'Add ride',
-                        label: 'Add Ride',
-                        icon: Icons.add,
-                        onPressed: () {
-                         _checkTripPostConditions();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                  )
+                ],
               ),
             ),
           ),
+        ),
 /*
           floatingActionButton: Container(
             width: 100,

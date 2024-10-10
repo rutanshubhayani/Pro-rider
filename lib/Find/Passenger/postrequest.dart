@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travel/Find/Passenger/findrequests.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:travel/Find/find.dart';
 import 'package:travel/UserProfile/BookedRides/all_booked_rides.dart';
@@ -130,7 +131,7 @@ class _PostrequestState extends State<Postrequest> {
 
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => MyHomePage()),
+        MaterialPageRoute(builder: (context) => MyHomePage(initialIndex: 2,)),
       );
     } else {
       _showErrorSnackbar(

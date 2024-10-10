@@ -483,6 +483,7 @@ class _UserProfileState extends State<UserProfile> {
                               // Clear the token from SharedPreferences
                               SharedPreferences prefs = await SharedPreferences.getInstance();
                               await prefs.remove('authToken');
+                              await prefs.remove('recentSearches');
 
                               // Navigate to LoginScreen and clear the navigation stack
                               Navigator.pushAndRemoveUntil(

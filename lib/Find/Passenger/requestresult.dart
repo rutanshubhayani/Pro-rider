@@ -221,7 +221,7 @@ class _RequestResultState extends State<RequestResult> {
                               Spacer(),
                               Padding(
                                 padding: const EdgeInsets.only(right: 20),
-                                child: Text('$seatsRequired seats required', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                child: Text('$seatsRequired seats \nrequired', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               ),
                             ],
                           ),

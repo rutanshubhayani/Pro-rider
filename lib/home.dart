@@ -4,17 +4,26 @@ import 'package:travel/Find/Passenger/findrequests.dart';
 import 'package:travel/Find/find.dart';
 
 class MyHomePage extends StatefulWidget {
+  final int initialIndex;
+
+  MyHomePage({this.initialIndex = 0});
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _currentIndex = 0;
   final List<Widget> _screens = [
     const FindScreen(),
     const InboxList(),
     const FindRequests(),
   ];
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex; // Set initial index
+  }
 
   @override
   Widget build(BuildContext context) {

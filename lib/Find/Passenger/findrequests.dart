@@ -337,8 +337,13 @@ class _FindRequestsState extends State<FindRequests> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Text('Manage requests'),
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 30.0, horizontal: 16),
+        padding: const EdgeInsets.symmetric( horizontal: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -348,10 +353,14 @@ class _FindRequestsState extends State<FindRequests> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Find requests of passenger!', // Use the user's name here
+                      'Find requests!', // Use the user's name here
                       style: TextStyle(
                           fontSize: 20, fontWeight: FontWeight.bold),
                     ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    Text('Find requests of person by entering locations of departure and destination.',style: TextStyle(color: Colors.black54),),
                     SizedBox(
                       height: 10,
                     ),
@@ -406,7 +415,7 @@ class _FindRequestsState extends State<FindRequests> {
                 ),
                 Positioned(
                   right: 50,
-                  top: 75,
+                  top: 120,
                   child: Container(
                     decoration: BoxDecoration(
                       color: Color(0xFF3d5a80),
@@ -613,7 +622,7 @@ class _FindRequestsState extends State<FindRequests> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
             Container(
-              width: 180,
+              width: 165,
               child: ActionButton(
                 label: 'History',
                 icon: Icons.history,
@@ -628,7 +637,7 @@ class _FindRequestsState extends State<FindRequests> {
                 SizedBox(height: 10,),
 
                 Container(
-                  width: 180,
+                  width: 165,
                   child: ActionButton(
                     label: 'Add Request',
                     icon: Icons.add,
