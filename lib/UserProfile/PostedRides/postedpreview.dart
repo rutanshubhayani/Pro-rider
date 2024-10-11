@@ -1,10 +1,9 @@
 import 'dart:convert';
-import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:travel/api/api.dart';
+import 'package:travel/widget/configure.dart';
 
 class GetPostedPreview extends StatefulWidget {
   final Map<String, dynamic> tripData;
@@ -73,6 +72,35 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
       );*/
     }
   }
+
+  Future<void> _cancelBooking(String bookingTripId, String uid) async {
+    final url = 'http://202.21.32.153:8081/cancel-booking/$bookingTripId/$uid';
+
+    try {
+      final response = await http.post(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        // Handle successful cancellation
+        setState(() {
+          bookedUsers.removeWhere((user) => user['booking_trip_id'] == bookingTripId);
+        });
+        _fetchBookedUsers();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Booking canceled successfully.')),
+        );
+      } else {
+        // Handle error response
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to cancel booking: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
 
 
   String getLuggageLabel(String code) {
@@ -448,56 +476,84 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
                     radius: 24,
                     backgroundImage: NetworkImage(user['profile_photo']),
                   ),
-                  title: Row(
+                  title: Column(
                     children: [
-                      Text(user['uname'] ?? 'Unknown User'),
-                      Spacer(),
                       Row(
                         children: [
+                          Text(user['uname'] ?? 'Unknown User'),
+                          Spacer(),
                           Text(
                             'Booked Seats: ',
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                           ),
                           Text(user['booked_seats'].toString() ?? 'N/A'),
+                          PopupMenuButton<String>(
+                            icon: Icon(Icons.more_vert_rounded),
+                            offset: Offset(0, 40), // Adjust the offset to position the menu above the icon
+                            onSelected: (value) {
+                              if (value == 'cancel') {
+                                // Handle cancel ride
+                                CustomDialog.show(
+                                  context,
+                                  title: 'Confirm cancellation',
+                                  content: 'Do you really want to cancel ride of this user?',
+                                  confirmButtonText: 'Confirm',
+                                  onConfirm: () {
+                                    _cancelBooking(
+                                      user['booking_trip_id'].toString(),
+                                      user['booking_user_id'].toString(),
+                                    );
+                                  },
+                                );                              }
+                              // Handle other actions if needed
+                            },
+                            itemBuilder: (BuildContext context) {
+                              return [
+                                PopupMenuItem<String>(
+                                  value: 'cancel',
+                                  child: Text('Cancel Ride'),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'char',
+                                  child: Text('Char Option'),
+                                ),
+                              ];
+                            },
+                          ),
                         ],
                       ),
                     ],
                   ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  subtitle: Row(
                     children: [
-                      Row(
-                        children: [
+                      if (user['status'] == 'canceled')
+                        ...[
+                          SizedBox(height: 4),
                           Text(
-                            'Email: ',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            'Ride is cancelled by user',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                          Text(user['umail'].toString() ?? 'N/A'),
-                        ],
-                      ),
-                      Row(
-                        children: [
+                        ]
+                      else if (user['status'] == 'driver_canceled')
+                        ...[
+                          SizedBox(height: 4),
                           Text(
-                            'Mobile: ',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            'Ride has been cancelled by you',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                          Text(user['umobilenumber'].toString() ?? 'N/A'),
                         ],
-                      ),
-                      // Show "this user has cancelled booking" if the status is "canceled"
-                      if (user['status'] == 'canceled') ...[
-                        SizedBox(height: 4),
-                        Text(
-                          'This user has cancelled booking',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+
                     ],
                   ),
+
                 );
               },
             ),

@@ -187,3 +187,42 @@ class ActionButton extends StatelessWidget {
     );
   }
 }
+
+
+class CustomDialog {
+  static Future<void> show(
+      BuildContext context, {
+        required String title,
+        required String content,
+        String cancelButtonText = 'Cancel',
+        String confirmButtonText = 'OK',
+        VoidCallback? onConfirm,
+      }) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(content),
+          actions: <Widget>[
+            TextButton(
+              child: Text(cancelButtonText),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+            TextButton(
+              child: Text(confirmButtonText),
+              onPressed: () {
+                if (onConfirm != null) {
+                  onConfirm(); // Execute the confirm action
+                }
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}

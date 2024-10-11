@@ -19,6 +19,7 @@ class BookedUserRides extends StatelessWidget {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
+      initialIndex: 0,
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -103,7 +104,9 @@ class _AllBookedRidesState extends State<AllBookedRides> {
     String? authToken = prefs.getString('authToken');
 
     if (authToken == null) {
-      Get.snackbar('Authentication Error', 'User not authenticated');
+      Get.snackbar('Authentication Error', 'User not authenticated',
+
+      );
       return;
     }
 
@@ -155,7 +158,11 @@ class _AllBookedRidesState extends State<AllBookedRides> {
     );
 
     if (response.statusCode == 200) {
+      setState(() {
+        _fetchBookedRides();
+      });
       Get.snackbar(
+        duration:Duration(seconds: 1) ,
         'Success',
         'Booking canceled successfully',
         snackPosition: SnackPosition.BOTTOM,
@@ -166,7 +173,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
           child: Text('Undo', style: TextStyle(color: Colors.blue)),
         ),
       );
-      _fetchBookedRides();
+
     } else {
       print('Error cancelling ride: ${response.body}');
       Get.snackbar('Error', 'Error cancelling ride');
@@ -193,6 +200,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
 
       if (response.statusCode == 200) {
         _fetchBookedRides();
+        Get.closeCurrentSnackbar();
       } else {
         print('Error restoring booking: ${response.body}');
         Get.snackbar('Error', 'Error restoring booking.');
@@ -518,6 +526,7 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
 
       if (response.statusCode == 200) {
         Get.snackbar('Success', 'Booking restored successfully.',
+            duration:Duration(seconds: 1) ,
             snackPosition: SnackPosition.BOTTOM);
         _fetchCancelledRides();
       } else {
@@ -701,7 +710,15 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
                 ),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: ride['status'] == 'driver_canceled'
+                      ? Text(
+                    'Ride cannot be restored as it was cancelled by driver.',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+                      : ElevatedButton(
                     onPressed: () {
                       _showRestoreConfirmationDialog(
                           ride['booking_trip_id'].toString());
@@ -715,7 +732,7 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
                       ),
                     ),
                   ),
-                )
+                ),
               ],
             ),
           ),

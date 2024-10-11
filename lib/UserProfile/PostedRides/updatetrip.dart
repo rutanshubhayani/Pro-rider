@@ -367,10 +367,11 @@ class _UpdateTripState extends State<UpdateTrip> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Trip updated successfully!')),
           );
-          Navigator.pushReplacement(
-            context,
+          Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) => PostedUserRides()),
+            ModalRoute.withName('/PostTrip'), // Adjust this to the correct route name if needed
           );
+
           print('Response from server: ${response.body}'); // Log response
         } else {
           print('Failed to update trip: ${response.body}');

@@ -340,7 +340,7 @@ class _FindRequestsState extends State<FindRequests> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text('Manage requests'),
+        title: Text('Manage requests',style: TextStyle(fontWeight: FontWeight.bold),),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric( horizontal: 16),
@@ -415,7 +415,7 @@ class _FindRequestsState extends State<FindRequests> {
                 ),
                 Positioned(
                   right: 50,
-                  top: 120,
+                  top: 125,
                   child: Container(
                     decoration: BoxDecoration(
                       color: Color(0xFF3d5a80),

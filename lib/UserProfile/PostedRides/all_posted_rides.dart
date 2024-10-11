@@ -448,24 +448,24 @@ class _AllPostedRidesState extends State<AllPostedRides> {
                         ),
                         Row(
                           children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    _showCancelDialog(trip);
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    backgroundColor: Color(0XFFd90000),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)
-                                  )
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      _showCancelDialog(trip);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      foregroundColor: Colors.white,
+                                      backgroundColor: Color(0XFFd90000),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10)
+                                    )
+                                    ),
+                                    child: const Text('Cancel Ride'),
                                   ),
-                                  child: const Text('Cancel Ride'),
                                 ),
                               ),
-                            ),
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.all(8.0),
@@ -699,10 +699,10 @@ class _CancelledPostedRidesState extends State<CancelledPostedRides> {
             ),
             TextButton(
               onPressed: () {
-                Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => PostedUserRides()),
-                        (Route<dynamic> route) => route.isFirst,);
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => PostedUserRides()),
+                  ModalRoute.withName('/PostTrip'), // Adjust this to the correct route name if needed
+                );
                 restoreTrip(postATripId, context); // Restore the trip
               },
               child: Text('Restore'),
