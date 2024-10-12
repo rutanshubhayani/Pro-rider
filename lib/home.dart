@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:travel/Find/Inbox/receiveInbox.dart';
 import 'package:travel/Find/Passenger/findrequests.dart';
 import 'package:travel/Find/find.dart';
+import 'package:travel/Find/history.dart';
 
 class MyHomePage extends StatefulWidget {
   final int initialIndex;
@@ -16,6 +17,7 @@ class _MyHomePageState extends State<MyHomePage> {
     const FindScreen(),
     const InboxList(),
     const FindRequests(),
+    const History(),
   ];
   late int _currentIndex;
 
@@ -55,8 +57,12 @@ class _MyHomePageState extends State<MyHomePage> {
               label: 'Inbox',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.trip_origin, size: 20),
-              label: 'Requests',
+              icon: Icon(Icons.person, size: 20),
+              label: 'Passenger',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.history, size: 20),
+              label: 'History',
             ),
           ],
         ),

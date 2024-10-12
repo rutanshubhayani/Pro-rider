@@ -2,8 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
@@ -211,10 +209,13 @@ class _VehicleDetailsState extends State<VehicleDetails> {
           content: Text(data['message']),
         ));*/
       } else if (response.statusCode == 404) {
+        setState(() {
+          isEditing = true;
+        });
         print('new user');
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        /*ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('You have not uploaded any details.'),
-        ));
+        ));*/
         setState(() {
           _isLoadingImage = false;  // End loading
         });
@@ -228,10 +229,12 @@ class _VehicleDetailsState extends State<VehicleDetails> {
       }
     } catch (e) {
       print(e);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('An error server error occurred'),
-      ));
       setState(() {
+/*
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('An error server error occurred'),
+        ));
+*/
         _isLoadingImage = false;  // End loading
       });
     }
@@ -340,17 +343,10 @@ class _VehicleDetailsState extends State<VehicleDetails> {
       var response = await request.send();
       var responseBody = await response.stream.bytesToString();
 
-      // Get the size of the uploaded image
-      final imageSize = length / 1024; // Size in KB
-
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Access the VehicleDetailsController
-       /* final vehicleDetailsController = Get.find<VehicleDetailsController>();
-        vehicleDetailsController._saveVehicleDetailsStatus(true);*/
         setState(() {
-          isEditing = false;
+          isEditing = false; // Exit editing mode on success
           _isSubmitting = false; // Reset loading state
-
         });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Vehicle details uploaded successfully!'),
@@ -365,13 +361,24 @@ class _VehicleDetailsState extends State<VehicleDetails> {
         print('Error details: $responseBody');
       }
     } catch (e) {
-      print(e);
       setState(() {
         _isSubmitting = false; // Reset loading state
+        isEditing = false; // Exit editing mode on error
       });
+
+      String errorMessage;
+      if (e is http.ClientException) {
+        print('Network error. ${e.message}');
+        errorMessage = 'Network error.';
+      } else {
+        print(e);
+        errorMessage = 'An unexpected error occurred.';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('An server error occurred'),
+        content: Text(errorMessage),
       ));
+      print(e);
     }
   }
 
@@ -455,14 +462,14 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                                 _getImage(ImageSource.gallery);
                               },
                             ),
-                            ListTile(
+                           /* ListTile(
                               leading: Icon(Icons.delete),
                               title: Text('Remove Image'),
                               onTap: () {
                                 Navigator.pop(context);
                                 _removeImage();
                               },
-                            ),
+                            ),*/
                           ],
                         ),
                       ),
@@ -502,14 +509,25 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                     )
                         : Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: Colors.grey, width: 2), // Rounded border
                       ),
                       height: 200,
                       width: double.infinity,
                       child: Center(
-                        child: isEditing ? Text('Click here to upload Image.') : Text('Click on Add to upload Image.'),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.directions_car,color: Colors.grey,size: 80,),
+                            Text('Add photo',
+                            style: TextStyle(
+                              fontSize:17,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey
+                            ),),
+                          ],
+                        )
                       ),
                     ),
                 ),
@@ -745,10 +763,10 @@ class _VehicleDetailsState extends State<VehicleDetails> {
 
                       ),
                     SizedBox(width: 10,),
-                    Expanded(
+                    isEditing ?  Container() : Expanded(
                       child: ElevatedButton(
                         onPressed: toggleEditing,
-                        child: Text(isEditing ? 'Cancel' : 'Add'),
+                        child: Text(isEditing ? 'Cancel' : 'Edit'),
                         style: ElevatedButton.styleFrom(
                           elevation: 7,
                           backgroundColor: Color(0xFF3d5a80),
@@ -759,7 +777,7 @@ class _VehicleDetailsState extends State<VehicleDetails> {
                           ),
                         ),
                       ),
-                    ),
+                    )
                   ],
                 ),
               ],

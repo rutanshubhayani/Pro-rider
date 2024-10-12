@@ -1,10 +1,139 @@
 import 'package:flutter/material.dart';
+import 'package:travel/UserProfile/PostedRides/all_posted_rides.dart';
+import 'package:travel/widget/configure.dart';
 
-class History extends StatelessWidget {
+class History extends StatefulWidget {
   const History({super.key});
 
   @override
+  State<History> createState() => _HistoryState();
+}
+
+class _HistoryState extends State<History> {
+  @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Text('History'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: () {
+                // Navigate to PostedUserRides when tapped
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => PostedUserRides()),
+                );
+              },
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.27, // 30% of screen width
+                width: double.infinity,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: kPrimaryColor, width: 2),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        spreadRadius: 0,
+                        blurRadius: 8,
+                        offset: const Offset(8, 10),
+                      ),
+                    ],
+                  ),
+                  margin: EdgeInsets.all(16.0), // Optional: adds some space around the card
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0), // Adds padding inside the card
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset('name'),
+                        Text(
+                          'Post History',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 6,
+                              child: Text(
+                                'Access your ride history to view, edit, or cancel your bookings. Check who’s joined your ride and stay in control of your travel plans!',
+                                textAlign: TextAlign.justify,
+                              ),
+                            ),
+                            Spacer(),
+                            Expanded(child: Icon(Icons.arrow_forward_ios_rounded)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Other containers remain unchanged
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.27,
+              width: double.infinity,
+              child: Container(
+                decoration: BoxDecoration(
+                    border: Border.all(color: kPrimaryColor, width: 2),
+                    borderRadius: BorderRadius.circular(10)),
+                margin: EdgeInsets.all(16.0),
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Post History',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 10),
+                      Text('Detail 1: Some description here.'),
+                      Text('Detail 2: Additional information here.'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.27,
+              width: double.infinity,
+              child: Container(
+                decoration: BoxDecoration(
+                    border: Border.all(color: kPrimaryColor, width: 2),
+                    borderRadius: BorderRadius.circular(10)),
+                margin: EdgeInsets.all(16.0),
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Post History',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 10),
+                      Text('Detail 1: Some description here.'),
+                      Text('Detail 2: Additional information here.'),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -514,8 +514,8 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
                                   child: Text('Cancel Ride'),
                                 ),
                                 PopupMenuItem<String>(
-                                  value: 'char',
-                                  child: Text('Char Option'),
+                                  value: 'Chat',
+                                  child: Text('Chat'),
                                 ),
                               ];
                             },
