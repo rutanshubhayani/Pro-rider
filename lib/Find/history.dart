@@ -29,7 +29,6 @@ class _HistoryState extends State<History> {
                 );
               },
               child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.27, // 30% of screen width
                 width: double.infinity,
                 child: Container(
                   decoration: BoxDecoration(
@@ -41,7 +40,7 @@ class _HistoryState extends State<History> {
                         color: Colors.black.withOpacity(0.1),
                         spreadRadius: 0,
                         blurRadius: 8,
-                        offset: const Offset(8, 10),
+                        offset: const Offset(10, 10),
                       ),
                     ],
                   ),
@@ -49,16 +48,22 @@ class _HistoryState extends State<History> {
                   child: Padding(
                     padding: EdgeInsets.all(16.0), // Adds padding inside the card
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Image.asset('name'),
+                        // Optional: Wrap Image in a Container for more control
+                        Container(
+                          alignment: Alignment.centerLeft, // Align to left
+                          child: Image.asset(
+                            'images/posthistory.png',
+                            height: 100,
+                            width: 100,
+                          ),
+                        ),
                         Text(
                           'Post History',
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
-                        SizedBox(height: 10),
                         Row(
                           children: [
                             Expanded(
