@@ -151,7 +151,7 @@ class _HistoryState extends State<History> {
               Row(
                 children: [
                   Image.asset(
-                    'images/posttrip_prev_ui.png',
+                    'images/booked_history.png',
                     height: 55,
                     width: 55,
                     color: kPrimaryColor,
@@ -211,6 +211,7 @@ class _HistoryState extends State<History> {
       ),
     );
   }
+
   Widget requesrHistoryCard() {
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.27, // 30% of screen height
