@@ -105,9 +105,9 @@ class _AllBookedRidesState extends State<AllBookedRides> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? authToken = prefs.getString('authToken');
 
-    if (authToken == null) {
+    if (authToken == null || authToken.isEmpty) {
+      Get.to(() => LoginScreen());
       Get.snackbar('Authentication Error', 'User not authenticated',
-
       );
       return;
     }
@@ -288,10 +288,22 @@ class _AllBookedRidesState extends State<AllBookedRides> {
       itemCount: _bookedRides.length,
       itemBuilder: (context, index) {
         final ride = _bookedRides[index];
-        String formattedDate =
-        dateFormat.format(DateTime.parse(ride['leaving_date_time']));
-        String departureFirstName = getFirstNameOfCity(ride['departure']);
-        String destinationFirstName = getFirstNameOfCity(ride['destination']);
+
+        // Safely extract fields with null-aware operators
+        String formattedDate = ride['leaving_date_time'] != null
+            ? dateFormat.format(DateTime.parse(ride['leaving_date_time']))
+            : 'Date not available';
+
+        String departureFirstName = ride['departure'] != null
+            ? getFirstNameOfCity(ride['departure'])
+            : '';
+
+        String destinationFirstName = ride['destination'] != null
+            ? getFirstNameOfCity(ride['destination'])
+            : '';
+
+        String userName = ride['uname'] ?? 'Unknown User';
+        String profilePhoto = ride['profile_photo'] ?? '';
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10.0),
@@ -309,21 +321,20 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundImage: ride['profile_photo'] != null &&
-                            ride['profile_photo'].isNotEmpty
-                            ? NetworkImage(ride['profile_photo'])
+                        backgroundImage: profilePhoto.isNotEmpty
+                            ? NetworkImage(profilePhoto)
                             : AssetImage('images/Userpfp.png') as ImageProvider,
                       ),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          ride['uname'],
+                          userName,
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ),
                       Text(
-                        '${ride['booked_seats']} Seats booked',
+                        '${ride['booked_seats'] ?? '0'} Seats booked',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
@@ -339,7 +350,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                               fontWeight: FontWeight.bold, color: Colors.black),
                         ),
                         TextSpan(
-                          text: '  ${ride['departure']}',
+                          text: '  ${ride['departure'] ?? 'Unknown Departure'}',
                           style: TextStyle(color: Colors.black54),
                         ),
                       ],
@@ -355,7 +366,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                               fontWeight: FontWeight.bold, color: Colors.black),
                         ),
                         TextSpan(
-                          text: '  ${ride['destination']}',
+                          text: '  ${ride['destination'] ?? 'Unknown Destination'}',
                           style: TextStyle(color: Colors.black54),
                         ),
                       ],
@@ -371,7 +382,11 @@ class _AllBookedRidesState extends State<AllBookedRides> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        _cancelRide(ride['booking_trip_id'].toString());
+                        if (ride['booking_trip_id'] != null) {
+                          _cancelRide(ride['booking_trip_id'].toString());
+                        } else {
+                          Get.snackbar('Error', 'Booking ID is not available');
+                        }
                       },
                       child: Text('Cancel Booking'),
                       style: ElevatedButton.styleFrom(
