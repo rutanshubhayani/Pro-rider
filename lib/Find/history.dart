@@ -240,7 +240,7 @@ class _HistoryState extends State<History> {
               Row(
                 children: [
                   Image.asset(
-                    'images/request_prev_ui.png',
+                    'images/request_history.png',
                     height: 70,
                     width: 55,
                     color: kPrimaryColor,
