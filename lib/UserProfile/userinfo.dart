@@ -8,7 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/UserProfile/Userprofile.dart';
 import 'package:travel/api/api.dart';
 import 'dart:convert';
-import 'package:travel/auth/verifyotp.dart'; // For converting response to JSON
+import 'package:travel/auth/verifyotp.dart';
+import 'package:travel/widget/configure.dart'; // For converting response to JSON
 
 class UserInfo extends StatefulWidget {
   const UserInfo({super.key});
@@ -253,7 +254,7 @@ class _UserInfoState extends State<UserInfo> {
             prefixIcon: Icon(Icons.person),
             border: OutlineInputBorder(
               borderSide: BorderSide(
-                color: Color(0xFF51737A),
+                color: kPrimaryColor,
                 width: 1.0,
               ),
               borderRadius: BorderRadius.circular(10.0),
@@ -282,7 +283,7 @@ class _UserInfoState extends State<UserInfo> {
             prefixIcon: Icon(Icons.email),
             border: OutlineInputBorder(
               borderSide: BorderSide(
-                color: Color(0xFF51737A),
+                color: kPrimaryColor,
                 width: 1.0,
               ),
               borderRadius: BorderRadius.circular(10.0),
@@ -328,7 +329,7 @@ class _UserInfoState extends State<UserInfo> {
             ),
             border: OutlineInputBorder(
               borderSide: BorderSide(
-                color: Color(0xFF51737A),
+                color: kPrimaryColor,
                 width: 1.0,
               ),
               borderRadius: BorderRadius.circular(10.0),

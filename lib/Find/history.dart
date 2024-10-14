@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:travel/Find/Passenger/all_requests.dart';
+import 'package:travel/UserProfile/BookedRides/all_booked_rides.dart';
 import 'package:travel/UserProfile/PostedRides/all_posted_rides.dart';
 import 'package:travel/widget/configure.dart';
 
@@ -20,120 +22,280 @@ class _HistoryState extends State<History> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            GestureDetector(
-              onTap: () {
-                // Navigate to PostedUserRides when tapped
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => PostedUserRides()),
-                );
-              },
-              child: SizedBox(
-                // height: MediaQuery.of(context).size.height * 0.27, // 30% of screen width
-                width: double.infinity,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: kPrimaryColor, width: 2),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        spreadRadius: 0,
-                        blurRadius: 8,
-                        offset: const Offset(8, 10),
-                      ),
-                    ],
+            // Adjusted margin to reduce spacing
+            postHistoryCard(),
+            bookedHistoryCard(),
+            requesrHistoryCard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget postHistoryCard() {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.27, // 30% of screen height
+      width: double.infinity,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: kPrimaryColor, width: 2),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              spreadRadius: 0,
+              blurRadius: 8,
+              offset: const Offset(8, 10),
+            ),
+          ],
+        ),
+        margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0), // Adjusted vertical margin
+        child: Padding(
+          padding: EdgeInsets.all(16.0), // Padding inside the card
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Image.asset(
+                    'images/posthistory.png',
+                    height: 55,
+                    width: 55,
+                    color: kPrimaryColor,
                   ),
-                  margin: EdgeInsets.all(16.0), // Optional: adds some space around the card
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0), // Adds padding inside the card
+                  SizedBox(width: 10),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Image.asset('images/posthistory.png',
-                          height: 100,
-                          width: 100,
-                        ),
                         Text(
                           'Post History',
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
-                        SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              flex: 6,
-                              child: Text(
-                                'Access your ride history to view, edit, or cancel your bookings. Check who’s joined your ride and stay in control of your travel plans!',
-                                textAlign: TextAlign.justify,
-                              ),
-                            ),
-                            Spacer(),
-                            Expanded(child: Icon(Icons.arrow_forward_ios_rounded)),
-                          ],
+                        Text(
+                          'Access your ride history to view, edit, or cancel your bookings. Check who’s joined your ride and stay in control of your travel plans!',
+                          textAlign: TextAlign.justify,
                         ),
                       ],
                     ),
                   ),
-                ),
+                ],
               ),
-            ),
-            // Other containers remain unchanged
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.27,
-              width: double.infinity,
-              child: Container(
-                decoration: BoxDecoration(
-                    border: Border.all(color: kPrimaryColor, width: 2),
-                    borderRadius: BorderRadius.circular(10)),
-                margin: EdgeInsets.all(16.0),
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+              SizedBox(height: 15),
+              SizedBox(
+                width: double.infinity,
+                height: 45,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => PostedUserRides()),
+                    );
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Icon(Icons.history),
+                      SizedBox(width: 5),
                       Text(
-                        'Post History',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        'Post ride history',
+                        style: TextStyle(fontSize: 16),
                       ),
-                      SizedBox(height: 10),
-                      Text('Detail 1: Some description here.'),
-                      Text('Detail 2: Additional information here.'),
                     ],
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimaryColor, // Background color
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget bookedHistoryCard() {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.27, // 30% of screen height
+      width: double.infinity,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: kPrimaryColor, width: 2),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              spreadRadius: 0,
+              blurRadius: 8,
+              offset: const Offset(8, 10),
             ),
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.27,
-              width: double.infinity,
-              child: Container(
-                decoration: BoxDecoration(
-                    border: Border.all(color: kPrimaryColor, width: 2),
-                    borderRadius: BorderRadius.circular(10)),
-                margin: EdgeInsets.all(16.0),
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Post History',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 10),
-                      Text('Detail 1: Some description here.'),
-                      Text('Detail 2: Additional information here.'),
-                    ],
-                  ),
-                ),
-              ),
-            )
           ],
+        ),
+        margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0), // Adjusted vertical margin
+        child: Padding(
+          padding: EdgeInsets.all(16.0), // Padding inside the card
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Image.asset(
+                    'images/posttrip_prev_ui.png',
+                    height: 55,
+                    width: 55,
+                    color: kPrimaryColor,
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Booked ride history',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'The Booked Rides history feature provides a comprehensive record of all your past ride bookings, including dates and destinations.',
+                          textAlign: TextAlign.justify,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 15),
+              SizedBox(
+                width: double.infinity,
+                height: 45,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => BookedUserRides()),
+                    );
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.history),
+                      SizedBox(width: 5),
+                      Text(
+                        'Booked ride History',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimaryColor, // Background color
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  Widget requesrHistoryCard() {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.27, // 30% of screen height
+      width: double.infinity,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: kPrimaryColor, width: 2),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              spreadRadius: 0,
+              blurRadius: 8,
+              offset: const Offset(8, 10),
+            ),
+          ],
+        ),
+        margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0), // Adjusted vertical margin
+        child: Padding(
+          padding: EdgeInsets.all(16.0), // Padding inside the card
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Image.asset(
+                    'images/request_prev_ui.png',
+                    height: 70,
+                    width: 55,
+                    color: kPrimaryColor,
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Request History',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'The Requested Ride history feature keeps track of all your ride requests, making it easy to revisit past requsted destinations.',
+                          textAlign: TextAlign.justify,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 15),
+              SizedBox(
+                width: double.infinity,
+                height: 45,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => RequestHistory()),
+                    );
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.history),
+                      SizedBox(width: 5),
+                      Text(
+                        'Requested ride history',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimaryColor, // Background color
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:travel/Find/Trips/GetBook.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travel/widget/configure.dart';
 
 import '../Inbox/newinbox.dart';
 import '../Inbox/Inbox.dart';
@@ -305,7 +306,7 @@ class _GetTripPreviewState extends State<GetTripPreview> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Color(0xFF51737A),
+                        color: kPrimaryColor,
                         width: 3,
                       ),
                     ),

@@ -404,39 +404,43 @@ class _FindMeetDriverState extends State<FindMeetDriver> {
             SizedBox(height: 25),
             Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    '${driverData!['vehicle']['vehicle_img_url']}',
-                    height: 120,
-                    width: 150,
-                    fit: BoxFit.cover,
-                    // Fallback image
-                    errorBuilder: (context, error, stackTrace) => Image.asset(
-                      'images/default-car.png',
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      '${driverData!['vehicle']['vehicle_img_url']}',
+                      height: 120,
+                      width: 150,
                       fit: BoxFit.cover,
+                      // Fallback image
+                      errorBuilder: (context, error, stackTrace) => Image.asset(
+                        'images/default-car.png',
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
                 SizedBox(width: 15),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      driverData!['vehicle']['vehicle_model'] ?? 'Unknown Model',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        driverData!['vehicle']['vehicle_model'] ?? 'Unknown Model',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '${driverData!['vehicle']['vehicle_color'] ?? 'Unknown Color'}, ${driverData!['vehicle']['vehicle_year'] ?? 'Unknown Year'}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black54,
+                      Text(
+                        '${driverData!['vehicle']['vehicle_color'] ?? 'Unknown Color'}, ${driverData!['vehicle']['vehicle_year'] ?? 'Unknown Year'}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black54,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

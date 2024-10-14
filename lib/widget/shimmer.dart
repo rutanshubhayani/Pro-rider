@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:travel/widget/configure.dart';
 
 class TripShimmerCard extends StatelessWidget {
   const TripShimmerCard({Key? key}) : super(key: key);
@@ -13,7 +14,7 @@ class TripShimmerCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.0),
           side: const BorderSide(
-            color: Color(0xFF51737A),
+            color: kPrimaryColor,
             width: 1.5,
           ),
         ),
@@ -33,7 +34,7 @@ class TripShimmerCard extends StatelessWidget {
                             color: Colors.white,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0xFF51737A),
+                              color: kPrimaryColor,
                               width: 3,
                             ),
                           ),

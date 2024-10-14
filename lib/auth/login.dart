@@ -11,6 +11,7 @@ import 'package:travel/UserProfile/userinfo.dart';
 import 'package:travel/home.dart';
 
 import '../api/api.dart';
+import '../widget/configure.dart';
 import '../widget/internet.dart';
 import '../widget/HttpHandler.dart';
 
@@ -212,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF51737A),
+                          color: kPrimaryColor,
                         ),
                       ),
                       SizedBox(height: 40),
@@ -227,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: Icon(Icons.email),
                           border: OutlineInputBorder(
                             borderSide: BorderSide(
-                              color: Color(0xFF51737A),
+                              color: kPrimaryColor,
                               width: 1.0,
                             ),
                             borderRadius: BorderRadius.circular(10.0),
@@ -268,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           border: OutlineInputBorder(
                             borderSide: BorderSide(
-                              color: Color(0xFF51737A),
+                              color: kPrimaryColor,
                               width: 1.0,
                             ),
                             borderRadius: BorderRadius.circular(10.0),
@@ -295,7 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                             child: Text(
                               'Forgot Password?',
-                              style: TextStyle(color: Color(0xFF51737A)),
+                              style: TextStyle(color: kPrimaryColor),
                             ),
                           ),
                         ),
@@ -310,7 +311,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           style: ElevatedButton.styleFrom(
                             elevation: 7,
-                            backgroundColor: Color(0xFF51737A),
+                            backgroundColor: kPrimaryColor,
                             padding: EdgeInsets.symmetric(
                                 horizontal: 40, vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -331,7 +332,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         child: Text(
                           'Create Account',
-                          style: TextStyle(color: Color(0xFF51737A)),
+                          style: TextStyle(color: kPrimaryColor),
                         ),
                       ),
                     ],

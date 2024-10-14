@@ -15,7 +15,7 @@ class RequestResult extends StatefulWidget {
     Key? key,
     required this.results,
     required this.selectedCities,
-    this.selectedDate, // Initialize optional date parameter
+    this.selectedDate,
   }) : super(key: key);
 
   @override
@@ -26,6 +26,7 @@ class _RequestResultState extends State<RequestResult> {
   late List<Map<String, dynamic>> filteredTrips;
 
   // Filter options
+  bool _earlyMorningSelected = false;
   bool _morningSelected = false;
   bool _afternoonSelected = false;
   bool _eveningSelected = false;
@@ -35,7 +36,6 @@ class _RequestResultState extends State<RequestResult> {
     super.initState();
     _filterTrips();
   }
-
 
   void _filterTrips() {
     filteredTrips = widget.results.where((trip) {
@@ -52,11 +52,13 @@ class _RequestResultState extends State<RequestResult> {
       // Check for time of day filters
       DateTime dateTime = DateTime.parse(trip['departure_date'] ?? DateTime.now().toString());
       bool timeMatches = false;
-      if (_morningSelected && dateTime.hour < 12) timeMatches = true;
-      if (_afternoonSelected && dateTime.hour >= 12 && dateTime.hour < 17) timeMatches = true;
-      if (_eveningSelected && dateTime.hour >= 17) timeMatches = true;
 
-      return cityMatches && dateMatches && (timeMatches || (!_morningSelected && !_afternoonSelected && !_eveningSelected));
+      if (_earlyMorningSelected && dateTime.hour >= 0 && dateTime.hour < 6) timeMatches = true;
+      if (_morningSelected && dateTime.hour >= 6 && dateTime.hour < 12) timeMatches = true;
+      if (_afternoonSelected && dateTime.hour >= 12 && dateTime.hour < 18) timeMatches = true;
+      if (_eveningSelected && dateTime.hour >= 18) timeMatches = true;
+
+      return cityMatches && dateMatches && (timeMatches || (!_earlyMorningSelected && !_morningSelected && !_afternoonSelected && !_eveningSelected));
     }).toList();
 
     // Sort the filtered trips by departure date
@@ -66,8 +68,6 @@ class _RequestResultState extends State<RequestResult> {
       return dateA.compareTo(dateB);
     });
   }
-
-
 
   void _showFilterBottomSheet() {
     showModalBottomSheet(
@@ -81,6 +81,15 @@ class _RequestResultState extends State<RequestResult> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text("Filter by Time of Day", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  CheckboxListTile(
+                    title: Text("Early Morning"),
+                    value: _earlyMorningSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _earlyMorningSelected = value ?? false;
+                      });
+                    },
+                  ),
                   CheckboxListTile(
                     title: Text("Morning"),
                     value: _morningSelected,
@@ -113,9 +122,8 @@ class _RequestResultState extends State<RequestResult> {
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        // Update filters and re-filter trips immediately
                         setState(() {
-                          _filterTrips();
+                          _filterTrips(); // Re-filter trips immediately
                         });
                       },
                       child: Text('Apply filters'),
@@ -136,7 +144,6 @@ class _RequestResultState extends State<RequestResult> {
       },
     );
   }
-
 
   Future<void> _refreshData() async {
     await Future.delayed(Duration(seconds: 1));
@@ -197,7 +204,7 @@ class _RequestResultState extends State<RequestResult> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10.0),
                     side: BorderSide(
-                      color: Color(0xFF51737A),
+                      color: kPrimaryColor,
                       width: 1.5,
                     ),
                   ),
@@ -221,7 +228,7 @@ class _RequestResultState extends State<RequestResult> {
                               Spacer(),
                               Padding(
                                 padding: const EdgeInsets.only(right: 20),
-                                child: Text('$seatsRequired seats \nrequired', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                child: Text('$seatsRequired seats required', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               ),
                             ],
                           ),

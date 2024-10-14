@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:travel/auth/login.dart';
 import 'package:travel/auth/register.dart';
+import 'package:travel/widget/configure.dart';
 
 
 
@@ -103,7 +104,7 @@ class First extends StatelessWidget {
                 color: Colors.white,
               ),),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF51737A),
+                backgroundColor: kPrimaryColor,
                 minimumSize: Size(200, 50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25),

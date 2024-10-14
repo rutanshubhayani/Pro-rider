@@ -19,6 +19,8 @@ import 'package:travel/UserProfile/profilesetting.dart';
 import 'package:travel/UserProfile/userinfo.dart';
 import 'package:travel/UserProfile/vechiledetails.dart';
 
+import '../widget/configure.dart';
+
 
 class UserProfile extends StatefulWidget {
   const UserProfile({Key? key}) : super(key: key);
@@ -459,48 +461,79 @@ class _UserProfileState extends State<UserProfile> {
                       );
                     },
                   ),
-              CylindricalTile(
-                leadingIcon: Icons.logout,
-                title: 'Log Out',
-                onTap: () async {
-                  // Show confirmation dialog
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: Text('Logout'),
-                        content: Text('Are you sure you want to log out?'),
-                        actions: <Widget>[
-                          TextButton(
-                            child: Text('Cancel'),
-                            onPressed: () {
-                              Navigator.of(context).pop(); // Close the dialog
-                            },
-                          ),
-                          TextButton(
-                            child: Text('Log Out'),
-                            onPressed: () async {
-                              // Clear the token from SharedPreferences
-                              SharedPreferences prefs = await SharedPreferences.getInstance();
-                              await prefs.remove('authToken');
-                              await prefs.remove('recentSearches');
+                  CylindricalTile(
+                    leadingIcon: Icons.logout,
+                    title: 'Log Out',
+                    onTap: () async {
+                      // Show confirmation dialog
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('Logout'),
+                            content: Text('Are you sure you want to log out?'),
+                            actions: <Widget>[
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Distribute space evenly
+                                children: [
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      elevation: 7,
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 40, vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        side: BorderSide(color: kPrimaryColor)
+                                      ),
+                                    ),
+                                    child: Text('Cancel',
+                                    style: TextStyle(
+                                      color: kPrimaryColor
+                                    ),),
+                                    onPressed: () {
+                                      Navigator.of(context).pop(); // Close the dialog
+                                    },
+                                  ),
+                                  SizedBox(width: 7,),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      elevation: 7,
+                                      backgroundColor: kPrimaryColor,
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 40, vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: Text('Log Out',
+                                    style: TextStyle(
+                                      color: Colors.white
+                                    ),),
+                                    onPressed: () async {
+                                      // Clear the token from SharedPreferences
+                                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                                      await prefs.remove('authToken');
+                                      await prefs.remove('recentSearches');
 
-                              // Navigate to LoginScreen and clear the navigation stack
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => LoginScreen(),
-                                ),
-                                    (route) => false, // This will remove all the previous routes
-                              );
-                            },
-                          ),
-                        ],
+                                      // Navigate to LoginScreen and clear the navigation stack
+                                      Navigator.pushAndRemoveUntil(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => LoginScreen(),
+                                        ),
+                                            (route) => false, // This will remove all the previous routes
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
                       );
                     },
-                  );
-                },
-              ),
+                  )
+,
 
                 ],
               ),

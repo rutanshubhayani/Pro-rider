@@ -9,6 +9,7 @@ import 'package:travel/UserProfile/PostedRides/updatetrip.dart';
 import 'package:travel/UserProfile/PostedRides/postedpreview.dart';
 import 'package:travel/api/api.dart';
 import '../../Find/Trips/trips.dart';
+import '../../widget/configure.dart';
 
 class PostedUserRides extends StatelessWidget {
   const PostedUserRides({super.key});
@@ -304,7 +305,7 @@ class _AllPostedRidesState extends State<AllPostedRides> {
             : userTrips.isEmpty
             ? Center(child: Text('No trips found'))
             : RefreshIndicator(
-          onRefresh: fetchUserPosts,
+          onRefresh: fetchUserPosts, // Call fetchUserPosts on refresh
           child: ListView.builder(
             itemCount: userTrips.length,
             itemBuilder: (context, index) {
@@ -328,7 +329,7 @@ class _AllPostedRidesState extends State<AllPostedRides> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10.0),
                     side: BorderSide(
-                      color: Color(0xFF51737A),
+                      color: kPrimaryColor,
                       width: 1.5,
                     ),
                   ),
@@ -348,7 +349,7 @@ class _AllPostedRidesState extends State<AllPostedRides> {
                                       color: Colors.white,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: Color(0xFF51737A),
+                                        color: kPrimaryColor,
                                         width: 3,
                                       ),
                                     ),
@@ -437,7 +438,7 @@ class _AllPostedRidesState extends State<AllPostedRides> {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.only(left: 15.0, bottom: 10.0,top: 10), // Adjusted bottom padding
+                          padding: const EdgeInsets.only(left: 15.0, bottom: 10.0, top: 10),
                           child: Text(
                             formattedDate,
                             style: TextStyle(
@@ -448,24 +449,24 @@ class _AllPostedRidesState extends State<AllPostedRides> {
                         ),
                         Row(
                           children: [
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        _showCancelDialog(trip);
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        foregroundColor: Colors.white,
-                                        backgroundColor: Color(0XFFd90000),
-                                      shape: RoundedRectangleBorder(
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    _showCancelDialog(trip);
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    backgroundColor: Color(0XFFd90000),
+                                    shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(10)
-                                      )
-                                      ),
-                                      child: const Text('Cancel Ride'),
                                     ),
                                   ),
+                                  child: const Text('Cancel Ride'),
                                 ),
+                              ),
+                            ),
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.all(8.0),
@@ -478,8 +479,8 @@ class _AllPostedRidesState extends State<AllPostedRides> {
                                     foregroundColor: Colors.white,
                                     backgroundColor: Color(0xFF3d5a80),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10)
-                                    )
+                                        borderRadius: BorderRadius.circular(10)
+                                    ),
                                   ),
                                 ),
                               ),
@@ -520,7 +521,7 @@ class ShimmerLoadingCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10.0),
         side: BorderSide(
-          color: Color(0xFF51737A),
+          color: kPrimaryColor,
           width: 1.5,
         ),
       ),
@@ -758,7 +759,7 @@ class _CancelledPostedRidesState extends State<CancelledPostedRides> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                   side: BorderSide(
-                    color: Color(0xFF51737A),
+                    color: kPrimaryColor,
                     width: 1.5,
                   ),
                 ),

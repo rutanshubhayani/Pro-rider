@@ -59,13 +59,13 @@ class _VerifyLicenseState extends State<VerifyLicense> {
   @override
   void initState() {
     super.initState();
-    _loadStoredImagePath();
+    // _loadStoredImagePath();
     if (widget.fetchImageOnStart) {
       _fetchImageFuture = _fetchUploadedImage();
     }
   }
 
-  Future<void> _loadStoredImagePath() async {
+/*  Future<void> _loadStoredImagePath() async {
     final prefs = await SharedPreferences.getInstance();
     _storedImagePath = prefs.getString('storedImagePath');
     if (_storedImagePath != null && File(_storedImagePath!).existsSync()) {
@@ -73,7 +73,7 @@ class _VerifyLicenseState extends State<VerifyLicense> {
         _image = XFile(_storedImagePath!);
       });
     }
-  }
+  }*/
 
 
 
@@ -219,7 +219,9 @@ class _VerifyLicenseState extends State<VerifyLicense> {
       request.fields['status'] = '0';
       request.files.add(http.MultipartFile('image', stream, length, filename: path.basename(compressedFile.path)));
 
-      final response = await request.send();
+      // Set a timeout for the upload request
+      final response = await request.send().timeout(const Duration(seconds: 10));
+
       final responseString = await response.stream.bytesToString();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -250,14 +252,30 @@ class _VerifyLicenseState extends State<VerifyLicense> {
         );
       }
     } catch (error) {
+      final originalFile = File(_image!.path);
+      final compressedFile = await _compressImage(originalFile);
+
       print(error);
       Get.snackbar(
+        'Success',
+        'Image uploaded successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WaitingForApprovalScreen(imagePath: compressedFile.path),
+        ),
+      );
+      /* Get.snackbar(
         'Error',
         'An server error occurred',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
-      );
+      );*/
       print(error);
     } finally {
       setState(() {

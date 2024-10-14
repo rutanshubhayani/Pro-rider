@@ -8,8 +8,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:travel/UserProfile/BookedRides/BookedPreview.dart';
 import 'package:travel/auth/login.dart';
+import 'package:travel/widget/configure.dart';
 import '../../Find/Trips/trips.dart';
 import '../../api/api.dart';
+
 import '../Userprofile.dart';
 
 class BookedUserRides extends StatelessWidget {
@@ -296,7 +298,7 @@ class _AllBookedRidesState extends State<AllBookedRides> {
           child: Card(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
-              side: BorderSide(color: Color(0xFF51737A), width: 1.5),
+              side: BorderSide(color: kPrimaryColor, width: 1.5),
             ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -609,7 +611,7 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10.0),
             side: BorderSide(
-              color: Color(0xFF51737A),
+              color: kPrimaryColor,
               width: 1.5,
             ),
           ),
@@ -626,7 +628,7 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
                         color: Colors.white,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Color(0xFF51737A),
+                          color: kPrimaryColor,
                           width: 3,
                         ),
                       ),

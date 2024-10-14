@@ -4,6 +4,7 @@ import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../api/api.dart';
+import '../widget/configure.dart';
 
 
 class RegisterScreen extends StatefulWidget {
@@ -203,7 +204,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF51737A),
+                          color: kPrimaryColor,
                         ),
                       ),
                       SizedBox(height: 40),
@@ -217,7 +218,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           prefixIcon: Icon(Icons.person),
                           border: OutlineInputBorder(
                             borderSide: BorderSide(
-                              color: Color(0xFF51737A),
+                              color: kPrimaryColor,
                               width: 1.0,
                             ),
                             borderRadius: BorderRadius.circular(10.0),
@@ -247,7 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           prefixIcon: Icon(Icons.email),
                           border: OutlineInputBorder(
                             borderSide: BorderSide(
-                              color: Color(0xFF51737A),
+                              color: kPrimaryColor,
                               width: 1.0,
                             ),
                             borderRadius: BorderRadius.circular(10.0),
@@ -282,7 +283,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           fillColor: Colors.transparent,
                           border: OutlineInputBorder(
                             borderSide: BorderSide(
-                              color: Color(0xFF51737A),
+                              color: kPrimaryColor,
                               width: 1.0,
                             ),
                             borderRadius: BorderRadius.circular(10.0),
@@ -405,7 +406,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           style: ElevatedButton.styleFrom(
                             elevation: 7,
-                            backgroundColor: Color(0xFF51737A),
+                            backgroundColor: kPrimaryColor,
                             padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -424,7 +425,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         },
                         child: Text(
                           'Log In',
-                          style: TextStyle(color: Color(0xFF51737A)),
+                          style: TextStyle(color: kPrimaryColor),
                         ),
                       ),
                     ],

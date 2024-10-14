@@ -19,17 +19,17 @@ class SearchResult extends StatefulWidget {
   @override
   State<SearchResult> createState() => _SearchResultState();
 }
-
 class _SearchResultState extends State<SearchResult> {
+  bool _earlyMorningSelected = false;
   bool _morningSelected = false;
   bool _afternoonSelected = false;
   bool _eveningSelected = false;
-  List<Map<String, dynamic>> filteredTrips = []; // Initialize as an empty list
+  List<Map<String, dynamic>> filteredTrips = [];
 
   @override
   void initState() {
     super.initState();
-    filteredTrips = widget.results; // Initially show all results
+    filteredTrips = widget.results;
   }
 
   void _showFilterBottomSheet() {
@@ -44,6 +44,15 @@ class _SearchResultState extends State<SearchResult> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text("Filter by Time of Day", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  CheckboxListTile(
+                    title: Text("Early Morning"),
+                    value: _earlyMorningSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _earlyMorningSelected = value ?? false;
+                      });
+                    },
+                  ),
                   CheckboxListTile(
                     title: Text("Morning"),
                     value: _morningSelected,
@@ -71,24 +80,23 @@ class _SearchResultState extends State<SearchResult> {
                       });
                     },
                   ),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: ()  {
-                  Navigator.pop(context);
-                  _filterTrips(); // Re-filter the trips based on selected time
-                },
-                child: Text('Apply filters'),
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: kPrimaryColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _filterTrips(); // Re-filter the trips based on selected time
+                      },
+                      child: Text('Apply filters'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: kPrimaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            )
                 ],
               ),
             );
@@ -100,7 +108,7 @@ class _SearchResultState extends State<SearchResult> {
 
   void _filterTrips() {
     setState(() {
-      if (!_morningSelected && !_afternoonSelected && !_eveningSelected) {
+      if (!_earlyMorningSelected && !_morningSelected && !_afternoonSelected && !_eveningSelected) {
         // If no filters are selected, show all results
         filteredTrips = widget.results;
       } else {
@@ -113,9 +121,10 @@ class _SearchResultState extends State<SearchResult> {
 
           DateTime dateTime = DateTime.parse(trip['leaving_date_time'] ?? DateTime.now().toString());
 
-          if (_morningSelected && dateTime.hour < 12) return true;
-          if (_afternoonSelected && dateTime.hour >= 12 && dateTime.hour < 17) return true;
-          if (_eveningSelected && dateTime.hour >= 17) return true;
+          if (_earlyMorningSelected && dateTime.hour >= 0 && dateTime.hour < 6) return true;
+          if (_morningSelected && dateTime.hour >= 6 && dateTime.hour < 12) return true;
+          if (_afternoonSelected && dateTime.hour >= 12 && dateTime.hour < 18) return true;
+          if (_eveningSelected && dateTime.hour >= 18 && dateTime.hour < 24) return true;
 
           return false;
         }).toList();
@@ -184,7 +193,7 @@ class _SearchResultState extends State<SearchResult> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                   side: BorderSide(
-                    color: Color(0xFF51737A),
+                    color: kPrimaryColor,
                     width: 1.5,
                   ),
                 ),

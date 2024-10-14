@@ -303,7 +303,7 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Color(0xFF51737A),
+                        color: kPrimaryColor,
                         width: 3,
                       ),
                     ),

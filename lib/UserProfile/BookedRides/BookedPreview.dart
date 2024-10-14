@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:travel/widget/configure.dart';
 
 class GetBookedPreview extends StatefulWidget {
   final List<dynamic> tripData;
@@ -236,7 +237,7 @@ class _GetBookedPreviewState extends State<GetBookedPreview> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFF51737A),
+                          color:  kPrimaryColor,
                           width: 3,
                         ),
                       ),

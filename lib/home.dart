@@ -8,23 +8,54 @@ class MyHomePage extends StatefulWidget {
   final int initialIndex;
 
   MyHomePage({this.initialIndex = 0});
+
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
   final List<Widget> _screens = [
     const FindScreen(),
     const InboxList(),
     const FindRequests(),
     const History(),
   ];
+
   late int _currentIndex;
+  late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex; // Set initial index
+    _currentIndex = widget.initialIndex;
+
+    // Initialize the AnimationController
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _onHistoryTapped() {
+    if (_currentIndex != 3) {
+      setState(() {
+        _currentIndex = 3;
+        _animationController.forward().then((_) {
+          _animationController.reverse(); // Reset the animation after playing
+        });
+      });
+    } else {
+      // If already on History, start the animation again
+      _animationController.forward().then((_) {
+        _animationController.reverse();
+      });
+    }
   }
 
   @override
@@ -32,36 +63,52 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       extendBody: true,
-      body: SafeArea(
-          child: _screens[_currentIndex]),
+      body: SafeArea(child: _screens[_currentIndex]),
       bottomNavigationBar: Container(
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           selectedItemColor: Colors.black,
-          unselectedItemColor: Color(0xFF757575),
-          backgroundColor: Colors.white, // Change opacity here
+          unselectedItemColor: const Color(0xFF757575),
+          backgroundColor: Colors.white,
           elevation: 0,
           currentIndex: _currentIndex,
           onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
+            if (index == 3) {
+              _onHistoryTapped();
+            } else {
+              setState(() {
+                _currentIndex = index;
+                _animationController.reset(); // Reset animation if navigating to another tab
+              });
+            }
           },
-          items: const <BottomNavigationBarItem>[
+          items: <BottomNavigationBarItem>[
             BottomNavigationBarItem(
-              icon: Icon(Icons.directions_car),
+              icon: const Icon(Icons.search),
               label: 'Find',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.inbox),
+              icon: Icon(
+                _currentIndex == 1 ? Icons.email_rounded : Icons.email_outlined,
+              ),
               label: 'Inbox',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person, size: 20),
+              icon: Icon(
+                _currentIndex == 2 ? Icons.person : Icons.person_outline_outlined,
+              ),
               label: 'Passenger',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.history, size: 20),
+              icon: AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  return Transform.rotate(
+                    angle: _animationController.value * 2 * 3.14159, // Rotate based on the animation value
+                    child: const Icon(Icons.history),
+                  );
+                },
+              ),
               label: 'History',
             ),
           ],

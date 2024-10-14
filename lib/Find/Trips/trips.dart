@@ -9,6 +9,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:travel/api/api.dart';
 import 'package:travel/Find/SearchResult/Findtrippreview.dart';
+import 'package:travel/widget/configure.dart';
 import 'package:travel/widget/shimmer.dart';
 import 'gettrippreview.dart';
 
@@ -172,7 +173,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                   side: BorderSide(
-                    color: Color(0xFF51737A),
+                    color: kPrimaryColor,
                     width: 1.5,
                   ),
                 ),
@@ -192,7 +193,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                                     color: Colors.white,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: Color(0xFF51737A),
+                                      color: kPrimaryColor,
                                       width: 3,
                                     ),
                                   ),
@@ -436,7 +437,7 @@ class _ActiveScreenState extends State<ActiveScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                   side: BorderSide(
-                    color: Color(0xFF51737A),
+                    color: kPrimaryColor,
                     width: 1.5,
                   ),
                 ),
@@ -456,7 +457,7 @@ class _ActiveScreenState extends State<ActiveScreen> {
                                     color: Colors.white,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: Color(0xFF51737A),
+                                      color: kPrimaryColor,
                                       width: 3,
                                     ),
                                   ),
@@ -695,7 +696,7 @@ class _RecentScreenState extends State<RecentScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                   side: BorderSide(
-                    color: Color(0xFF51737A),
+                    color: kPrimaryColor,
                     width: 1.5,
                   ),
                 ),
@@ -715,7 +716,7 @@ class _RecentScreenState extends State<RecentScreen> {
                                     color: Colors.white,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: Color(0xFF51737A),
+                                      color: kPrimaryColor,
                                       width: 3,
                                     ),
                                   ),

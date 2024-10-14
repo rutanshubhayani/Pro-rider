@@ -304,7 +304,7 @@ class _AllPostRequestsState extends State<AllPostRequests> {
           child: Card(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
-              side: BorderSide(color: Color(0xFF51737A), width: 1.5),
+              side: BorderSide(color: kPrimaryColor, width: 1.5),
             ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -550,7 +550,7 @@ class _CancelledRequestsState extends State<CancelledRequests> {
         return Card(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10.0),
-            side: BorderSide(color: Color(0xFF51737A), width: 1.5),
+            side: BorderSide(color: kPrimaryColor, width: 1.5),
           ),
           margin: const EdgeInsets.all(10),
           child: Padding(

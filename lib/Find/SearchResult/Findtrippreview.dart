@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/SearchResult/FindBook.dart';
 import 'package:travel/Find/Inbox/newinbox.dart';
+import 'package:travel/widget/configure.dart';
 import '../Inbox/Inbox.dart';
 
 class FindTripPreview extends StatefulWidget {
@@ -329,7 +330,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Color(0xFF51737A),
+                        color: kPrimaryColor,
                         width: 3,
                       ),
                     ),
