@@ -190,7 +190,7 @@ class ActionButton extends StatelessWidget {
 
 
 class CustomDialog {
-  static Future<void> show(
+  static Future<bool> show(
       BuildContext context, {
         required String title,
         required String content,
@@ -198,31 +198,60 @@ class CustomDialog {
         String confirmButtonText = 'OK',
         VoidCallback? onConfirm,
       }) {
-    return showDialog<void>(
+    return showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(title),
           content: Text(content),
           actions: <Widget>[
-            TextButton(
-              child: Text(cancelButtonText),
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-            ),
-            TextButton(
-              child: Text(confirmButtonText),
-              onPressed: () {
-                if (onConfirm != null) {
-                  onConfirm(); // Execute the confirm action
-                }
-                Navigator.of(context).pop(); // Close the dialog
-              },
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      elevation: 7,
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: kPrimaryColor),
+                      ),
+                    ),
+                    child: Text(
+                      cancelButtonText,
+                      style: TextStyle(color: kPrimaryColor),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop(false); // Close the dialog and return false
+                    },
+                  ),
+                ),
+                SizedBox(width: 7),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      elevation: 7,
+                      backgroundColor: kPrimaryColor,
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      confirmButtonText,
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    onPressed: () {
+                      if (onConfirm != null) onConfirm(); // Execute onConfirm if provided
+                      Navigator.of(context).pop(true); // Close the dialog and return true
+                    },
+                  ),
+                ),
+              ],
             ),
           ],
         );
       },
-    );
+    ).then((value) => value ?? false); // Return false if the dialog was dismissed
   }
 }

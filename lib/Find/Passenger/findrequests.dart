@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:travel/Find/Passenger/all_requests.dart';
+import 'package:travel/Find/Passenger/all_posted_requests.dart';
 import 'package:travel/Find/Passenger/postrequest.dart';
 import 'package:travel/Find/Passenger/requestresult.dart';
 import '../../api/api.dart';
@@ -338,16 +338,6 @@ class _FindRequestsState extends State<FindRequests> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Manage requests',style: TextStyle(fontWeight: FontWeight.bold),),
-            Divider(),
-          ],
-        ),
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric( horizontal: 16),
         child: Column(
@@ -358,6 +348,7 @@ class _FindRequestsState extends State<FindRequests> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    SizedBox(height: 20,),
                     Text(
                       'Find requests!', // Use the user's name here
                       style: TextStyle(
@@ -709,7 +700,6 @@ class _FindRequestsState extends State<FindRequests> {
       focusNode: dateFocusNode,
       decoration: InputDecoration(
         hintText: 'Departure date',
-        filled: true,
         prefixIcon: Icon(Icons.calendar_today),
         suffixIcon: dateController.text.isNotEmpty
             ? IconButton(
@@ -722,7 +712,6 @@ class _FindRequestsState extends State<FindRequests> {
         )
             : null,
         border: OutlineInputBorder(
-          borderSide: BorderSide.none,
           borderRadius: BorderRadius.circular(10),
         ),
       ),

@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:travel/Find/Inbox/newinbox.dart';
 import 'package:travel/api/api.dart';
 import 'package:travel/widget/configure.dart';
 
@@ -505,6 +508,9 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
                                     );
                                   },
                                 );                              }
+                              if (value == 'chat') {
+                                Get.to(() => ChatScreen(recipientId: user['uid'].toString(), recipientUserName: user['uname'].toString(), recipientUserImage: user['profile_photo'].toString()));
+                              }
                               // Handle other actions if needed
                             },
                             itemBuilder: (BuildContext context) {
@@ -514,7 +520,7 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
                                   child: Text('Cancel Ride'),
                                 ),
                                 PopupMenuItem<String>(
-                                  value: 'Chat',
+                                  value: 'chat',
                                   child: Text('Chat'),
                                 ),
                               ];

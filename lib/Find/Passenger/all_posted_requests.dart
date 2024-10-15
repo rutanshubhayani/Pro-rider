@@ -140,30 +140,14 @@ class _AllPostRequestsState extends State<AllPostRequests> {
     }
   }
 
-  Future<bool> _showConfirmationDialog(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Confirm Cancellation'),
-          content: Text('Are you sure you want to cancel this post request?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false); // User pressed No
-              },
-              child: Text('No'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true); // User pressed Yes
-              },
-              child: Text('Yes'),
-            ),
-          ],
-        );
-      },
-    ).then((value) => value ?? false);
+  Future<bool> _showConfirmationDialog(BuildContext context) async {
+    return await CustomDialog.show(
+      context,
+      title: 'Confirm Cancellation',
+      content: 'Are you sure you want to cancel this post request?',
+      cancelButtonText: 'No',
+      confirmButtonText: 'Yes',
+    );
   }
 
   Future<void> _cancelPostRequest(int postId, dynamic requestData) async {
@@ -189,6 +173,7 @@ class _AllPostRequestsState extends State<AllPostRequests> {
         Get.snackbar(
           'Success',
           'Post request successfully cancelled',
+          duration: Duration(seconds: 1),
           snackPosition: SnackPosition.BOTTOM,
           mainButton: TextButton(
             onPressed: () async {
@@ -232,6 +217,7 @@ class _AllPostRequestsState extends State<AllPostRequests> {
 
       if (response.statusCode == 200) {
         Get.snackbar('Success', 'Post request successfully restored',
+            duration: Duration(seconds: 1),
             snackPosition: SnackPosition.BOTTOM);
         // Refresh the list of post requests
         _fetchPostRequests();
@@ -444,25 +430,13 @@ class _CancelledRequestsState extends State<CancelledRequests> {
   }
 
   Future<bool> _showConfirmationDialog(BuildContext context) async {
-    return showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Restore Request'),
-          content: Text('Are you sure you want to restore this request?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text('Restore'),
-            ),
-          ],
-        );
-      },
-    ).then((value) => value ?? false); // Return false if dialog is dismissed
+    return await CustomDialog.show(
+      context,
+      title: 'Restore Request',
+      content: 'Are you sure you want to restore this request?',
+      cancelButtonText: 'Cancel',
+      confirmButtonText: 'Restore',
+    );
   }
 
   Future<void> _restoreRequest(String postRequestId) async {
@@ -484,7 +458,7 @@ class _CancelledRequestsState extends State<CancelledRequests> {
       );
 
       if (response.statusCode == 200) {
-        Get.snackbar('Success', 'Post request successfully restored!');
+        Get.snackbar('Success', 'Post request successfully restored!',snackPosition: SnackPosition.BOTTOM,duration: Duration(seconds: 1));
         _fetchCancelledPostRequests(); // Refresh the list
       } else {
         print('Failed to restore post request.: ${response.body}');

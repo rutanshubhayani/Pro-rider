@@ -53,14 +53,16 @@ class _UpdateTripState extends State<UpdateTrip> {
   late List<bool> isSelectedPeople;
   late List<bool> isSelected1;
   List<String> choices = ['Winter tires', 'Bikes', 'Skis & snowboards', 'Pets'];
-  List<IconData> icons = [
-    Icons.ac_unit,
-    Icons.directions_bike,
-    Icons.downhill_skiing,
-    Icons.pets
-  ];
+
+  List<String> rideScheduleOptions = ['One-time trip', 'Recurring trip'];
+  List<IconData> rideicons = [Icons.date_range, Icons.repeat]; // Replace with your actual icons
+  List<bool> isSelectedTrip1 = [false, false]; // Track selected state for each chip
+  String _selectedRideSchedule = ''; // Store the selected ride schedule
   late List<bool> isSelected2;
 
+  List<String> tripPreferences = ['No luggage', 'Backpack', 'Cabin bag (23kg)'];
+  List<IconData> tripIcons = [Icons.no_luggage, Icons.backpack, Icons.cabin]; // Replace with your actual icons
+  List<bool> isSelected3 = [false, false, false]; // Track selected state for each chip
   int selectedSeats = 1;
   bool _isChecked = true;
   bool _isEditingStops = false;
@@ -367,9 +369,8 @@ class _UpdateTripState extends State<UpdateTrip> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Trip updated successfully!')),
           );
-          Navigator.of(context).pushAndRemoveUntil(
+          Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => PostedUserRides()),
-            ModalRoute.withName('/PostTrip'), // Adjust this to the correct route name if needed
           );
 
           print('Response from server: ${response.body}'); // Log response
@@ -576,7 +577,6 @@ class _UpdateTripState extends State<UpdateTrip> {
                                 controller: destinationController,
                                 focusNode: destinationFocusNode,
                                 decoration: InputDecoration(
-                                  filled: true,
                                   prefixIcon: Icon(Icons.location_on),
                                   hintText: 'Destination Location',
                                   suffixIcon: destinationController
@@ -588,7 +588,6 @@ class _UpdateTripState extends State<UpdateTrip> {
                                         )
                                       : null, // Only show the clear icon if there's text in the field
                                   border: OutlineInputBorder(
-                                    borderSide: BorderSide.none,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
@@ -615,10 +614,8 @@ class _UpdateTripState extends State<UpdateTrip> {
                                 focusNode: dpriceFocusNode,
                                 controller: dpriceController,
                                 decoration: InputDecoration(
-                                  filled: true,
                                   hintText: 'Enter price',
                                   border: OutlineInputBorder(
-                                    borderSide: BorderSide.none,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
@@ -691,7 +688,6 @@ class _UpdateTripState extends State<UpdateTrip> {
                               controller: stopsController,
                               focusNode: stopsFocusNode,
                               decoration: InputDecoration(
-                                filled: true,
                                 prefixIcon:
                                     Icon(Icons.add_location_alt_sharp),
                                 hintText: 'Stops Location',
@@ -704,7 +700,6 @@ class _UpdateTripState extends State<UpdateTrip> {
                                       )
                                     : null, // Only show the clear icon if there's text in the field
                                 border: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
@@ -882,38 +877,45 @@ class _UpdateTripState extends State<UpdateTrip> {
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 10.0, top: 10),
-                          child: SizedBox(
-                            width: double.infinity, // Set width to full screen
-                            child: ToggleButtons(
-                              borderRadius: BorderRadius.circular(20),
-                              renderBorder: true,
-                              borderWidth: 1,
-                              selectedBorderColor: Colors.white,
-                              selectedColor: Colors.white,
-                              fillColor: Color(0xFF3d5a80),
-                              color: Colors.black,
-                              constraints:
-                                  BoxConstraints(minHeight: 30, minWidth: 130),
-                              children: [
-                                Text('One-time trip'),
-                                Text('Recurring trip'),
-                              ],
-                              onPressed: (int index) {
-                                setState(() {
-                                  for (int buttonIndex = 0;
-                                      buttonIndex < isSelectedTrip.length;
-                                      buttonIndex++) {
-                                    isSelectedTrip[buttonIndex] =
-                                        buttonIndex == index;
-                                  }
-                                });
-                              },
-                              isSelected: isSelectedTrip,
-                            ),
-                          ),
-                        ),
+            Wrap(
+              spacing: 10, // Spacing between chips
+              children: List<Widget>.generate(
+                rideScheduleOptions.length,
+                    (int index) {
+                  return ChoiceChip(
+                    avatar: Icon(
+                      rideicons[index],
+                      color: isSelectedTrip[index] ? Colors.white : Colors.black,
+                    ),
+                    label: Text(rideScheduleOptions[index]),
+                    selected: isSelectedTrip[index],
+                    selectedColor: Color(0xFF3d5a80),
+                    showCheckmark: false,
+                    onSelected: (bool selected) {
+                      setState(() {
+                        if (!selected || isSelectedTrip[index]) return;
+
+                        // Deselect all other chips and select the current chip
+                        for (int i = 0; i < isSelectedTrip.length; i++) {
+                          isSelectedTrip[i] = (i == index);
+                        }
+                        _selectedRideSchedule = rideScheduleOptions[index]; // Update selected schedule
+                      });
+                    },
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20.0),
+                      side: BorderSide(
+                        color: isSelectedTrip[index] ? Colors.white : Colors.grey,
+                      ),
+                    ),
+                    labelStyle: TextStyle(
+                      color: isSelectedTrip[index] ? Colors.white : Colors.black,
+                    ),
+                  );
+                },
+              ).toList(),
+            ),
                         Padding(
                           padding: const EdgeInsets.only(
                               left: 3.0, top: 10, bottom: 10),
@@ -932,13 +934,12 @@ class _UpdateTripState extends State<UpdateTrip> {
                                 controller: dateController,
                                 decoration: InputDecoration(
                                   hintText: 'Departure date',
-                                  filled: true,
                                   prefixIcon: Icon(Icons.calendar_month),
                                   border: OutlineInputBorder(
-                                      borderSide: BorderSide.none,
                                       borderRadius: BorderRadius.circular(10)),
                                   focusedBorder: OutlineInputBorder(
                                     borderSide: BorderSide(color: Colors.blue),
+                                      borderRadius: BorderRadius.circular(10)
                                   ),
                                 ),
                                 readOnly: true,
@@ -971,13 +972,12 @@ class _UpdateTripState extends State<UpdateTrip> {
                                 onTap: _selectTime,
                                 decoration: InputDecoration(
                                   hintText: 'Time',
-                                  filled: true,
                                   border: OutlineInputBorder(
-                                    borderSide: BorderSide.none,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderSide: BorderSide(color: Colors.blue),
+                                      borderRadius: BorderRadius.circular(10)
                                   ),
                                 ),
                                 textInputAction: TextInputAction.next,
@@ -1039,63 +1039,46 @@ class _UpdateTripState extends State<UpdateTrip> {
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 10.0, top: 10),
-                          child: SizedBox(
-                            width: double.infinity, // Set width to full screen
-                            child: ToggleButtons(
-                              borderRadius: BorderRadius.circular(20),
-                              renderBorder: true,
-                              borderWidth: 1,
-                              selectedBorderColor: Colors.white,
-                              selectedColor: Colors.white,
-                              fillColor:Color(0xFF3d5a80),
-                              color: Colors.black,
-                              constraints: BoxConstraints(
-                                  minHeight: 33.0, minWidth: 110.0),
-                              children: <Widget>[
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(width: 6),
-                                    Icon(Icons.work),
-                                    Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Text('No luggage'),
-                                    ),
-                                  ],
-                                ),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.work),
-                                    SizedBox(width: 6),
-                                    Text('Backpack'),
-                                  ],
-                                ),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.work),
-                                    SizedBox(width: 6),
-                                    Text('Cabin Bag'),
-                                  ],
-                                ),
-                              ],
-                              onPressed: (int index) {
-                                setState(() {
-                                  for (int buttonIndex = 0;
-                                      buttonIndex < isSelected1.length;
-                                      buttonIndex++) {
-                                    isSelected1[buttonIndex] =
-                                        buttonIndex == index;
-                                  }
-                                });
-                              },
-                              isSelected: isSelected1,
-                            ),
-                          ),
-                        ),
+          Wrap(
+            spacing: 10, // Spacing between chips
+            children: List<Widget>.generate(
+              tripPreferences.length,
+                  (int index) {
+                return ChoiceChip(
+                  avatar: Icon(
+                    tripIcons[index],
+                    color: isSelected1[index] ? Colors.white : Colors.black,
+                  ),
+                  label: Text(tripPreferences[index]),
+                  selected: isSelected1[index],
+                  selectedColor: Color(0xFF3d5a80),
+                  showCheckmark: false,
+                  onSelected: (bool selected) {
+                    setState(() {
+                      // If the user clicks on an already selected chip, don't allow deselecting it.
+                      // Ensure that at least one chip is always selected.
+                      if (!selected || isSelected1[index]) return;
+
+                      // Deselect all other chips and select the current chip
+                      for (int i = 0; i < isSelected1.length; i++) {
+                        isSelected1[i] = (i == index);
+                      }
+                    });
+                  },
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.0),
+                    side: BorderSide(
+                      color: isSelected1[index] ? Colors.white : Colors.grey,
+                    ),
+                  ),
+                  labelStyle: TextStyle(
+                    color: isSelected1[index] ? Colors.white : Colors.black,
+                  ),
+                );
+              },
+            ).toList(),
+          ),
                         Text(
                           'Note: Cabin bag must contain maximum of 23kg',
                           style: TextStyle(
@@ -1325,11 +1308,9 @@ class _UpdateTripState extends State<UpdateTrip> {
                           maxLength: 50,
                           maxLines: 2,
                           decoration: InputDecoration(
-                              filled: true,
                               hintText: 'Add description',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none,
                               )),
                         ),
                         SizedBox(

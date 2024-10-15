@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:travel/Find/Passenger/all_requests.dart';
+import 'package:travel/Find/Passenger/all_posted_requests.dart';
 import 'package:travel/UserProfile/BookedRides/all_booked_rides.dart';
 import 'package:travel/UserProfile/PostedRides/all_posted_rides.dart';
 import 'package:travel/widget/configure.dart';
@@ -25,7 +25,7 @@ class _HistoryState extends State<History> {
             // Adjusted margin to reduce spacing
             postHistoryCard(),
             bookedHistoryCard(),
-            requesrHistoryCard(),
+            requestHistoryCard(),
           ],
         ),
       ),
@@ -34,7 +34,6 @@ class _HistoryState extends State<History> {
 
   Widget postHistoryCard() {
     return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.27, // 30% of screen height
       width: double.infinity,
       child: Container(
         decoration: BoxDecoration(
@@ -124,7 +123,6 @@ class _HistoryState extends State<History> {
 
   Widget bookedHistoryCard() {
     return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.27, // 30% of screen height
       width: double.infinity,
       child: Container(
         decoration: BoxDecoration(
@@ -212,9 +210,8 @@ class _HistoryState extends State<History> {
     );
   }
 
-  Widget requesrHistoryCard() {
+  Widget requestHistoryCard() {
     return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.27, // 30% of screen height
       width: double.infinity,
       child: Container(
         decoration: BoxDecoration(

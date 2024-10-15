@@ -214,24 +214,12 @@ class _AllBookedRidesState extends State<AllBookedRides> {
   }
 
   Future<void> _cancelRide(String bookingTripId) async {
-    bool confirm = await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Confirm Cancellation'),
-          content: Text('Are you sure you want to cancel this booking?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text('No'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text('Yes'),
-            ),
-          ],
-        );
-      },
+    final confirm = await CustomDialog.show(
+      context,
+      title: 'Confirm Cancellation',
+      content: 'Are you sure you want to cancel this booking?',
+      cancelButtonText: 'No',
+      confirmButtonText: 'Yes',
     );
 
     if (confirm) {
@@ -307,98 +295,110 @@ class _AllBookedRidesState extends State<AllBookedRides> {
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10.0),
-          child: Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-              side: BorderSide(color: kPrimaryColor, width: 1.5),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundImage: profilePhoto.isNotEmpty
-                            ? NetworkImage(profilePhoto)
-                            : AssetImage('images/Userpfp.png') as ImageProvider,
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          userName,
+          child: GestureDetector(
+            onTap: (){
+              Get.to(() => GetBookedPreview(tripData: [ride]));
+            },
+            child: Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                side: BorderSide(color: kPrimaryColor, width: 1.5),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage: profilePhoto.isNotEmpty
+                              ? NetworkImage(profilePhoto)
+                              : AssetImage('images/Userpfp.png') as ImageProvider,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            userName,
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Text(
+                          '${ride['booked_seats'] ?? '0'} Seats booked',
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold),
                         ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: departureFirstName,
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, color: Colors.black),
+                          ),
+                          TextSpan(
+                            text: '  ${ride['departure'] ?? 'Unknown Departure'}',
+                            style: TextStyle(color: Colors.black54),
+                          ),
+                        ],
                       ),
+                    ),
+                    SizedBox(height: 10),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: destinationFirstName,
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, color: Colors.black),
+                          ),
+                          TextSpan(
+                            text: '  ${ride['destination'] ?? 'Unknown Destination'}',
+                            style: TextStyle(color: Colors.black54),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      formattedDate,
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 10),
+                    // Check trip_status
+                    if (ride['trip_status'] == 'canceled')
                       Text(
-                        '${ride['booked_seats'] ?? '0'} Seats booked',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: departureFirstName,
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, color: Colors.black),
-                        ),
-                        TextSpan(
-                          text: '  ${ride['departure'] ?? 'Unknown Departure'}',
-                          style: TextStyle(color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: destinationFirstName,
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, color: Colors.black),
-                        ),
-                        TextSpan(
-                          text: '  ${ride['destination'] ?? 'Unknown Destination'}',
-                          style: TextStyle(color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    formattedDate,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (ride['booking_trip_id'] != null) {
-                          _cancelRide(ride['booking_trip_id'].toString());
-                        } else {
-                          Get.snackbar('Error', 'Booking ID is not available');
-                        }
-                      },
-                      child: Text('Cancel Booking'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Color(0XFFd90000),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                        'Driver has canceled this ride.',
+                        style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                      )
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (ride['booking_trip_id'] != null) {
+                              _cancelRide(ride['booking_trip_id'].toString());
+                            } else {
+                              Get.snackbar('Error', 'Booking ID is not available');
+                            }
+                          },
+                          child: Text('Cancel Booking'),
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: Color(0XFFd90000),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -496,29 +496,15 @@ class _CancelledBookedRidesState extends State<CancelledBookedRides> {
   }
 
   Future<void> _showRestoreConfirmationDialog(String bookingTripId) async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Confirm Restore'),
-          content: const Text('Are you sure you want to restore this booking?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-                _restoreBooking(bookingTripId); // Proceed with restoring the booking
-              },
-              child: const Text('Confirm'),
-            ),
-          ],
-        );
-      },
+    final result = await CustomDialog.show(
+        context,
+        title: 'Confirm Restore',
+        content: 'Are you sure you want to restore this booking?',
+      cancelButtonText: 'Cancel',
+      confirmButtonText: 'Confirm',
+      onConfirm: (){
+        _restoreBooking(bookingTripId); // Proceed with restoring the booking
+      }
     );
   }
 

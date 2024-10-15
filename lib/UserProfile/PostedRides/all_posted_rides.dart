@@ -204,6 +204,8 @@ class _AllPostedRidesState extends State<AllPostedRides> {
         Get.snackbar(
           'Success',
           'Trip cancelled successfully',
+          duration: Duration(seconds: 1),
+
           snackPosition: SnackPosition.BOTTOM,
           mainButton: TextButton(
             onPressed: () async {
@@ -225,7 +227,9 @@ class _AllPostedRidesState extends State<AllPostedRides> {
                     // Add the cancelled trip back to the list
                     userTrips.add(cancelledTrip!);
                   });
-                  Get.snackbar('Success', 'Trip restored successfully', snackPosition: SnackPosition.BOTTOM);
+                  Get.snackbar('Success', 'Trip restored successfully',
+                      duration: Duration(seconds: 1),
+                      snackPosition: SnackPosition.BOTTOM);
                 } else {
                   Get.snackbar('Error', 'Failed to restore the trip.', snackPosition: SnackPosition.BOTTOM);
                   print('Failed to restore trip: ${restoreResponse.statusCode}');
@@ -256,31 +260,17 @@ class _AllPostedRidesState extends State<AllPostedRides> {
 
 
   Future<void> _showCancelDialog(Map<String, dynamic> trip) async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false, // User must tap button to close dialog
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Cancel Ride'),
-          content: Text('Are you sure you want to cancel this ride?'),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text('Yes, Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _cancelTrip(trip['post_a_trip_id'].toString());
-              },
-            ),
-          ],
-        );
-      },
+    final shouldCancel = await CustomDialog.show(
+      context,
+      title: 'Cancel Ride',
+      content: 'Are you sure you want to cancel this ride?',
+      cancelButtonText: 'Cancel',
+      confirmButtonText: 'Yes, Cancel',
     );
+
+    if (shouldCancel) {
+      _cancelTrip(trip['post_a_trip_id'].toString());
+    }
   }
 
 
@@ -673,7 +663,10 @@ class _CancelledPostedRidesState extends State<CancelledPostedRides> {
     if (response.statusCode == 200) {
       // Successfully restored the trip
       await fetchCanceledTrips(); // Refresh the list of canceled trips
-      Get.snackbar('Success', 'Trip restored successfully', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Success', 'Trip restored successfully',
+        duration: Duration(seconds: 1),
+        snackPosition: SnackPosition.BOTTOM,
+      );
 
     }
     else {
@@ -684,34 +677,18 @@ class _CancelledPostedRidesState extends State<CancelledPostedRides> {
     }
   }
 
-  void _showConfirmationDialog(String postATripId) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Confirm Restore'),
-          content: Text('Are you sure you want to restore this trip?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Dismiss the dialog
-              },
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => PostedUserRides()),
-                  ModalRoute.withName('/PostTrip'), // Adjust this to the correct route name if needed
-                );
-                restoreTrip(postATripId, context); // Restore the trip
-              },
-              child: Text('Restore'),
-            ),
-          ],
-        );
-      },
+  void _showConfirmationDialog(String postATripId) async {
+    final shouldRestore = await CustomDialog.show(
+      context,
+      title: 'Confirm Restore',
+      content: 'Are you sure you want to restore this trip?',
+      cancelButtonText: 'Cancel',
+      confirmButtonText: 'Restore',
     );
+
+    if (shouldRestore) {
+      restoreTrip(postATripId, context); // Restore the trip if confirmed
+    }
   }
 
   String getFirstNameOfCity(String city) {

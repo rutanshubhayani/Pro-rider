@@ -414,12 +414,15 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                       final stopName = stop['stop_name'] ?? 'Unknown Stop';
                       // final stopPrice = stop['stop_price'] ?? '0';
                       return ListTile(
-                        title: Row(
-                          children: [
-                            Icon(Icons.location_on),
-                            SizedBox(width: 5,),
-                            Text(stopName),
-                          ],
+                        title: Padding(
+                          padding: const EdgeInsets.only(bottom: 20.0),
+                          child: Row(
+                            children: [
+                              Icon(Icons.location_on),
+                              SizedBox(width: 5,),
+                              Text(stopName),
+                            ],
+                          ),
                         ),
                         // subtitle: Text('Price: \$${stopPrice}'),
                       );

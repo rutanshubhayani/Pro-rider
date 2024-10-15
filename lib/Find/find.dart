@@ -55,6 +55,8 @@ class _FindScreenState extends State<FindScreen> {
   int _selectedIndex = 0;
 
   bool _isLoading = false; // Define a loading state
+  bool isSearchLoading = false; // Loading state
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -385,6 +387,10 @@ class _FindScreenState extends State<FindScreen> {
         });
       }
 
+      setState(() {
+        isSearchLoading = true; // Start loading
+      });
+
       // Perform API request with token
       try {
         // Retrieve token from SharedPreferences
@@ -411,7 +417,7 @@ class _FindScreenState extends State<FindScreen> {
           final List<Map<String, dynamic>> results =
               List<Map<String, dynamic>>.from(resultsJson);
           print('API called');
-          print('Find trip data:${response.body}');
+          print('Find trip data: ${response.body}');
           if (results.isNotEmpty) {
             // Handle successful response and navigate to results page
             Navigator.push(
@@ -437,38 +443,35 @@ class _FindScreenState extends State<FindScreen> {
       } catch (e) {
         print('An error occurred: $e');
         _showAlert('An error occurred.');
-      }
+      } finally {
+        // Ensure loading state is reset
+        setState(() {
+          isSearchLoading = false; // Stop loading
+        });
 
-      // Clear input fields after search
-      destinationController.clear();
-      departureController.clear();
-      dateController.clear();
+        // Clear input fields after search
+        destinationController.clear();
+        departureController.clear();
+        dateController.clear();
+      }
     }
   }
 
-  Future<bool> _showExitPrompt() async {
-    return await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Exit App'),
-            content: Text('Are you sure you want to exit the app?'),
-            actions: [
-              TextButton(
-                onPressed: () =>
-                    Navigator.of(context).pop(false), // Do not exit
-                child: Text('No'),
-              ),
-              TextButton(
-                onPressed: () {
-                  SystemNavigator.pop(); // Close the app
-                },
-                child: Text('Yes'),
-              ),
-            ],
-          ),
-        ) ??
-        false; // In case the user dismisses the dialog by tapping outside
-  }
+ /* Future<bool> _showExitPrompt() async {
+    final result = await CustomDialog.show(
+      context,
+      title: 'Exit App',
+      content: 'Are you sure you want to exit the app?',
+      cancelButtonText: 'No',
+      confirmButtonText: 'Yes',
+      onConfirm: () {
+        SystemNavigator.pop(); // Close the app
+      },
+    );
+    // You can infer whether the user chose to exit based on your logic.
+    // For example, if `onConfirm` is called, you can assume they want to exit.
+    return true; // User confirmed exit
+  }*/
 
   void _selectRecentSearch(String search) {
     // The format is "Departure To Destination on Date"
@@ -493,417 +496,423 @@ class _FindScreenState extends State<FindScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _showExitPrompt,
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        appBar: AppBar(
-          leading: Padding(
-            padding: const EdgeInsets.only(left: 20.0),
-            child: Tooltip(
-              message: 'User details',
-              child: Container(
-                height: 40,
-                width: 40,
-                child: GestureDetector(
-                  onTap: () {
-                    Get.to(() => UserProfile(),
-                        transition: Transition.leftToRight);
-                  },
-                  child: Image.asset(
-                    'images/blogo.png',
-                  ),
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 20.0),
+          child: Tooltip(
+            message: 'User details',
+            child: Container(
+              height: 40,
+              width: 40,
+              child: GestureDetector(
+                onTap: () {
+                  Get.to(() => UserProfile(),
+                      transition: Transition.leftToRight);
+                },
+                child: Image.asset(
+                  'images/blogo.png',
                 ),
               ),
             ),
           ),
-          actions: [
-            Tooltip(
-              message: 'Notifications',
-              child: IconButton(
-                  onPressed: () {
-                    Get.to(NotificationScreen());
-                  },
-                  icon: Icon(Icons.notifications_active)),
-            ),
-            SizedBox(width: 15),
-          ],
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Stack(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Find your ride!', // Use the user's name here
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
+        actions: [
+          Tooltip(
+            message: 'Notifications',
+            child: IconButton(
+                onPressed: () {
+                  Get.to(NotificationScreen());
+                },
+                icon: Icon(Icons.notifications_active)),
+          ),
+          SizedBox(width: 15),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Find your ride!', // Use the user's name here
+                      style: TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Find your desired trip by providing departure and destination locations.',
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    CitySearchField(
+                      controller: departureController,
+                      focusNode: departureFocusNode,
+                      hintText: 'Departure Location',
+                      showSuggestions: showDepartureContainer,
+                      suggestions: departureSuggestions,
+                      onChanged: (value) {
+                        activeController = departureController;
+                        _updateSuggestions(value, departureController);
+                      },
+                      onSubmitted: (value) {
+                        FocusScope.of(context)
+                            .requestFocus(destinationFocusNode);
+                      },
+                      onClear: () => handleClearClick(departureController),
+                      onSuggestionTap: (suggestion) {
+                        departureController.text =
+                            '${suggestion['city']}, ${suggestion['pname']}';
+                        setState(() {
+                          showDepartureContainer = false;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    CitySearchField(
+                      controller: destinationController,
+                      focusNode: destinationFocusNode,
+                      hintText: 'Destination Location',
+                      showSuggestions: showDestinationContainer,
+                      suggestions: destinationSuggestions,
+                      onChanged: (value) {
+                        activeController = destinationController;
+                        _updateSuggestions(value, destinationController);
+                      },
+                      onSubmitted: (value) {
+                        FocusScope.of(context).requestFocus(dateFocusNode);
+                      },
+                      onClear: () => handleClearClick(destinationController),
+                      onSuggestionTap: (suggestion) {
+                        destinationController.text =
+                            '${suggestion['city']}, ${suggestion['pname']}';
+                        setState(() {
+                          showDestinationContainer = false;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 10),
+                  ],
+                ),
+                Positioned(
+                  right: 50,
+                  top: 115,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xFF3d5a80),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: FaIcon(
+                        FontAwesomeIcons.arrowsUpDown,
+                        color: Colors.white,
+                        size: 20,
                       ),
-                      Text(
-                        'Find your desired trip by providing departure and destination locations.',
-                        style: TextStyle(color: Colors.black54),
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      CitySearchField(
-                        controller: departureController,
-                        focusNode: departureFocusNode,
-                        hintText: 'Departure Location',
-                        showSuggestions: showDepartureContainer,
-                        suggestions: departureSuggestions,
-                        onChanged: (value) {
-                          activeController = departureController;
-                          _updateSuggestions(value, departureController);
-                        },
-                        onSubmitted: (value) {
-                          FocusScope.of(context)
-                              .requestFocus(destinationFocusNode);
-                        },
-                        onClear: () => handleClearClick(departureController),
-                        onSuggestionTap: (suggestion) {
-                          departureController.text =
-                              '${suggestion['city']}, ${suggestion['pname']}';
-                          setState(() {
-                            showDepartureContainer = false;
-                          });
-                        },
-                      ),
-                      SizedBox(height: 10),
-                      CitySearchField(
-                        controller: destinationController,
-                        focusNode: destinationFocusNode,
-                        hintText: 'Destination Location',
-                        showSuggestions: showDestinationContainer,
-                        suggestions: destinationSuggestions,
-                        onChanged: (value) {
-                          activeController = destinationController;
-                          _updateSuggestions(value, destinationController);
-                        },
-                        onSubmitted: (value) {
-                          FocusScope.of(context).requestFocus(dateFocusNode);
-                        },
-                        onClear: () => handleClearClick(destinationController),
-                        onSuggestionTap: (suggestion) {
-                          destinationController.text =
-                              '${suggestion['city']}, ${suggestion['pname']}';
-                          setState(() {
-                            showDestinationContainer = false;
-                          });
-                        },
-                      ),
-                      SizedBox(height: 10),
-                    ],
+                      onPressed: _swapLocations,
+                    ),
                   ),
-                  Positioned(
-                    right: 50,
-                    top: 115,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Color(0xFF3d5a80),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: FaIcon(
-                          FontAwesomeIcons.arrowsUpDown,
+                ),
+              ],
+            ),
+            buildDateTextField(),
+            SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isSearchLoading ? null : _performSearch,
+                child: isSearchLoading
+                    ? SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
                           color: Colors.white,
-                          size: 20,
+                          strokeWidth: 2,
                         ),
-                        onPressed: _swapLocations,
+                      )
+                    : Text(
+                        'Search',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF3d5a80),
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            if (recentSearches.isNotEmpty) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Searches:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _clearAllSearches,
+                    child: Text(
+                      'Clear All',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ],
               ),
-              buildDateTextField(),
-              SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _performSearch,
-                  child: Text(
-                    'Search',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
+              ListView.builder(
+                shrinkWrap: true,
+                itemCount: recentSearches.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(recentSearches[index]),
+                    trailing: IconButton(
+                      icon: Icon(
+                        Icons.delete,
+                      ),
+                      onPressed: () => _removeSearch(index),
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF3d5a80),
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    onTap: () => _selectRecentSearch(recentSearches[index]),
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    /*        bottomNavigationBar: Container(
+        color: Colors.white, // Background color of the bottom navigation bar
+        height: kBottomNavigationBarHeight,
+        child: Row(
+          children: [
+        Expanded(
+        child: Tooltip(
+        message: 'Post a trip as driver',
+          child: InkWell(
+            onTap: _checkTripPostConditions,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.directions_car, size: 20),
+                Text('Driver', style: TextStyle(fontSize: 14)),
+              ],
+            ),
+          ),
+        ),
+      ),
+            Padding(
+              padding: const EdgeInsets.only(top: 15.0, bottom: 15),
+              child: VerticalDivider(
+                width: 1,
+                color: Colors.grey, // Color of the divider
+              ),
+            ),
+            Expanded(
+              child: Tooltip(
+                message: 'Inbox',
+                child: InkWell(
+                  onTap: () {
+                    Get.to(() => InboxList()); // Navigate to HomeScreen
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.inbox,
+                        size: 20,
+                      ),
+                      Text(
+                        'Inbox',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              SizedBox(height: 20),
-              if (recentSearches.isNotEmpty) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Recent Searches:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 15.0, bottom: 15),
+              child: VerticalDivider(
+                width: 1,
+                color: Colors.grey, // Color of the divider
+              ),
+            ),
+            Expanded(
+              child: Tooltip(
+                message: 'Find Requests',
+                child: InkWell(
+                  onTap: () {
+                    // Get.to(() => FindRequests());
+                    _onItemTapped(1); // Set index for Trips screen
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.trip_origin,
+                        size: 20,
                       ),
+                      Text(
+                        'Requests',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 15.0, bottom: 15),
+              child: VerticalDivider(
+                width: 1,
+                color: Colors.grey, // Color of the divider
+              ),
+            ),
+            */ /*Expanded(
+              child: Tooltip(
+                message: 'Reqeust a trip',
+                child: InkWell(
+                  onTap: () {
+                    Get.to(() => Postrequest());
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.person,
+                        size: 20,
+                      ),
+                      Text(
+                        'Passenger',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),*/ /*
+          ],
+        ),
+      ),*/
+      floatingActionButton: Align(
+        child: Container(
+          padding: EdgeInsets.only(top: 10),
+          child: Align(
+            alignment: Alignment.bottomRight,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Container(
+                  width: 165,
+                  child: ActionButton(
+                    tootltipmessage: 'Booking history',
+                    label: 'History',
+                    icon: Icons.history,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => BookedUserRides()),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                SizedBox(
+                  width: 165,
+                  height: 50,
+                  child: FloatingActionButton(
+                    backgroundColor: kPrimaryColor,
+                    onPressed: _checkTripPostConditions,
+                    child: Row(
+                      mainAxisAlignment:
+                          MainAxisAlignment.center, // Center the content
+                      children: [
+                        if (!_isLoading)
+                          Icon(
+                            Icons.add,
+                            color: Colors.white,
+                          ), // Show the icon only if not loading
+                        if (_isLoading)
+                          SizedBox(
+                              height: 30,
+                              width: 30,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 4,
+                              )), // Show loading indicator when loading
+                        if (!_isLoading) ...[
+                          // Only show text if not loading
+                          SizedBox(width: 5),
+                          Text(
+                            'Add ride',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ],
                     ),
-                    TextButton(
-                      onPressed: _clearAllSearches,
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
+      ),
+    /*
+        floatingActionButton: Container(
+          width: 100,
+          child: Tooltip(
+            preferBelow: false,
+            message: 'Booking history',
+            child: Container(
+              padding: EdgeInsets.only(top: 10),
+              child: FloatingActionButton(
+                backgroundColor: kPrimaryColor,
+                onPressed: () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => BookedUserRides()));
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.history, color: Colors.white), // Your history icon
+                    const Padding(
+                      padding: EdgeInsets.only(left: 5),
                       child: Text(
-                        'Clear All',
+                        'History',
                         style: TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            fontSize: 15,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
                 ),
-                ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: recentSearches.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      title: Text(recentSearches[index]),
-                      trailing: IconButton(
-                        icon: Icon(
-                          Icons.delete,
-                        ),
-                        onPressed: () => _removeSearch(index),
-                      ),
-                      onTap: () => _selectRecentSearch(recentSearches[index]),
-                    );
-                  },
-                ),
-              ],
-            ],
-          ),
-        ),
-/*        bottomNavigationBar: Container(
-          color: Colors.white, // Background color of the bottom navigation bar
-          height: kBottomNavigationBarHeight,
-          child: Row(
-            children: [
-          Expanded(
-          child: Tooltip(
-          message: 'Post a trip as driver',
-            child: InkWell(
-              onTap: _checkTripPostConditions,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.directions_car, size: 20),
-                  Text('Driver', style: TextStyle(fontSize: 14)),
-                ],
               ),
             ),
           ),
-        ),
-              Padding(
-                padding: const EdgeInsets.only(top: 15.0, bottom: 15),
-                child: VerticalDivider(
-                  width: 1,
-                  color: Colors.grey, // Color of the divider
-                ),
-              ),
-              Expanded(
-                child: Tooltip(
-                  message: 'Inbox',
-                  child: InkWell(
-                    onTap: () {
-                      Get.to(() => InboxList()); // Navigate to HomeScreen
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.inbox,
-                          size: 20,
-                        ),
-                        Text(
-                          'Inbox',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 15.0, bottom: 15),
-                child: VerticalDivider(
-                  width: 1,
-                  color: Colors.grey, // Color of the divider
-                ),
-              ),
-              Expanded(
-                child: Tooltip(
-                  message: 'Find Requests',
-                  child: InkWell(
-                    onTap: () {
-                      // Get.to(() => FindRequests());
-                      _onItemTapped(1); // Set index for Trips screen
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.trip_origin,
-                          size: 20,
-                        ),
-                        Text(
-                          'Requests',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 15.0, bottom: 15),
-                child: VerticalDivider(
-                  width: 1,
-                  color: Colors.grey, // Color of the divider
-                ),
-              ),
-              */ /*Expanded(
-                child: Tooltip(
-                  message: 'Reqeust a trip',
-                  child: InkWell(
-                    onTap: () {
-                      Get.to(() => Postrequest());
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.person,
-                          size: 20,
-                        ),
-                        Text(
-                          'Passenger',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),*/ /*
-            ],
-          ),
-        ),*/
-        floatingActionButton: Align(
-          child: Container(
-            padding: EdgeInsets.only(top: 10),
-            child: Align(
-              alignment: Alignment.bottomRight,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Container(
-                    width: 165,
-                    child: ActionButton(
-                      tootltipmessage: 'Booking history',
-                      label: 'History',
-                      icon: Icons.history,
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => BookedUserRides()),
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                    width: 165,
-                    height: 50,
-                    child: FloatingActionButton(
-                      backgroundColor: kPrimaryColor,
-                      onPressed: _checkTripPostConditions,
-                      child: Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center, // Center the content
-                        children: [
-                          if (!_isLoading)
-                            Icon(
-                              Icons.add,
-                              color: Colors.white,
-                            ), // Show the icon only if not loading
-                          if (_isLoading)
-                            SizedBox(
-                              height: 30,
-                                width: 30,
-                                child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 4,
-                            )), // Show loading indicator when loading
-                          if (!_isLoading) ...[
-                            // Only show text if not loading
-                            SizedBox(width: 5),
-                            Text(
-                              'Add ride',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  )
-                ],
-              ),
-            ),
-          ),
-        ),
-/*
-          floatingActionButton: Container(
-            width: 100,
-            child: Tooltip(
-              preferBelow: false,
-              message: 'Booking history',
-              child: Container(
-                padding: EdgeInsets.only(top: 10),
-                child: FloatingActionButton(
-                  backgroundColor: kPrimaryColor,
-                  onPressed: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => BookedUserRides()));
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.history, color: Colors.white), // Your history icon
-                      const Padding(
-                        padding: EdgeInsets.only(left: 5),
-                        child: Text(
-                          'History',
-                          style: TextStyle(
-                              fontSize: 15,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          )
-*/
-      ),
+        )
+    */
     );
   }
 
@@ -920,7 +929,6 @@ class _FindScreenState extends State<FindScreen> {
           controller: controller,
           focusNode: focusNode,
           decoration: InputDecoration(
-            filled: true,
             prefixIcon: Icon(Icons.location_on),
             hintText: hintText,
             suffixIcon: Visibility(
@@ -951,7 +959,6 @@ class _FindScreenState extends State<FindScreen> {
       focusNode: dateFocusNode,
       decoration: InputDecoration(
         hintText: 'Departure date',
-        filled: true,
         prefixIcon: Icon(Icons.calendar_today),
         suffixIcon: dateController.text.isNotEmpty
             ? IconButton(
@@ -964,7 +971,6 @@ class _FindScreenState extends State<FindScreen> {
               )
             : null,
         border: OutlineInputBorder(
-          borderSide: BorderSide.none,
           borderRadius: BorderRadius.circular(10),
         ),
       ),

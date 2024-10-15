@@ -19,17 +19,58 @@ class SearchResult extends StatefulWidget {
   @override
   State<SearchResult> createState() => _SearchResultState();
 }
+
 class _SearchResultState extends State<SearchResult> {
   bool _earlyMorningSelected = false;
   bool _morningSelected = false;
   bool _afternoonSelected = false;
   bool _eveningSelected = false;
+
   List<Map<String, dynamic>> filteredTrips = [];
+  int _loadedTripCount = 5; // Initial count of loaded trips
+  final int _increment = 5; // Number of trips to load on scroll
+  ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false; // Loading state for more trips
 
   @override
   void initState() {
     super.initState();
-    filteredTrips = widget.results;
+    print('Initial results count: ${widget.results.length}');
+    filteredTrips = widget.results.take(_loadedTripCount).toList(); // Load initial trips
+
+  // Add a listener to the scroll controller
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 50) {
+        print("Scrolled to bottom, loading more trips...");
+        _loadMoreTrips(); // Load more trips when reaching the bottom
+      }
+    });
+  }
+
+  Future<void> _loadMoreTrips() async {
+    print("Attempting to load more trips...");
+
+    if (_isLoadingMore || filteredTrips.length >= widget.results.length) {
+      print("Already loading or no more trips to load.");
+      return;
+    }
+
+    setState(() {
+      _isLoadingMore = true; // Start loading
+    });
+
+    // Simulate a delay for loading more trips
+    await Future.delayed(Duration(seconds: 2));
+
+    setState(() {
+      _loadedTripCount = (_loadedTripCount + _increment).clamp(0, widget.results.length);
+      filteredTrips = widget.results.take(_loadedTripCount).toList(); // Update filtered trips
+      _isLoadingMore = false; // Stop loading
+    });
+
+    print('Loaded trips: ${filteredTrips.length}');
+    print('Loaded trip count: $_loadedTripCount');
+    print('Total available trips: ${widget.results.length}');
   }
 
   void _showFilterBottomSheet() {
@@ -109,7 +150,6 @@ class _SearchResultState extends State<SearchResult> {
   void _filterTrips() {
     setState(() {
       if (!_earlyMorningSelected && !_morningSelected && !_afternoonSelected && !_eveningSelected) {
-        // If no filters are selected, show all results
         filteredTrips = widget.results;
       } else {
         filteredTrips = widget.results.where((trip) {
@@ -138,6 +178,19 @@ class _SearchResultState extends State<SearchResult> {
     });
   }
 
+  Future<void> _refreshTrips() async {
+    await Future.delayed(Duration(seconds: 2));
+    setState(() {
+      filteredTrips = widget.results; // Reset trips on refresh
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose(); // Dispose of the scroll controller
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     DateFormat dateFormat = DateFormat('E, MMM d \'at\' h:mma');
@@ -156,105 +209,124 @@ class _SearchResultState extends State<SearchResult> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 13),
-        child: ListView.builder(
-          itemCount: filteredTrips.length,
-          itemBuilder: (context, index) {
-            final trip = filteredTrips[index];
-            String formattedDate = 'Date not available';
+      body: RefreshIndicator(
+        onRefresh: _refreshTrips,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 13.0, vertical: 13),
+          child: ListView.builder(
+            controller: _scrollController,
+            itemCount: filteredTrips.length + (_isLoadingMore ? 1 : 0), // Add one for loading indicator
+            itemBuilder: (context, index) {
+              if (index < filteredTrips.length) {
+                final trip = filteredTrips[index];
+                String formattedDate = 'Date not available';
 
-            String dateString = trip['leaving_date_time'] ?? '';
-            if (dateString.isNotEmpty) {
-              try {
-                DateTime date = DateTime.parse(dateString);
-                formattedDate = dateFormat.format(date);
-              } catch (e) {
-                print('Date parsing error: $e');
-              }
-            }
+                String dateString = trip['leaving_date_time'] ?? '';
+                if (dateString.isNotEmpty) {
+                  try {
+                    DateTime date = DateTime.parse(dateString);
+                    formattedDate = dateFormat.format(date);
+                  } catch (e) {
+                    print('Date parsing error: $e');
+                  }
+                }
 
-            int seatsLeft = trip['empty_seats'] ?? 0;
-            String userName = trip['uname'] ?? 'Unknown';
+                int seatsLeft = trip['empty_seats'] ?? 0;
+                String userName = trip['uname'] ?? 'Unknown';
 
-            String departureCityFirstName = trip['departure']?.split(' ').first ?? 'Unknown';
-            String destinationCityFirstName = trip['destination']?.split(' ').first ?? 'Unknown';
+                String departureCityFirstName = trip['departure']?.split(' ').first ?? 'Unknown';
+                String destinationCityFirstName = trip['destination']?.split(' ').first ?? 'Unknown';
 
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => FindTripPreview(tripData: trip),
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FindTripPreview(tripData: trip),
+                      ),
+                    );
+                  },
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(
+                        color: kPrimaryColor,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 30,
+                                  backgroundImage: NetworkImage(trip['profile_photo'] ?? 'images/Userpfp.png'),
+                                ),
+                                SizedBox(width: 5),
+                                const Icon(Icons.verified, color: Colors.blue),
+                                SizedBox(width: 5),
+                                Expanded(child: Text(userName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                                Spacer(),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 20),
+                                    child: Text('$seatsLeft seats left', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 15),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(text: departureCityFirstName, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                                  TextSpan(text: '  ${trip['departure'] ?? 'Unknown Departure'}', style: TextStyle(color: Colors.black54)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 13, left: 15),
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(text: destinationCityFirstName, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                                  TextSpan(text: '  ${trip['destination'] ?? 'Unknown Destination'}', style: TextStyle(color: Colors.black54)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 13.0, left: 15),
+                            child: Text(formattedDate, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ),
+                          SizedBox(height: 10),
+                        ],
+                      ),
+                    ),
                   ),
                 );
-              },
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(
-                    color: kPrimaryColor,
-                    width: 1.5,
+              } else if (_isLoadingMore) {
+                // Loading indicator
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Center(
+                    child: CircularProgressIndicator(), // Show loading indicator
                   ),
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 30,
-                              backgroundImage: NetworkImage(trip['profile_photo'] ?? 'images/Userpfp.png'),
-                            ),
-                            SizedBox(width: 5),
-                            const Icon(Icons.verified, color: Colors.blue),
-                            SizedBox(width: 5),
-                            Text(userName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            Spacer(),
-                            Padding(
-                              padding: const EdgeInsets.only(right: 20),
-                              child: Text('$seatsLeft seats left', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 15),
-                        child: RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(text: departureCityFirstName, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                              TextSpan(text: '  ${trip['departure'] ?? 'Unknown Departure'}', style: TextStyle(color: Colors.black54)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13, left: 15),
-                        child: RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(text: destinationCityFirstName, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                              TextSpan(text: '  ${trip['destination'] ?? 'Unknown Destination'}', style: TextStyle(color: Colors.black54)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13.0, left: 15),
-                        child: Text(formattedDate, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      ),
-                      SizedBox(height: 10),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
+                );
+              } else {
+                // Optionally handle the case where no more items are loading
+                return SizedBox.shrink();
+              }
+            },
+          ),
         ),
       ),
     );

@@ -54,18 +54,24 @@ class _PostTripState extends State<PostTrip> {
   TimeOfDay? selectedTime;
   List<bool> isSelectedTrip = [true, false];
   List<bool> isSelectedPeople = [true, false];
-  List<bool> isSelected1 = [true, false, false];
+  List<bool> isSelected1 = [true, false];
   List<String> choices = ['Winter tires', 'Bikes', 'Skis & snowboards', 'Pets'];
-  List<IconData> icons = [
-    Icons.ac_unit,
-    Icons.directions_bike,
-    Icons.downhill_skiing,
-    Icons.pets
+  List<IconData> rideicons = [
+    Icons.calendar_month,
+    Icons.repeat,
   ];
-  List<bool> isSelected2 = [false, false, false, false];
+  List<IconData> tripIcons = [
+    Icons.clear, // Represents no luggage
+    Icons.backpack, // Represents a backpack
+    Icons.luggage, // Represents a cabin bag
+  ];
+  List<String> tripPreferences = ['No luggage', 'Backpack', 'Cabin bag (23kg)'];
+  final List<String> rideScheduleOptions = ['One-time trip', 'Recurring trip'];
+  List<bool> isSelected2 = [true, false, false];
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
-
+  String _selectedRideSchedule = 'One-time trip';
+  String _selectedTripPreference = 'No luggage';
   int _selectedChoice = 1;
   int selectedSeats = 1;
   bool _isChecked = false;
@@ -127,20 +133,25 @@ class _PostTripState extends State<PostTrip> {
     if (_formKey.currentState?.validate() ?? false) {
       final url = Uri.parse('${API.api1}/post-a-trip');
 
+      // Get the index of the selected trip preference
+      int luggageIndex =
+          isSelected2.indexOf(true); // Get the index of the selected preference
+
       final Map<String, dynamic> body = {
         'departure': departureController.text,
         'destination': destinationController.text,
         'price': dpriceController.text,
-        'ride_schedule': isSelectedTrip[0] ? 'One-time trip' : 'Recurring trip',
+        'ride_schedule': _selectedRideSchedule,
         'leaving_date_time': '${dateController.text} ${timeController.text}',
-        'luggage': isSelected1.indexWhere((element) => element),
+        'luggage':
+            luggageIndex, // Send the index of the selected trip preference
         // 'back_row_sitting': isSelectedPeople[0] ? 'Max 2 people' : '3 people',
         /*'other_items': choices
-            .asMap()
-            .entries
-            .where((entry) => isSelected2[entry.key])
-            .map((entry) => entry.value)
-            .join(', '),*/
+          .asMap()
+          .entries
+          .where((entry) => isSelected2[entry.key])
+          .map((entry) => entry.value)
+          .join(', '),*/
         'empty_seats': selectedSeats,
         'description': descriptionController.text,
         'stops': stopsAndPrices
@@ -176,8 +187,6 @@ class _PostTripState extends State<PostTrip> {
             MaterialPageRoute(builder: (context) => MyHomePage()),
             (route) => false,
           );
-
-          // Navigate to search results or another page if needed
         } else {
           print('Failed to post trip: ${response.body}');
           ScaffoldMessenger.of(context).showSnackBar(
@@ -444,7 +453,6 @@ class _PostTripState extends State<PostTrip> {
                               controller: destinationController,
                               focusNode: destinationFocusNode,
                               decoration: InputDecoration(
-                                filled: true,
                                 prefixIcon: Icon(Icons.location_on),
                                 hintText: 'Destination Location',
                                 suffixIcon: destinationController
@@ -456,7 +464,6 @@ class _PostTripState extends State<PostTrip> {
                                       )
                                     : null, // Only show the clear icon if there's text in the field
                                 border: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
@@ -483,10 +490,8 @@ class _PostTripState extends State<PostTrip> {
                               focusNode: dpriceFocusNode,
                               controller: dpriceController,
                               decoration: InputDecoration(
-                                filled: true,
                                 hintText: 'Enter price',
                                 border: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
@@ -561,7 +566,6 @@ class _PostTripState extends State<PostTrip> {
                                   controller: stopsController,
                                   focusNode: stopsFocusNode,
                                   decoration: InputDecoration(
-                                    filled: true,
                                     prefixIcon:
                                         Icon(Icons.add_location_alt_sharp),
                                     hintText: 'Stops Location',
@@ -573,7 +577,6 @@ class _PostTripState extends State<PostTrip> {
                                           )
                                         : null, // Only show the clear icon if there's text in the field
                                     border: OutlineInputBorder(
-                                      borderSide: BorderSide.none,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
@@ -588,7 +591,7 @@ class _PostTripState extends State<PostTrip> {
                                 ),
                               ),
                               SizedBox(width: 10),
-                             /* Expanded(
+                              /* Expanded(
                                 child: TextFormField(
                                   focusNode: spriceFocusNode,
                                   controller: spriceController,
@@ -670,8 +673,7 @@ class _PostTripState extends State<PostTrip> {
                                     .spaceBetween, // Use space between to separate text and delete icon
                                 children: [
                                   Expanded(
-                                    child: Text(
-                                        '${item['stop']}'),
+                                    child: Text('${item['stop']}'),
                                   ),
                                   IconButton(
                                     icon: Icon(Icons.delete),
@@ -695,54 +697,71 @@ class _PostTripState extends State<PostTrip> {
                         color: Colors.black26,
                       ),
                       SizedBox(height: 30),
+
                       Padding(
-                        padding: const EdgeInsets.only(left: 3.0, bottom: 7),
+                        padding: EdgeInsets.only(left: 3, bottom: 15),
                         child: Text(
                           'Ride Schedule',
                           style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 21),
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       Padding(
                         padding: const EdgeInsets.only(left: 3.0),
                         child: Text(
-                          'Enter precise date and time of your journey',
+                          'Enter precise date and time of your journey.',
                           style: TextStyle(
                             color: Colors.black54,
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10.0, top: 10),
-                        child: ToggleButtons(
-                          borderRadius: BorderRadius.circular(20),
-                          renderBorder: true,
-                          borderWidth: 1,
-                          selectedBorderColor: Colors.white,
-                          selectedColor: Colors.white,
-                          fillColor: kPrimaryColor,
-                          color: Colors.black,
-                          constraints:
-                              BoxConstraints(minHeight: 30, minWidth: 130),
-                          children: [
-                            Text('One-time trip'),
-                            Text('Recurring trip'),
-                          ],
-                          onPressed: (int index) {
-                            setState(() {
-                              for (int buttonIndex = 0;
-                                  buttonIndex < isSelectedTrip.length;
-                                  buttonIndex++) {
-                                if (buttonIndex == index) {
-                                  isSelectedTrip[buttonIndex] = true;
-                                } else {
-                                  isSelectedTrip[buttonIndex] = false;
-                                }
-                              }
-                            });
+                      Wrap(
+                        spacing: 10, // Spacing between chips
+                        children: List<Widget>.generate(
+                          rideScheduleOptions.length,
+                          (int index) {
+                            return ChoiceChip(
+                              avatar: Icon(
+                                rideicons[index],
+                                color: isSelected1[index]
+                                    ? Colors.white
+                                    : Colors.black,
+                              ),
+                              label: Text(rideScheduleOptions[index]),
+                              selected: isSelected1[index],
+                              selectedColor: Color(0xFF3d5a80),
+                              showCheckmark: false,
+                              onSelected: (bool selected) {
+                                setState(() {
+                                  if (!selected || isSelected1[index]) return;
+
+                                  // Deselect all other chips and select the current chip
+                                  for (int i = 0; i < isSelected1.length; i++) {
+                                    isSelected1[i] = (i == index);
+                                  }
+                                  _selectedRideSchedule = rideScheduleOptions[
+                                      index]; // Update selected schedule
+                                });
+                              },
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20.0),
+                                side: BorderSide(
+                                  color: isSelected1[index]
+                                      ? Colors.white
+                                      : Colors.grey,
+                                ),
+                              ),
+                              labelStyle: TextStyle(
+                                color: isSelected1[index]
+                                    ? Colors.white
+                                    : Colors.black,
+                              ),
+                            );
                           },
-                          isSelected: isSelectedTrip,
-                        ),
+                        ).toList(),
                       ),
                       Padding(
                         padding: const EdgeInsets.only(
@@ -762,14 +781,12 @@ class _PostTripState extends State<PostTrip> {
                               controller: dateController,
                               decoration: InputDecoration(
                                 hintText: 'Departure date',
-                                filled: true,
                                 prefixIcon: Icon(Icons.calendar_month),
                                 border: OutlineInputBorder(
-                                    borderSide: BorderSide.none,
                                     borderRadius: BorderRadius.circular(10)),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.blue),
-                                ),
+                                    borderSide: BorderSide(color: Colors.blue),
+                                    borderRadius: BorderRadius.circular(10)),
                               ),
                               readOnly: true,
                               onTap: () {
@@ -801,14 +818,12 @@ class _PostTripState extends State<PostTrip> {
                               onTap: _selectTime,
                               decoration: InputDecoration(
                                 hintText: 'Time',
-                                filled: true,
                                 border: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.blue),
-                                ),
+                                    borderSide: BorderSide(color: Colors.blue),
+                                    borderRadius: BorderRadius.circular(10)),
                               ),
                               textInputAction: TextInputAction.next,
                               onFieldSubmitted: (_) {
@@ -869,68 +884,51 @@ class _PostTripState extends State<PostTrip> {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10.0, top: 10),
-                        child: ToggleButtons(
-                          borderRadius: BorderRadius.circular(20),
-                          renderBorder: true,
-                          borderWidth: 1,
-                          selectedBorderColor: Colors.white,
-                          selectedColor: Colors.white,
-                          fillColor: Color(0xFF3d5a80),
-                          color: Colors.black,
-                          constraints:
-                              BoxConstraints(minHeight: 33.0, minWidth: 110.0),
-                          children: <Widget>[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 6,
+                      Wrap(
+                        spacing: 10, // Spacing between chips
+                        children: List<Widget>.generate(
+                          tripPreferences.length,
+                          (int index) {
+                            return ChoiceChip(
+                              avatar: Icon(
+                                tripIcons[index],
+                                color: isSelected2[index]
+                                    ? Colors.white
+                                    : Colors.black,
+                              ),
+                              label: Text(tripPreferences[index]),
+                              selected: isSelected2[index],
+                              selectedColor: Color(0xFF3d5a80),
+                              showCheckmark: false,
+                              onSelected: (bool selected) {
+                                setState(() {
+                                  // If the user clicks on an already selected chip, don't allow deselecting it.
+                                  // Ensure that at least one chip is always selected.
+                                  if (!selected || isSelected2[index]) return;
+
+                                  // Deselect all other chips and select the current chip
+                                  for (int i = 0; i < isSelected2.length; i++) {
+                                    isSelected2[i] = (i == index);
+                                  }
+                                });
+                              },
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20.0),
+                                side: BorderSide(
+                                  color: isSelected2[index]
+                                      ? Colors.white
+                                      : Colors.grey,
                                 ),
-                                Icon(Icons.work),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text('No luggage'),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.work),
-                                SizedBox(
-                                  width: 6,
-                                ),
-                                Text('Backpack'),
-                              ],
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.work),
-                                SizedBox(
-                                  width: 6,
-                                ),
-                                Text('Cabin Bag'),
-                              ],
-                            ),
-                          ],
-                          onPressed: (int index) {
-                            setState(() {
-                              for (int buttonIndex = 0;
-                                  buttonIndex < isSelected1.length;
-                                  buttonIndex++) {
-                                if (buttonIndex == index) {
-                                  isSelected1[buttonIndex] = true;
-                                } else {
-                                  isSelected1[buttonIndex] = false;
-                                }
-                              }
-                            });
+                              ),
+                              labelStyle: TextStyle(
+                                color: isSelected2[index]
+                                    ? Colors.white
+                                    : Colors.black,
+                              ),
+                            );
                           },
-                          isSelected: isSelected1,
-                        ),
+                        ).toList(),
                       ),
                       Text(
                         'Note: Cabin bag must contain maximum of 23kg',
@@ -939,7 +937,7 @@ class _PostTripState extends State<PostTrip> {
                           fontStyle: FontStyle.italic,
                         ),
                       ),
-                     /* Padding(
+                      /* Padding(
                         padding: const EdgeInsets.only(
                             left: 3.0, top: 15, bottom: 10),
                         child: Text(
@@ -1165,11 +1163,9 @@ class _PostTripState extends State<PostTrip> {
                         maxLines: 2,
                         inputFormatters: [NoEmojiInputFormatter()],
                         decoration: InputDecoration(
-                            filled: true,
                             hintText: 'Add description',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
                             )),
                       ),
                       SizedBox(
@@ -1202,13 +1198,14 @@ class _PostTripState extends State<PostTrip> {
                           readOnly: true,
                           controller: licenseController,
                           decoration: InputDecoration(
+                            filled: true,
                             hintText: 'License plate',
                             hintStyle: const TextStyle(
                                 color: Colors.grey), // Grey hint text color
-                            border:
-                            OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: Colors.teal)                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
+                            ),
                           ),
                         ),
                       ),

@@ -289,7 +289,7 @@ class _GetBookedPreviewState extends State<GetBookedPreview> {
                 children: [
                   const Divider(thickness: 15, color: Colors.black12),
                   Padding(
-                    padding: const EdgeInsets.only(left: 20.0),
+                    padding: const EdgeInsets.only(left: 20.0,top: 20),
                     child: const Text(
                       'Stops:',
                       style: TextStyle(
@@ -305,18 +305,21 @@ class _GetBookedPreviewState extends State<GetBookedPreview> {
                     ...List<Widget>.from(
                         (jsonDecode(trip['stops']) as List).map((stop) {
                           final stopName = stop['stop_name'] ?? 'No Stop available for your ride';
-                          final stopPrice = stop['stop_price'] ?? 'N/A';
                           return Padding(
                             padding: const EdgeInsets.only(left: 15.0),
                             child: ListTile(
-                              title: Text(stopName),
-                              subtitle: Text('Price: \$${stopPrice}'),
+                              title: Row(
+                                children: [
+                                  Icon(Icons.location_on),
+                                  SizedBox(width: 5,),
+                                  Text(stopName),
+                                ],
+                              ),
                             ),
                           );
                         }).toList()),
-                  const Divider(thickness: 15, color: Colors.black12),
                   // Other items section
-                  Padding(
+/*                  Padding(
                     padding: const EdgeInsets.only(right: 150.0, bottom: 100),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,7 +334,7 @@ class _GetBookedPreviewState extends State<GetBookedPreview> {
                             ),
                           ),
                         ),
-                        Padding(
+                        *//*Padding(
                           padding: const EdgeInsets.only(left: 25.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,10 +365,10 @@ class _GetBookedPreviewState extends State<GetBookedPreview> {
                               );
                             }).toList(),
                           ),
-                        ),
+                        )*//*
                       ],
                     ),
-                  ),
+                  )*/
                 ],
               ),
             ],

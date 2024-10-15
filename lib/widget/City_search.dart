@@ -36,7 +36,7 @@ class CitySearchField extends StatelessWidget {
           controller: controller,
           focusNode: focusNode,
           decoration: InputDecoration(
-            filled: true,
+            // filled: true,
             prefixIcon: Icon(Icons.location_on),
             hintText: hintText,
             suffixIcon: controller.text.isNotEmpty
@@ -46,7 +46,6 @@ class CitySearchField extends StatelessWidget {
             )
                 : null,
             border: OutlineInputBorder(
-              borderSide: BorderSide.none,
               borderRadius: BorderRadius.circular(10),
             ),
           ),
