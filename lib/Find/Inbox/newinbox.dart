@@ -135,45 +135,49 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+
   void _sendMessage() {
     String messageText = _messageController.text.trim();
     if (messageText.isNotEmpty && _token != null) {
-      bool containsIntegers = _hasIntegers(messageText);
-      int countNumbers = _countNumbersInText(messageText);
+      if (_validateMessage(messageText)) {
+        setState(() {
+          _messages.insert(0, 'You: $messageText'); // Add sent messages to the top
+          _messageController.clear(); // Clear input after sending
+          _scrollToTop();
+        });
 
-      if (countNumbers > 6) {
-        _showWarningDialog('Message cannot contain more than 6 numbers.');
-        return;
+        final messageData = {
+          'token': _token,
+          'to': int.parse(widget.recipientId),
+          'content': messageText,
+        };
+
+        // Print the message that is being sent to WebSocket
+        print("Sending message: $messageData");
+        _channel.sink.add(jsonEncode(messageData));
+        _saveMessages();
+        _updateInboxConversation(widget.recipientId, messageText);
       }
-
-      if (containsIntegers) {
-        consecutiveMessagesWithNumbers++;
-        if (consecutiveMessagesWithNumbers > 1) {
-          _showWarningDialog('You can\'t use consecutive messages with numbers.');
-          return;
-        }
-      } else {
-        consecutiveMessagesWithNumbers = 0;
-      }
-
-      setState(() {
-        _messages.insert(0, 'You: $messageText'); // Add sent messages to the top
-        _messageController.clear();
-        _scrollToTop();
-      });
-
-      final messageData = {
-        'token': _token,
-        'to': int.parse(widget.recipientId),
-        'content': messageText,
-      };
-
-      // Print the message that is being sent to WebSocket
-      print("Sending message: $messageData");
-      _channel.sink.add(jsonEncode(messageData));
-      _saveMessages();
-      _updateInboxConversation(widget.recipientId, messageText);
     }
+  }
+
+// Separate validation logic
+  bool _validateMessage(String messageText) {
+    if (_countNumbersInText(messageText) > 6) {
+      _showWarningDialog('Message cannot contain more than 6 numbers.');
+      return false;
+    }
+
+    if (_hasIntegers(messageText)) {
+      consecutiveMessagesWithNumbers++;
+      if (consecutiveMessagesWithNumbers > 1) {
+        _showWarningDialog('You can\'t use consecutive messages with numbers.');
+        return false;
+      }
+    } else {
+      consecutiveMessagesWithNumbers = 0;
+    }
+    return true;
   }
 
 

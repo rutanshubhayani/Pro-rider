@@ -31,8 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
-
-
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -41,7 +40,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-
   @override
   void initState() {
     super.initState();
@@ -49,13 +47,12 @@ class _LoginScreenState extends State<LoginScreen> {
     chkDB();
   }
 
-
   void chkDB() async {
     bool chki = await hs.netconnection(true);
     if (chki == false) {
-      final res =  Navigator.of(context).pushAndRemoveUntil(
+      final res = Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const OnInternet()),
-              (Route<dynamic> route) => false);
+          (Route<dynamic> route) => false);
 
       if (res != null && res.toString() == 'done') {
         chkDB();
@@ -64,25 +61,35 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
       // If the form is not valid, return
       return;
     }
 
+    // Set loading to true
+    setState(() {
+      _isLoading = true;
+    });
+
     final String email = _emailicontroller.text.trim();
     final String password = _passwordcontroller.text.trim();
 
     try {
-      final response = await http.post(
-        Uri.parse('${API.api1}/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'umail': email,
-          'upassword': password,
-        }),
-      ).timeout(Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('${API.api1}/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'umail': email,
+              'upassword': password,
+            }),
+          )
+          .timeout(Duration(seconds: 10));
+      // Reset loading state regardless of outcome
+      setState(() {
+        _isLoading = false;
+      });
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
@@ -93,13 +100,19 @@ class _LoginScreenState extends State<LoginScreen> {
           // Print user information for debugging
           print('User: $user');
           print('Token: $token');
-          List<String> userKeys = ['uid', 'uname', 'umail', 'umobilenumber', 'uaddress', 'profile_photo'];
+          List<String> userKeys = [
+            'uid',
+            'uname',
+            'umail',
+            'umobilenumber',
+            'uaddress',
+            'profile_photo'
+          ];
           for (String key in userKeys) {
             if (user.containsKey(key)) {
               print('${key}: ${user[key]}');
             }
           }
-
 
           // Extract user details
           String uname = user['uname'] ?? 'User';
@@ -113,23 +126,31 @@ class _LoginScreenState extends State<LoginScreen> {
           await prefs.setString('authToken', token);
           await prefs.setString('userId', uid); // Save uid separately
 
-          Get.snackbar('Success', 'Login successful', snackPosition: SnackPosition.BOTTOM);
+          Get.snackbar('Success', 'Login successful',
+              snackPosition: SnackPosition.BOTTOM);
           Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (context) => MyHomePage()
-              ),
+              MaterialPageRoute(builder: (context) => MyHomePage()),
               (route) => false);
         } else {
-          Get.snackbar('Error', 'Unexpected response format', snackPosition: SnackPosition.BOTTOM);
+          Get.snackbar('Error', 'Unexpected response format',
+              snackPosition: SnackPosition.BOTTOM);
         }
       } else if (response.statusCode == 401) {
-        Get.snackbar('Error', 'Invalid email or password', snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('Error', 'Invalid email or password',
+            snackPosition: SnackPosition.BOTTOM);
       } else {
-        Get.snackbar('Error', 'Login failed', snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('Error', 'Login failed',
+            snackPosition: SnackPosition.BOTTOM);
         print(response.body);
       }
     } catch (error) {
-      Get.snackbar('Error', 'An internal Server error occurred. Please try again. ',
+      // Reset loading state on error
+      setState(() {
+        _isLoading = false;
+      });
+      Get.snackbar(
+          'Error', 'An internal Server error occurred. Please try again. ',
           snackPosition: SnackPosition.BOTTOM);
       print(error);
     }
@@ -304,11 +325,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _login, // Call the _login function on button press
-                          child: Text(
-                            'Login',
-                            style: TextStyle(fontSize: 17, color: Colors.white),
-                          ),
+                          onPressed: _isLoading
+                              ? null
+                              : _login, // Disable button when loading
+                          child: _isLoading
+                              ? CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                )
+                              : Text(
+                                  'Login',
+                                  style: TextStyle(
+                                      fontSize: 17, color: Colors.white),
+                                ),
                           style: ElevatedButton.styleFrom(
                             elevation: 7,
                             backgroundColor: kPrimaryColor,

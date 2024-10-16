@@ -52,6 +52,14 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       ..addListener(() {
         setState(() {});
       });
+
+
+    if (_currentIndex == 3) {
+      _historyAnimationController.forward().then((_) {
+        _historyAnimationController.reverse();
+      }
+      );
+    }
   }
 
   @override
@@ -87,6 +95,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   void _onPageChanged(int index) {
     setState(() {
       _currentIndex = index;
+
+      // Trigger the history animation when the page changes to History
+      if (index == 3) {
+        _historyAnimationController.forward().then((_) {
+          _historyAnimationController.reverse();
+        });
+      }
     });
   }
 

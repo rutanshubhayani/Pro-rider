@@ -323,10 +323,8 @@ class _PostrequestState extends State<Postrequest> {
                         onPressed: () => handleClearClick(dateController),
                       )
                           : null,
-                      filled: true,
                       prefixIcon: Icon(Icons.calendar_today),
                       border: OutlineInputBorder(
-                        borderSide: BorderSide.none,
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
@@ -356,10 +354,8 @@ class _PostrequestState extends State<Postrequest> {
                         onPressed: () => handleClearClick(timeController),
                       )
                           : null,*/
-                      filled: true,
                       prefixIcon: Icon(Icons.watch_later_outlined),
                       border: OutlineInputBorder(
-                        borderSide: BorderSide.none,
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
@@ -426,12 +422,10 @@ class _PostrequestState extends State<Postrequest> {
                 focusNode: descriptionFocusNode,
                 maxLines: 5,
                 decoration: InputDecoration(
-                  filled: true,
                   hintText:
                   'Tell driver a little bit more about you and why you\'re travelling.',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
                   ),
                 ),
               ),
