@@ -308,6 +308,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     TextFormField(
                       controller: _passwordcontroller,
                       focusNode: _passwordFocusNode,
+                      inputFormatters: [NoEmojiInputFormatter()],
                       obscureText: _obsecureText,
                       decoration: InputDecoration(
                         filled: true,
@@ -363,6 +364,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return 'Password must contain at least:\n' + errors.join('\n'); // Only show the common error message if there are other errors
                         }
                         return null; // No errors
+                      },
+                      onFieldSubmitted: (value){
+                        FocusScope.of(context).requestFocus(_confirmpasswordFocusNode);
                       },
                     ),
 

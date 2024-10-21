@@ -384,7 +384,6 @@ class _ForgotPasswordState extends State<ForgotPassword> {
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 fillColor: Colors.transparent,
-                filled: true,
                 labelText: 'Enter Mail',
                 prefixIcon: Icon(Icons.mail),
                 border: OutlineInputBorder(

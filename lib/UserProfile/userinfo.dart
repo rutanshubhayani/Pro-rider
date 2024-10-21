@@ -247,6 +247,7 @@ class _UserInfoState extends State<UserInfo> {
           controller: _nameController,
           readOnly: !isEditing,
           focusNode: _nameFocusNode, // Set focus node
+          inputFormatters: [NoEmojiInputFormatter()],
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.transparent,

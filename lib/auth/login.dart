@@ -127,6 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
           await prefs.setString('userId', uid); // Save uid separately
 
           Get.snackbar('Success', 'Login successful',
+              duration: Duration(seconds: 1),
               snackPosition: SnackPosition.BOTTOM);
           Navigator.pushAndRemoveUntil(
               context,
@@ -138,9 +139,11 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else if (response.statusCode == 401) {
         Get.snackbar('Error', 'Invalid email or password',
+            duration: Duration(seconds: 1),
             snackPosition: SnackPosition.BOTTOM);
       } else {
         Get.snackbar('Error', 'Login failed',
+            duration: Duration(seconds: 1),
             snackPosition: SnackPosition.BOTTOM);
         print(response.body);
       }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:travel/widget/configure.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -20,19 +21,61 @@ class ChatScreen extends StatefulWidget {
   _ChatScreenState createState() => _ChatScreenState();
 }
 
+class Message {
+  final String content;
+  final String type;
+  final DateTime timestamp;
+
+  Message(this.content, this.type, String formattedTime)
+      : timestamp = _parseFormattedTime(formattedTime);
+
+  static DateTime _parseFormattedTime(String formattedTime) {
+    // Check if the format is ISO 8601
+    if (formattedTime.contains('T')) {
+      return DateTime.parse(formattedTime);
+    } else {
+      // Otherwise, assume it's the other format
+      return DateFormat('MM/dd/yyyy, hh:mm:ss a').parse(formattedTime);
+    }
+  }
+}
+
 class _ChatScreenState extends State<ChatScreen> {
   late WebSocketChannel _channel;
   final TextEditingController _messageController = TextEditingController();
-  List<String> _messages = [];
+  List<Message> _messages = [];
   String? _token;
   final ScrollController _scrollController = ScrollController();
-  int consecutiveMessagesWithNumbers = 0;
+  bool _isLoading = true;
+  bool _isAtBottom = true;
+  bool _hasFetchedOldMessages = false; // Flag to check if old messages have been fetched
+  bool _noMessagesFound = false;
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients && _isAtBottom) {
+        // Only scroll if the user is already at the bottom
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(() {
+      // Update _isAtBottom based on scroll position
+      setState(() {
+        _isAtBottom = _scrollController.offset >=
+            _scrollController.position.maxScrollExtent - 50;
+      });
+    });
     _getToken();
-    _loadMessages();
   }
 
   Future<void> _getToken() async {
@@ -43,43 +86,34 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  Future<void> _loadMessages() async {
-    final prefs = await SharedPreferences.getInstance();
-    // Load the stored messages for the current recipient (active chat partner)
-    final storedMessages = prefs.getStringList('chatMessages_${widget.recipientId}') ?? [];
-    setState(() {
-      _messages = storedMessages;
-    });
-  }
-
-
-
   void _connectWebSocket() {
     try {
       _channel = WebSocketChannel.connect(Uri.parse('ws://202.21.32.153:8081'));
+
       if (_token != null) {
         print('WebSocket connected');
-        _channel.sink.add(jsonEncode({'token': _token}));
+        _channel.sink.add(jsonEncode({
+          'token': _token,
+          'to': int.parse(widget.recipientId),
+        }));
       }
 
       _channel.stream.listen(
-            (message) {
-          print("Message received: $message"); // Log the message
+        (message) {
+          print("Server response:$message");
           _handleIncomingMessage(message);
         },
         onError: (error) {
           _reconnectWebSocket();
-          print("WebSocket error: $error"); // Log error
-          // _showWarningDialog("Connection failed. Please check your network.");
+          print("WebSocket error: $error");
         },
         onDone: () {
-          print("WebSocket connection closed. Reconnecting...");
-          _reconnectWebSocket(); // Reconnect if connection closes
+          _reconnectWebSocket();
         },
       );
     } catch (e) {
-      print("WebSocket connection error: $e"); // Log connection error
-      _showWarningDialog("Unable to establish WebSocket connection.");
+      print("WebSocket connection error: $e");
+      _showSnackbar("Unable to establish WebSocket connection.");
     }
   }
 
@@ -93,40 +127,71 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _handleIncomingMessage(String message) async {
     final parsedMessage = json.decode(message);
-    final senderId = parsedMessage['from'];  // The ID of the sender
-    final receiverId = parsedMessage['to'];  // The ID of the recipient
-    final content = parsedMessage['content'];
-    final error = parsedMessage['error'];
-
-    // Retrieve the logged-in user's UID from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     final loggedInUserId = prefs.getString('userId');
 
-    if (error != null) {
-      print("Error from server: $error");
-    } else if (senderId != null && content != null) {
-      // Store only the content of the message
-      String messageDisplay = content; // Only the content
+    if (parsedMessage.containsKey('error')) {
+      if (parsedMessage['error'] == "No messages found between these users") {
+        setState(() {
+          _noMessagesFound = true; // Set flag for no messages
+          _isLoading = false; // Stop loading
+        });
+      } else if (parsedMessage['error'] == "Message content is required") {
+        // Handle message content error if needed
+      }
+    } else if (parsedMessage.containsKey('all_messages') && !_hasFetchedOldMessages) {
+      List<dynamic> allMessages = parsedMessage['all_messages'];
 
-      // Save the message to the sender's message list
-      List<String> storedMessages = prefs.getStringList('chatMessages_$senderId') ?? [];
-      storedMessages.insert(0, messageDisplay);
-      await prefs.setStringList('chatMessages_$senderId', storedMessages);
-
-      // Check if the message is meant for the logged-in user
-      if (loggedInUserId != null && receiverId.toString() == loggedInUserId) {
-        // Only display the message if it is from the current recipient
-        if (senderId.toString() == widget.recipientId) {
-          setState(() {
-            _messages.insert(0, messageDisplay);  // Insert the content at the top
-            _scrollToTop(); // Scroll to the top to show the new message
-          });
+      setState(() {
+        for (var msg in allMessages) {
+          final senderId = msg['from'];
+          final content = msg['content'];
+          final type = msg['type'];
+          final formattedTime = msg['formatted_time'];
+          if (senderId == widget.recipientId || senderId == loggedInUserId) {
+            _messages.add(Message(content, type, formattedTime));
+          }
         }
-      } else {
-        print("Message not for this user. Ignoring...");
+        _isLoading = false;
+        _hasFetchedOldMessages = true; // Set the flag to true after fetching messages
+        _noMessagesFound = false; // Reset no messages found flag
+      });
+      _scrollToBottom();
+    } else if (parsedMessage.containsKey('from')) {
+      // Handle individual new message
+      final senderId = parsedMessage['from'];
+      final receiverId = parsedMessage['to'];
+      final content = parsedMessage['content'];
+      final formattedTime = parsedMessage['formatted_time'];
+      final messageType = parsedMessage['type'];
+
+      // Reset no messages found flag when a message is received
+      setState(() {
+        _noMessagesFound = false;
+      });
+
+      // Check if the message is sent by the logged-in user and matches the current recipient
+      if (loggedInUserId != null &&
+          senderId.toString() == loggedInUserId &&
+          receiverId.toString() == widget.recipientId &&
+          messageType == 'sent') {
+        setState(() {
+          _messages.add(Message(content, 'sent', formattedTime));
+          _isLoading = false; // Hide loading if a new message is received
+        });
+        _scrollToBottom();
+      } else if (loggedInUserId != null &&
+          receiverId.toString() == loggedInUserId &&
+          senderId.toString() == widget.recipientId) {
+        setState(() {
+          _messages.add(Message(content, 'received', formattedTime));
+          _isLoading = false; // Hide loading if a new message is received
+        });
+        _scrollToBottom();
       }
     }
   }
+
 
 
   void _scrollToTop() {
@@ -135,123 +200,42 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-
   void _sendMessage() {
     String messageText = _messageController.text.trim();
     if (messageText.isNotEmpty && _token != null) {
-      if (_validateMessage(messageText)) {
-        setState(() {
-          _messages.insert(0, 'You: $messageText'); // Add sent messages to the top
-          _messageController.clear(); // Clear input after sending
-          _scrollToTop();
-        });
+      /*final newMessage = Message(
+          messageText, 'sent', DateTime.now().toIso8601String());
+*/
+      // Update state immediately
+      setState(() {
+        // _messages.add( newMessage); // Append sent message to the end
+        _messageController.clear();
+        _isLoading = false; // Hide loading if a new message is sent
+      });
 
-        final messageData = {
-          'token': _token,
-          'to': int.parse(widget.recipientId),
-          'content': messageText,
-        };
+      // Clear the input field
 
-        // Print the message that is being sent to WebSocket
-        print("Sending message: $messageData");
-        _channel.sink.add(jsonEncode(messageData));
-        _saveMessages();
-        _updateInboxConversation(widget.recipientId, messageText);
-      }
-    }
-  }
-
-// Separate validation logic
-  bool _validateMessage(String messageText) {
-    if (_countNumbersInText(messageText) > 6) {
-      _showWarningDialog('Message cannot contain more than 6 numbers.');
-      return false;
-    }
-
-    if (_hasIntegers(messageText)) {
-      consecutiveMessagesWithNumbers++;
-      if (consecutiveMessagesWithNumbers > 1) {
-        _showWarningDialog('You can\'t use consecutive messages with numbers.');
-        return false;
-      }
-    } else {
-      consecutiveMessagesWithNumbers = 0;
-    }
-    return true;
-  }
-
-
-  Future<void> _saveMessages() async {
-    final prefs = await SharedPreferences.getInstance();
-    // Save messages specific to the current recipient
-    await prefs.setStringList('chatMessages_${widget.recipientId}', _messages);
-  }
-
-  void _updateInboxConversation(String recipientId, String content) async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> conversations = prefs.getStringList('conversations') ?? [];
-
-    bool conversationExists = conversations.any((conv) {
-      final convMap = json.decode(conv) as Map<String, dynamic>;
-      return convMap['recipientId'] == recipientId;
-    });
-
-    if (conversationExists) {
-      conversations = conversations.map((conv) {
-        final convMap = json.decode(conv) as Map<String, dynamic>;
-        if (convMap['recipientId'] == recipientId) {
-          convMap['lastMessage'] = content; // Update last message
-          convMap['lastMessageUnread'] = true; // Mark as unread
-          convMap['timestamp'] = DateFormat('HH:mm').format(DateTime.now()); // Update timestamp
-        }
-        return json.encode(convMap);
-      }).toList();
-    } else {
-      // If the conversation doesn't exist, create a new one
-      Map<String, dynamic> newConversation = {
-        'recipientId': recipientId,
-        'recipientUserName': widget.recipientUserName,
-        'recipientUserImage': widget.recipientUserImage,
-        'lastMessage': content,
-        'lastMessageUnread': true,
-        'timestamp': DateFormat('HH:mm').format(DateTime.now()),
+      // Scroll to the bottom after sending a message
+      // Prepare the message data for WebSocket
+      final messageData = {
+        'token': _token,
+        'to': int.parse(widget.recipientId),
+        'content': messageText,
       };
-      conversations.add(json.encode(newConversation));
+
+      // Send the message via WebSocket
+      _channel.sink.add(jsonEncode(messageData));
     }
-    await prefs.setStringList('conversations', conversations);
-    print('Saved conversations:$conversations');
   }
 
-
-  bool _hasIntegers(String text) {
-    return RegExp(r'\d').hasMatch(text);
-  }
-
-  int _countNumbersInText(String text) {
-    return RegExp(r'\d').allMatches(text).length;
-  }
-
-  void _showWarningDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Warning', style: TextStyle(color: Colors.red)),
-          ],
-        ),
-        content: Text(message),
-        actions: <Widget>[
-          TextButton(child: const Text('OK'), onPressed: () => Navigator.of(context).pop()),
-        ],
-      ),
-    );
+  void _showSnackbar(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(() {}); // Remove the listener
     _channel.sink.close();
     _messageController.dispose();
     _scrollController.dispose();
@@ -261,6 +245,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Row(
           children: [
@@ -278,35 +263,59 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: Container(
               color: Colors.grey[200],
-              child: ListView.builder(
-                reverse: true,
+              child: _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : _noMessagesFound // Check if no messages found
+                  ? Center(child: Text('No messages found.'))
+                  : ListView.builder(
                 controller: _scrollController,
-                itemCount: _messages.length,
-                  itemBuilder: (context, index) {
-                    final message = _messages[index]; // This will now be just the content
-                    final isSentByMe = message.startsWith('You:'); // Check if the message is sent by the user
+                      itemCount: _messages.length,
+                      itemBuilder: (context, index) {
+                        final message = _messages[index];
+                        final isSentByMe = message.type == 'sent';
 
-                    return ListTile(
-                      title: Align(
-                        alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          padding: EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: isSentByMe ? Colors.blueGrey : Colors.white70,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            message, // This is now just the content
-                            style: TextStyle(
-                              color: isSentByMe ? Colors.white : Colors.black,
-                              fontSize: 16,
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 10),
+                          child: Align(
+                            alignment: isSentByMe
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: Column(
+                              crossAxisAlignment: isSentByMe
+                                  ? CrossAxisAlignment.end
+                                  : CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  constraints: BoxConstraints(maxWidth: 250),
+                                  padding: EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: isSentByMe
+                                        ? kPrimaryColor
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    message.content,
+                                    style: TextStyle(
+                                        color: isSentByMe
+                                            ? Colors.white
+                                            : Colors.black),
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  DateFormat('hh:mm a')
+                                      .format(message.timestamp),
+                                  style: TextStyle(
+                                      fontSize: 10, color: Colors.grey),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ),
-                    );
-                  },
-              ),
+                        );
+                      },
+                    ),
             ),
           ),
           Padding(
@@ -316,14 +325,17 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Expanded(
                   child: TextField(
+                    maxLines: null,
                     controller: _messageController,
                     decoration: InputDecoration(
                       filled: true,
-                      hintText: 'Type your message',
+                      hintText: 'Type your message...',
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(20),
                         borderSide: BorderSide.none,
                       ),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                     ),
                     onSubmitted: (_) => _sendMessage(),
                   ),

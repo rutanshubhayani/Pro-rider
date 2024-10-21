@@ -95,11 +95,9 @@ class _VerifyotpState extends State<Verifyotp> {
                     controller: _otpController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      filled: true,
                       hintText: 'Enter OTP',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
                       ),
                     ),
                     validator: (value) {
@@ -159,11 +157,9 @@ class _VerifyotpState extends State<Verifyotp> {
                     controller: _passwordController,
                     obscureText: !_isPasswordVisible,
                     decoration: InputDecoration(
-                      filled: true,
                       hintText: 'Enter New Password',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
                       ),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -219,11 +215,9 @@ class _VerifyotpState extends State<Verifyotp> {
                     controller: _confirmPasswordController,
                     obscureText: true,
                     decoration: InputDecoration(
-                      filled: true,
                       hintText: 'Confirm New Password',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
                       ),
                     ),
                     validator: (value) {
