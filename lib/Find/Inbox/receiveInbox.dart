@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/io.dart';
 import '../../api/api.dart';
-import '../../chat_photo.dart';
 import 'newinbox.dart'; // Adjust import based on your structure
 
 
@@ -35,15 +34,15 @@ class InboxList extends StatefulWidget {
   State<InboxList> createState() => _InboxListState();
 }
 
-class _InboxListState extends State<InboxList> {
+class _InboxListState extends State<InboxList> with TickerProviderStateMixin {
   List<Map<String, dynamic>> _conversations = [];
   Set<int> _selectedIndices = {};
   bool _isMultiSelectMode = false;
   IOWebSocketChannel? _channel;
-  Set<int> _clickedIndices = {};
   TextEditingController _searchController = TextEditingController();
+  bool _isLoading = true; // Loading state
   List<Map<String, dynamic>> _filteredConversations = [];
-
+  final Map<int, GlobalKey> _keys = {};
 
   bool get isWebSocketConnected => _channel != null && _channel!.closeCode == null;
 
@@ -70,6 +69,49 @@ class _InboxListState extends State<InboxList> {
     _connectToWebSocket();
     _filteredConversations = _conversations; // Initialize filtered list
     _searchController.addListener(_filterConversations);
+    _fetchConversations(); // Fetch conversations on init
+  }
+
+  Future<void> _fetchConversations() async {
+    setState(() {
+      _isLoading = true; // Start loading
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? userId = prefs.getString('userId');
+
+      // Your API call logic to fetch conversations
+      final response = await http.get(Uri.parse('${API.api1}/conversations/$userId'), headers: {
+        'Authorization': 'Bearer ${prefs.getString('authToken')}', // Adjust as needed
+      });
+
+      if (response.statusCode == 200) {
+        List<dynamic> fetchedConversations = json.decode(response.body);
+        setState(() {
+          _conversations = fetchedConversations.map((conv) {
+            return {
+              'recipientId': conv['recipientId'],
+              'recipientUserName': conv['recipientUserName'],
+              'recipientUserImage': conv['recipientUserImage'],
+              'lastMessage': conv['lastMessage'],
+              'lastMessageUnread': conv['lastMessageUnread'],
+              'timestamp': conv['timestamp'],
+            };
+          }).toList();
+
+          _filteredConversations = _conversations; // Update filtered list
+          _isLoading = false; // Stop loading
+        });
+      } else {
+        print('Failed to load conversations: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching conversations: $e');
+      setState(() {
+        _isLoading = false; // Stop loading even if there's an error
+      });
+    }
   }
 
 
@@ -95,11 +137,14 @@ class _InboxListState extends State<InboxList> {
   }
 
 
+
   void _clearSearch() {
     _searchController.clear();
     _filterConversations(); // Update the filtered conversations list
     FocusScope.of(context).unfocus(); // Remove focus from the TextField
   }
+
+
 
 
 
@@ -142,6 +187,7 @@ class _InboxListState extends State<InboxList> {
       }
     });
   }
+
 
   void _handleIncomingMessage(String message) async {
     print('Received message raw: $message');
@@ -192,6 +238,7 @@ class _InboxListState extends State<InboxList> {
 // Helper method to update or add conversation
   void _updateOrAddConversation(Map<String, dynamic> msg, int userId) async {
     bool conversationExists = _conversations.any((conv) => conv['recipientId'] == userId);
+
     if (conversationExists) {
       for (var existingConversation in _conversations) {
         if (existingConversation['recipientId'] == userId) {
@@ -201,9 +248,6 @@ class _InboxListState extends State<InboxList> {
             existingConversation['lastMessageUnread'] = !(msg['read'] ?? true);
             existingConversation['timestamp'] = msg['time'] ?? msg['formatted_time'];
           });
-
-          // Remove the updated conversation to re-insert it later
-          _conversations.remove(existingConversation);
           break; // Break the loop after finding the conversation
         }
       }
@@ -227,7 +271,6 @@ class _InboxListState extends State<InboxList> {
 
     // Sort conversations based on the timestamp, latest first
     _sortConversations();
-    setState(() {});
   }
 
   void _sortConversations() {
@@ -270,8 +313,6 @@ class _InboxListState extends State<InboxList> {
 
 
 
-
-
   void _navigateToChat(String recipientId, String recipientUserName, String recipientUserImage) {
     print('Navigating to chat with: $recipientUserName'); // Debug line
     print('Recipient ID: $recipientId, Image: $recipientUserImage'); // Debug line
@@ -280,7 +321,7 @@ class _InboxListState extends State<InboxList> {
       context,
       MaterialPageRoute(
         builder: (context) => ChatScreen(
-          recipientId: recipientId, // Ensure these match
+          recipientId: recipientId,
           recipientUserName: recipientUserName,
           recipientUserImage: recipientUserImage,
         ),
@@ -288,6 +329,9 @@ class _InboxListState extends State<InboxList> {
     ).then((_) {
       // Optional: You can add any additional logic to execute after returning to InboxList
       print('Returned from chat screen.'); // Debug line
+      if (!isWebSocketConnected) { // Check if already connected
+        _connectToWebSocket();
+      }
     });
   }
 
@@ -305,59 +349,66 @@ class _InboxListState extends State<InboxList> {
 
 
 
-  void _showProfilePhoto(String? imageUrl, String? receiverUserName) {
+  void _showProfilePhoto(String? imageUrl, String? receiverUserName, Offset tapPosition) {
+    final size = MediaQuery.of(context).size;
+
+    // Create an AnimationController
+    AnimationController controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    // Create an Animation for scale and position
+    Animation<double> scaleAnimation = Tween<double>(begin: 0.1, end: 1.0).animate(controller);
+    Animation<Offset> positionAnimation = Tween<Offset>(
+      begin: Offset(tapPosition.dx / size.width - 0.5, tapPosition.dy / size.height - 0.5),
+      end: Offset.zero,
+    ).animate(controller);
+
+    // Start the animation
+    controller.forward();
+
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (context) {
-        return Material(
-          color: Colors.transparent, // Make the background transparent
-          child: Stack(
-            children: [
-              Center(
+        return AnimatedBuilder(
+          animation: controller,
+          builder: (context, child) {
+            return Center(
+              child: Transform.scale(
+                scale: scaleAnimation.value,
                 child: GestureDetector(
                   onTap: () {
-                    // Navigate to FullScreenImage on image tap
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (context) => FullScreenImage(
-                          imageUrl: imageUrl ?? '',
-                          userName: receiverUserName ?? 'User', // Provide a default name
-                        ),
-                      ),
-                    );
+                    Navigator.of(context).pop(); // Close the dialog
                   },
-                  child: ClipOval(
-                    child: imageUrl != null && imageUrl.isNotEmpty
-                        ? Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      width: 300, // Set the width for circular size
-                      height: 300, // Set the height for circular size
-                    )
-                        : Image.asset(
-                      'images/Userpfp.png',
-                      fit: BoxFit.cover,
-                      width: 300, // Set the width for circular size
-                      height: 300, // Set the height for circular size
+                  child: Container(
+                    transform: Matrix4.translationValues(positionAnimation.value.dx * size.width, positionAnimation.value.dy * size.height, 0),
+                    child: ClipOval(
+                      child: imageUrl != null && imageUrl.isNotEmpty
+                          ? Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        width: 300,
+                        height: 300,
+                      )
+                          : Image.asset(
+                        'images/Userpfp.png',
+                        fit: BoxFit.cover,
+                        width: 300,
+                        height: 300,
+                      ),
                     ),
                   ),
                 ),
               ),
-              Positioned(
-                top: 240,
-                right: 20,
-                child: IconButton(
-                  icon: Icon(Icons.close, color: Colors.white),
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
-                  },
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
-    );
+    ).then((_) {
+      controller.dispose(); // Dispose of the controller when done
+    });
   }
 
 
@@ -377,7 +428,7 @@ class _InboxListState extends State<InboxList> {
                   child: TextField(
                     controller: _searchController,
                     onSubmitted: (_) {
-                      FocusScope.of(context).unfocus(); // Remove focus on submit
+                      FocusScope.of(context).unfocus();
                     },
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.search),
@@ -411,91 +462,101 @@ class _InboxListState extends State<InboxList> {
       ),
       body: GestureDetector(
         onTap: () {
-          FocusScope.of(context).unfocus(); // Remove focus from the TextField
+          FocusScope.of(context).unfocus();
         },
-        child: _filteredConversations.isEmpty
-            ? const Center(
-          child: Text('No conversations yet.'),
-        )
-            : ListView.builder(
-          itemCount: _filteredConversations.length,
-          itemBuilder: (context, index) {
-            final conversation = _filteredConversations[index];
-            bool isSelected = _selectedIndices.contains(index);
-            bool isUnread = conversation['lastMessageUnread'] == true;
+        child: _isLoading
+            ? Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 10),
+              Text('Loading..'),
+            ],
+          ),
+        ) // Loading indicator
+            : _filteredConversations.isEmpty
+            ? const Center(child: Text('No conversations found.')) // No conversations message
+            : RefreshIndicator(
+          onRefresh: _fetchConversations, // Call your fetch function
+          child: ListView.builder(
+            itemCount: _filteredConversations.length,
+            itemBuilder: (context, index) {
+              final conversation = _filteredConversations[index];
+              bool isSelected = _selectedIndices.contains(index);
+              bool isUnread = conversation['lastMessageUnread'] == true;
 
-            return Container(
-              color: isSelected ? Colors.grey[300] : Colors.transparent,
-              child: ListTile(
-                leading: GestureDetector(
-                  onTap: () => _showProfilePhoto(conversation['recipientUserImage'],conversation['recipientUserName']),
-                  child: CircleAvatar(
-                    radius: 30,
-                    backgroundImage: conversation['recipientUserImage'] != null &&
-                        conversation['recipientUserImage'].isNotEmpty
-                        ? NetworkImage(conversation['recipientUserImage'])
-                        : AssetImage('images/Userpfp.png') as ImageProvider,
+              return Container(
+                color: isSelected ? Colors.grey[300] : Colors.transparent,
+                child: ListTile(
+                  key: _keys[conversation['recipientId']] ??= GlobalKey(),
+                  leading: GestureDetector(
+                    onTapDown: (details) {
+                      final renderBox = _keys[conversation['recipientId']]!.currentContext!.findRenderObject() as RenderBox;
+                      final tapPosition = renderBox.globalToLocal(details.globalPosition);
+                      _showProfilePhoto(conversation['recipientUserImage'], conversation['recipientUserName'], tapPosition);
+                    },
+                    child: CircleAvatar(
+                      radius: 30,
+                      backgroundImage: conversation['recipientUserImage'] != null && conversation['recipientUserImage'].isNotEmpty
+                          ? NetworkImage(conversation['recipientUserImage'])
+                          : const AssetImage('images/Userpfp.png') as ImageProvider,
+                    ),
                   ),
-                ),
-                title: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        conversation['recipientUserName'],
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          conversation['recipientUserName'],
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                subtitle: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: 200,
-                    maxHeight: 20,
+                    ],
                   ),
-                  child: Text(
-                    conversation['type'] == 'sent' ? 'sent: ${conversation['lastMessage']}' : conversation['lastMessage'],
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                  subtitle: Container(
+                    constraints: BoxConstraints(maxWidth: 200, maxHeight: 20),
+                    child: Text(
+                      conversation['type'] == 'sent' ? 'sent: ${conversation['lastMessage']}' : conversation['lastMessage'],
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                      ),
                     ),
                   ),
+                  trailing: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(_formatDateAndTime(conversation['timestamp'])),
+                      Text(_formatTime(conversation['timestamp'])),
+                    ],
+                  ),
+                  onTap: () {
+                    if (_isMultiSelectMode) {
+                      _toggleSelection(index);
+                    } else {
+                      _navigateToChat(
+                        conversation['recipientId'].toString(),
+                        conversation['recipientUserName'],
+                        conversation['recipientUserImage'] ?? '',
+                      );
+                    }
+                  },
+                  onLongPress: () {
+                    setState(() {
+                      _isMultiSelectMode = true;
+                      _toggleSelection(index);
+                    });
+                  },
+                  selected: isSelected,
                 ),
-                trailing: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _formatDateAndTime(conversation['timestamp']),
-                    ),
-                    Text(
-                      _formatTime(conversation['timestamp']),
-                    ),
-                  ],
-                ),
-                onTap: () {
-                  if (_isMultiSelectMode) {
-                    _toggleSelection(index);
-                  } else {
-                    _navigateToChat(
-                      conversation['recipientId'].toString(),
-                      conversation['recipientUserName'],
-                      conversation['recipientUserImage'] ?? '',
-                    );
-                  }
-                },
-                onLongPress: () {
-                  setState(() {
-                    _isMultiSelectMode = true;
-                    _toggleSelection(index);
-                  });
-                },
-                selected: isSelected,
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

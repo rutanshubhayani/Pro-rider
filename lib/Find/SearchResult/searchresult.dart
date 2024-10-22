@@ -32,6 +32,7 @@ class _SearchResultState extends State<SearchResult> {
   ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false; // Loading state for more trips
 
+
   @override
   void initState() {
     super.initState();
@@ -236,6 +237,15 @@ class _SearchResultState extends State<SearchResult> {
 
                 String departureCityFirstName = trip['departure']?.split(' ').first ?? 'Unknown';
                 String destinationCityFirstName = trip['destination']?.split(' ').first ?? 'Unknown';
+                int stopCount = (trip['stops'] as List).length; // Count the stops
+
+// Display the number of stops
+                String stopsText;
+                if (stopCount == 0) {
+                  stopsText = 'No stops';
+                } else {
+                  stopsText = '$stopCount stop${stopCount != 1 ? 's' : ''} included';
+                }
 
                 return GestureDetector(
                   onTap: () {
@@ -247,6 +257,7 @@ class _SearchResultState extends State<SearchResult> {
                     );
                   },
                   child: Card(
+                    elevation: 5,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10.0),
                       side: BorderSide(
@@ -268,11 +279,12 @@ class _SearchResultState extends State<SearchResult> {
                                   backgroundImage: NetworkImage(trip['profile_photo'] ?? 'images/Userpfp.png'),
                                 ),
                                 SizedBox(width: 5),
-                                const Icon(Icons.verified, color: Colors.blue),
+                                const Icon(Icons.verified, color: Colors.blue,size: 20,),
                                 SizedBox(width: 5),
                                 Expanded(child: Text(userName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
                                 Spacer(),
                                 Expanded(
+                                  flex: 2,
                                   child: Padding(
                                     padding: const EdgeInsets.only(right: 20),
                                     child: Text('$seatsLeft seats left', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -294,18 +306,26 @@ class _SearchResultState extends State<SearchResult> {
                           ),
                           Padding(
                             padding: const EdgeInsets.only(top: 13, left: 15),
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(text: destinationCityFirstName, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                                  TextSpan(text: '  ${trip['destination'] ?? 'Unknown Destination'}', style: TextStyle(color: Colors.black54)),
-                                ],
+                              child: RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(text: destinationCityFirstName, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                                    TextSpan(text: '  ${trip['destination'] ?? 'Unknown Destination'}', style: TextStyle(color: Colors.black54)),
+                                  ],
+                                ),
                               ),
-                            ),
                           ),
                           Padding(
                             padding: const EdgeInsets.only(top: 13.0, left: 15),
-                            child: Text(formattedDate, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            child: Row(
+                              children: [
+                                Text(formattedDate, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                SizedBox(width: 10,),
+                                Text('-  ',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold
+                                ),),
+                            Text('$stopsText', style: TextStyle(fontSize: 16,fontWeight: FontWeight.bold)),                     ],       ),
                           ),
                           SizedBox(height: 10),
                         ],

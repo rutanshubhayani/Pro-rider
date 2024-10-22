@@ -114,6 +114,8 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
         return 'Backpack';
       case '2':
         return 'Cabin bag (max. 23 kg)';
+        case '3':
+        return 'Cabin bag (max. 46 kg)';
       default:
         return 'Unknown';
     }
@@ -145,15 +147,16 @@ class _GetPostedPreviewState extends State<GetPostedPreview> {
     final Map<String, IconData> luggageIcons = {
       'No luggage': Icons.cancel,
       'Backpack': Icons.backpack,
-      'Cabin bag (max. 23 kg)': Icons.luggage,
+      'Cabin bag (max. 23 kg)': Icons.cases_outlined,
+      'Cabin bag (max. 46 kg)': Icons.luggage,
     };
 
-    final Map<String, IconData> itemsIcons = {
+    /*final Map<String, IconData> itemsIcons = {
       'Winter tires': Icons.ac_unit,
       'Skis & snowboards': Icons.downhill_skiing,
       'Pets': Icons.pets,
       'Bikes': Icons.directions_bike,
-    };
+    };*/
 
     return Scaffold(
       appBar: AppBar(

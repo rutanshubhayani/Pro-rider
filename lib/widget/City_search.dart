@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import 'configure.dart';
+
 class CitySearchField extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final String hintText;
-  final bool showSuggestions; // Add this line
+  final bool showSuggestions;
   final List<dynamic> suggestions;
   final Function(String) onChanged;
   final Function(String) onSubmitted;
@@ -18,7 +20,7 @@ class CitySearchField extends StatefulWidget {
     required this.controller,
     required this.focusNode,
     required this.hintText,
-    required this.showSuggestions, // Include it here
+    required this.showSuggestions,
     required this.suggestions,
     required this.onChanged,
     required this.onSubmitted,
@@ -30,7 +32,6 @@ class CitySearchField extends StatefulWidget {
   @override
   _CitySearchFieldState createState() => _CitySearchFieldState();
 }
-
 
 class _CitySearchFieldState extends State<CitySearchField> {
   bool showSuggestions = false;
@@ -70,9 +71,28 @@ class _CitySearchFieldState extends State<CitySearchField> {
               )
                   : null,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.0),
+                borderSide: BorderSide(
+                  width: 2.0,
+                  color: Colors.grey,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                borderSide: BorderSide(
+                  width: 2.0,
+                  color: Colors.grey,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15.0),
+                borderSide: BorderSide(
+                  width: 2.0,
+                  color: kPrimaryColor,
+                ),
               ),
             ),
+
             textInputAction: TextInputAction.next,
             onChanged: (value) {
               widget.onChanged(value);
@@ -82,20 +102,17 @@ class _CitySearchFieldState extends State<CitySearchField> {
             },
             onFieldSubmitted: widget.onSubmitted,
             validator: (value) {
-              // Call the external validator if provided
-              final externalValidationResult = widget.validator?.call(value);
-              if (externalValidationResult != null) {
-                return externalValidationResult;
+              // Only call the external validator if it is provided
+              if (widget.validator != null) {
+                return widget.validator!(value);
               }
-              if (value == null || value.isEmpty) {
-                return 'Please fill in this field';
-              }
+              // Allow empty values without an error if no validator is provided
               return null;
             },
           ),
-          if (widget.showSuggestions) // Use widget.showSuggestions
+          if (widget.showSuggestions)
             SizedBox(height: 10),
-          if (widget.showSuggestions) // Use widget.showSuggestions
+          if (widget.showSuggestions)
             Card(
               elevation: 4.0,
               child: Container(
@@ -114,7 +131,6 @@ class _CitySearchFieldState extends State<CitySearchField> {
                         title: Text('${suggestion['city']}, ${suggestion['pname']}'),
                         onTap: () {
                           widget.onSuggestionTap(suggestion);
-                          // Optionally, you can update external state to close suggestions
                         },
                       );
                     },

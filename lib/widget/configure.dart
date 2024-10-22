@@ -255,3 +255,89 @@ class CustomDialog {
     ).then((value) => value ?? false); // Return false if the dialog was dismissed
   }
 }
+
+
+
+class CustomTextField extends StatelessWidget {
+  final String? label;
+  final TextEditingController controller;
+  final TextInputType keyboardType;
+  final bool obscureText;
+  final String? Function(String?)? validator;
+  final FocusNode focusNode;
+  final TextInputAction textInputAction;
+  final void Function(String)? onFieldSubmitted;
+  final String hintText;
+  final Icon? prefixIcon;
+  final bool readOnly;
+  final VoidCallback? onTap;
+  final TextStyle? textStyle;
+  final int? maxLength;
+  final int? maxLines;
+  final List<TextInputFormatter>? inputFormatters;
+  final Widget? suffixIcon;  // Add suffix icon for optional features
+
+  const CustomTextField({
+    Key? key,
+     this.label,
+    required this.controller,
+    required this.focusNode,
+    required this.textInputAction,
+    required this.onFieldSubmitted,
+    this.keyboardType = TextInputType.text,
+    this.obscureText = false,
+    this.validator,
+    required this.hintText,
+    this.prefixIcon,
+    this.readOnly = false,
+    this.onTap,
+    this.textStyle,
+    this.maxLength,
+    this.maxLines = 1,
+    this.inputFormatters,
+    this.suffixIcon,  // Add suffix icon
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onFieldSubmitted,
+      readOnly: readOnly,
+      onTap: onTap,
+      style: textStyle ?? const TextStyle(color: Colors.black),
+      maxLength: maxLength,
+      maxLines: maxLines,
+      inputFormatters: inputFormatters,
+      decoration: InputDecoration(
+        prefixIcon: prefixIcon,
+        hintText: hintText,
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: BorderSide(
+            color: Colors.grey,
+            width: 2
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15.0),
+          borderSide: BorderSide(
+            color: kPrimaryColor,
+              width: 2
+
+          ),
+        ),
+        suffixIcon: suffixIcon,  // Suffix icon for clear button
+      ),
+      validator: validator,
+    );
+  }
+}

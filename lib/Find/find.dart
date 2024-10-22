@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/Driver/posttrip.dart';
 import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:http/http.dart' as http;
+import 'package:travel/Find/history.dart';
 import 'package:travel/UserProfile/License/verifylicenese.dart';
 import '../UserProfile/BookedRides/all_booked_rides.dart';
 import '../UserProfile/vechiledetails.dart';
@@ -19,6 +20,7 @@ import '../widget/HttpHandler.dart';
 import '../UserProfile/Userprofile.dart';
 import '../api/api.dart';
 import '../widget/configure.dart';
+import 'Passenger/postrequest.dart';
 import 'Trips/TripsHome.dart';
 import '../widget/internet.dart';
 import 'notification.dart';
@@ -36,6 +38,8 @@ class _FindScreenState extends State<FindScreen> {
   /*final VehicleDetailsController vehicleDetailsController =
       Get.find(); // Access your controller*/
   late HttpHandler hs;
+  final _formKey = GlobalKey<FormState>();
+
 
   TextEditingController departureController = TextEditingController();
   TextEditingController destinationController = TextEditingController();
@@ -366,13 +370,7 @@ class _FindScreenState extends State<FindScreen> {
     String destination = destinationController.text;
     String date = dateController.text;
 
-    if (departure.isEmpty && destination.isEmpty && date.isEmpty) {
-      _showAlert('Please provide details.');
-    } else if (departure.isEmpty) {
-      _showAlert('Please enter departure location.');
-    } else if (destination.isEmpty) {
-      _showAlert('Please enter destination.');
-    } else {
+    if (_formKey.currentState?.validate() ?? false)  {
       // Save the search to recent searches
       String searchQuery = "$departure To $destination on $date";
       if (!recentSearches.contains(searchQuery)) {
@@ -532,168 +530,202 @@ class _FindScreenState extends State<FindScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Find your ride!', // Use the user's name here
-                      style: TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      'Find your desired trip by providing departure and destination locations.',
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    CitySearchField(
-                      controller: departureController,
-                      focusNode: departureFocusNode,
-                      hintText: 'Departure Location',
-                      showSuggestions: showDepartureContainer,
-                      suggestions: departureSuggestions,
-                      onChanged: (value) {
-                        activeController = departureController;
-                        _updateSuggestions(value, departureController);
-                      },
-                      onSubmitted: (value) {
-                        FocusScope.of(context)
-                            .requestFocus(destinationFocusNode);
-                      },
-                      onClear: () => handleClearClick(departureController),
-                      onSuggestionTap: (suggestion) {
-                        departureController.text =
-                            '${suggestion['city']}, ${suggestion['pname']}';
-                        setState(() {
-                          showDepartureContainer = false;
-                        });
-                      },
-                    ),
-                    SizedBox(height: 10),
-                    CitySearchField(
-                      controller: destinationController,
-                      focusNode: destinationFocusNode,
-                      hintText: 'Destination Location',
-                      showSuggestions: showDestinationContainer,
-                      suggestions: destinationSuggestions,
-                      onChanged: (value) {
-                        activeController = destinationController;
-                        _updateSuggestions(value, destinationController);
-                      },
-                      onSubmitted: (value) {
-                        FocusScope.of(context).requestFocus(dateFocusNode);
-                      },
-                      onClear: () => handleClearClick(destinationController),
-                      onSuggestionTap: (suggestion) {
-                        destinationController.text =
-                            '${suggestion['city']}, ${suggestion['pname']}';
-                        setState(() {
-                          showDestinationContainer = false;
-                        });
-                      },
-                    ),
-                    SizedBox(height: 10),
-                  ],
-                ),
-                Positioned(
-                  right: 50,
-                  top: 115,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Color(0xFF3d5a80),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: FaIcon(
-                        FontAwesomeIcons.arrowsUpDown,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      onPressed: _swapLocations,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            buildDateTextField(),
-            SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isSearchLoading ? null : _performSearch,
-                child: isSearchLoading
-                    ? SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Text(
-                        'Search',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF3d5a80),
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-            if (recentSearches.isNotEmpty) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Stack(
                 children: [
-                  Text(
-                    'Recent Searches:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Find your ride!', // Use the user's name here
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Find your desired trip by providing departure and destination locations.',
+                        style: TextStyle(color: Colors.black54),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      CitySearchField(
+                        controller: departureController,
+                        focusNode: departureFocusNode,
+                        hintText: 'Departure Location',
+                        showSuggestions: showDepartureContainer,
+                        suggestions: departureSuggestions,
+                        onChanged: (value) {
+                          activeController = departureController;
+                          _updateSuggestions(value, departureController);
+                        },
+                        onSubmitted: (value) {
+                          FocusScope.of(context)
+                              .requestFocus(destinationFocusNode);
+                        },
+                        onClear: () => handleClearClick(departureController),
+                        onSuggestionTap: (suggestion) {
+                          departureController.text =
+                              '${suggestion['city']}, ${suggestion['pname']}';
+                          setState(() {
+                            showDepartureContainer = false;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter departure';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 10),
+                      CitySearchField(
+                        controller: destinationController,
+                        focusNode: destinationFocusNode,
+                        hintText: 'Destination Location',
+                        showSuggestions: showDestinationContainer,
+                        suggestions: destinationSuggestions,
+                        onChanged: (value) {
+                          activeController = destinationController;
+                          _updateSuggestions(value, destinationController);
+                        },
+                        onSubmitted: (value) {
+                          FocusScope.of(context).requestFocus(dateFocusNode);
+                        },
+                        onClear: () => handleClearClick(destinationController),
+                        onSuggestionTap: (suggestion) {
+                          destinationController.text =
+                              '${suggestion['city']}, ${suggestion['pname']}';
+                          setState(() {
+                            showDestinationContainer = false;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter destination';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 10),
+                    ],
                   ),
-                  TextButton(
-                    onPressed: _clearAllSearches,
-                    child: Text(
-                      'Clear All',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
+                  Positioned(
+                    right: 50,
+                    top: 115,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Color(0xFF3d5a80),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: FaIcon(
+                          FontAwesomeIcons.arrowsUpDown,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: _swapLocations,
                       ),
                     ),
                   ),
                 ],
               ),
-              ListView.builder(
-                shrinkWrap: true,
-                itemCount: recentSearches.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(recentSearches[index]),
-                    trailing: IconButton(
-                      icon: Icon(
-                        Icons.delete,
-                      ),
-                      onPressed: () => _removeSearch(index),
-                    ),
-                    onTap: () => _selectRecentSearch(recentSearches[index]),
-                  );
+              CustomTextField(
+                controller: dateController,
+                focusNode: dateFocusNode,
+                textInputAction: TextInputAction.next,
+                onFieldSubmitted: (_) {
+                  FocusScope.of(context).unfocus();  // Or move to next focus
                 },
+                hintText: 'Departure date',
+                prefixIcon: Icon(Icons.calendar_today),
+                readOnly: true,
+                onTap: () => _selectDate(context),  // Opens date picker
+                suffixIcon: dateController.text.isNotEmpty
+                    ? IconButton(
+                  icon: Icon(FontAwesomeIcons.times),
+                  onPressed: () {
+                    dateController.clear();  // Clear the date field
+                  },
+                )
+                    : null,  // No suffix icon if text is empty
               ),
+              SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isSearchLoading ? null : _performSearch,
+                  child: isSearchLoading
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          'Search',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF3d5a80),
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              if (recentSearches.isNotEmpty) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Recent Searches:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _clearAllSearches,
+                      child: Text(
+                        'Clear All',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: recentSearches.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(recentSearches[index]),
+                      trailing: IconButton(
+                        icon: Icon(
+                          Icons.delete,
+                        ),
+                        onPressed: () => _removeSearch(index),
+                      ),
+                      onTap: () => _selectRecentSearch(recentSearches[index]),
+                    );
+                  },
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     /*        bottomNavigationBar: Container(
@@ -828,7 +860,7 @@ class _FindScreenState extends State<FindScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => BookedUserRides()),
+                            builder: (context) => History()),
                       );
                     },
                   ),
@@ -836,6 +868,20 @@ class _FindScreenState extends State<FindScreen> {
                 SizedBox(
                   height: 10,
                 ),
+                Container(
+                  width: 165,
+                  child: ActionButton(
+                    label: 'Add Request',
+                    icon: Icons.add,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => Postrequest()),
+                      );
+                    },
+                  ),
+                ),
+/*
                 SizedBox(
                   width: 165,
                   height: 50,
@@ -873,6 +919,7 @@ class _FindScreenState extends State<FindScreen> {
                     ),
                   ),
                 )
+*/
               ],
             ),
           ),

@@ -88,9 +88,9 @@ class _GetTripPreviewState extends State<GetTripPreview> {
     final DateTime dateTime = DateTime.parse(widget.tripData['date'].toString());
     final String formattedDate = DateFormat('EE, MMM d \'at\' h:mm a').format(dateTime);
     final departureCity = widget.tripData['departure'] ?? 'Unknown Departure';
-    final departureCityFirstName = widget.tripData['departure']?.split(' ').first ?? 'Unknown';
+    final departureCityFirstName = widget.tripData['departure']?.split(' ,').first ?? 'Unknown';
     final destinationCity = widget.tripData['destination'] ?? 'Unknown Destination';
-    final destinationCityFirstName = widget.tripData['destination']?.split(' ').first ?? 'Unknown';
+    final destinationCityFirstName = widget.tripData['destination']?.split(' ,').first ?? 'Unknown';
     final price = widget.tripData['price']?.toString() ?? '0';
     final luggageCode = widget.tripData['luggage']?.toString() ?? '0';
     final luggage = getLuggageLabel(luggageCode);

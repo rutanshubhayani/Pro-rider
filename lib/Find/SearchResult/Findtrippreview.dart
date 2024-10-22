@@ -91,6 +91,8 @@ class _FindTripPreviewState extends State<FindTripPreview> {
         return 'Backpack';
       case '2':
         return 'Cabin bag (max. 23 kg)';
+        case '3':
+        return 'Cabin bag (max. 46 kg)';
       default:
         return 'Unknown luggage type';
     }
@@ -100,9 +102,9 @@ class _FindTripPreviewState extends State<FindTripPreview> {
 
   @override
   Widget build(BuildContext context) {
-    String departureCityFirstName = widget.tripData['departure']?.split(' ').first ?? 'Unknown';
+    String departureCityFirstName = widget.tripData['departure']?.split(',').first.trim() ?? 'Unknown';
     String departureCity = widget.tripData['departure'] ?? 'Unknown Departure';
-    String destinationCityFirstName = widget.tripData['destination']?.split(' ').first ?? 'Unknown';
+    String destinationCityFirstName = widget.tripData['destination']?.split(',').first ?? 'Unknown';
     String destinationCity = widget.tripData['destination'] ?? 'Unknown Destination';
     String userName = widget.tripData['uname'] ?? 'Unknown';
     String uid = widget.tripData['uid'].toString() ?? 'Unknown';
@@ -128,7 +130,8 @@ class _FindTripPreviewState extends State<FindTripPreview> {
     final Map<String, IconData> luggageIcons = {
       'No luggage': Icons.cancel,
       'Backpack': Icons.backpack,
-      'Cabin bag (max. 23 kg)': Icons.luggage,
+      'Cabin bag (max. 23 kg)': Icons.cases_outlined,
+      'Cabin bag (max. 46 kg)': Icons.luggage,
     };
     final Map<String, IconData> itemsIcons = {
       'Winter tires': Icons.ac_unit,
@@ -277,7 +280,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
             ),
             Divider(),
             Padding(
-              padding: const EdgeInsets.only(top: 10, bottom: 13),
+              padding: const EdgeInsets.all(13),
               child: Text(
                 description,
                 style: TextStyle(color: Colors.grey[600], fontSize: 15),
@@ -415,7 +418,7 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                       // final stopPrice = stop['stop_price'] ?? '0';
                       return ListTile(
                         title: Padding(
-                          padding: const EdgeInsets.only(bottom: 20.0),
+                          padding: const EdgeInsets.all(10),
                           child: Row(
                             children: [
                               Icon(Icons.location_on),
@@ -429,6 +432,9 @@ class _FindTripPreviewState extends State<FindTripPreview> {
                     },
                   ),
                 ],
+                SizedBox(
+                  height: 100,
+                )
               ],
             ),
 

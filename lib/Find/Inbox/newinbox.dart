@@ -50,6 +50,8 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isAtBottom = true;
   bool _hasFetchedOldMessages = false; // Flag to check if old messages have been fetched
   bool _noMessagesFound = false;
+  int consecutiveMessagesWithNumbers = 0;
+
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -95,6 +97,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _channel.sink.add(jsonEncode({
           'token': _token,
           'to': int.parse(widget.recipientId),
+          'action': 'open_chat',
         }));
       }
 
@@ -203,6 +206,23 @@ class _ChatScreenState extends State<ChatScreen> {
   void _sendMessage() {
     String messageText = _messageController.text.trim();
     if (messageText.isNotEmpty && _token != null) {
+      bool containsIntegers = _hasIntegers(messageText);
+      int countNumbers = _countNumbersInText(messageText);
+
+      if (countNumbers > 6) {
+        _showWarningDialog('Message cannot contain more than 6 numbers.');
+        return;
+      }
+
+      if (containsIntegers) {
+        consecutiveMessagesWithNumbers++;
+        if (consecutiveMessagesWithNumbers > 1) {
+          _showWarningDialog('You can\'t use consecutive messages with numbers.');
+          return;
+        }
+      } else {
+        consecutiveMessagesWithNumbers = 0;
+      }
       /*final newMessage = Message(
           messageText, 'sent', DateTime.now().toIso8601String());
 */
@@ -213,9 +233,9 @@ class _ChatScreenState extends State<ChatScreen> {
         _isLoading = false; // Hide loading if a new message is sent
       });
 
-      // Clear the input field
 
       // Scroll to the bottom after sending a message
+
       // Prepare the message data for WebSocket
       final messageData = {
         'token': _token,
@@ -228,6 +248,33 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+
+  bool _hasIntegers(String text) {
+    return RegExp(r'\d').hasMatch(text);
+  }
+
+  int _countNumbersInText(String text) {
+    return RegExp(r'\d').allMatches(text).length;
+  }
+
+  void _showWarningDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Warning', style: TextStyle(color: Colors.red)),
+          ],
+        ),
+        content: Text(message),
+        actions: <Widget>[
+          TextButton(child: const Text('OK'), onPressed: () => Navigator.of(context).pop()),
+        ],
+      ),
+    );
+  }
   void _showSnackbar(String message) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));

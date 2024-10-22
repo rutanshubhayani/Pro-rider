@@ -60,6 +60,8 @@ class _GetBookedPreviewState extends State<GetBookedPreview> {
         return 'Backpack';
       case '2':
         return 'Cabin bag (max. 23 kg)';
+        case '3':
+        return 'Cabin bag (max. 46 kg)';
       default:
         return 'Unknown';
     }
@@ -69,7 +71,8 @@ class _GetBookedPreviewState extends State<GetBookedPreview> {
     final Map<String, IconData> luggageIcons = {
       'No luggage': Icons.cancel,
       'Backpack': Icons.backpack,
-      'Cabin bag (max. 23 kg)': Icons.luggage,
+      'Cabin bag (max. 23 kg)': Icons.cases_outlined,
+      'Cabin bag (max. 46 kg)': Icons.luggage,
     };
     return luggageIcons[getLuggageLabel(code)] ?? Icons.help;
   }

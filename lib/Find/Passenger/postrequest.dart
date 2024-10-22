@@ -312,28 +312,23 @@ class _PostrequestState extends State<Postrequest> {
               children: [
                 Expanded(
                   flex: 2,
-                  child: TextFormField(
+                  child: CustomTextField(
                     controller: dateController,
                     focusNode: dateFocusNode,
-                    decoration: InputDecoration(
-                      hintText: 'Pick departure date',
-                      suffixIcon: dateController.text.isNotEmpty
-                          ? IconButton(
-                        icon: Icon(Icons.close_rounded),
-                        onPressed: () => handleClearClick(dateController),
-                      )
-                          : null,
-                      prefixIcon: Icon(Icons.calendar_today),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
+                    hintText: 'Pick departure date',
                     textInputAction: TextInputAction.next,
                     onFieldSubmitted: (_) {
                       FocusScope.of(context).requestFocus(seatFocusNode);
                     },
                     readOnly: true,
                     onTap: () => _selectDate(context),
+                    prefixIcon: Icon(Icons.calendar_today),
+                    suffixIcon: dateController.text.isNotEmpty
+                        ? IconButton(
+                      icon: Icon(Icons.close_rounded),
+                      onPressed: () => handleClearClick(dateController),
+                    )
+                        : null,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please pick a date';
@@ -344,24 +339,17 @@ class _PostrequestState extends State<Postrequest> {
                 ),
                 SizedBox(width: 10),
                 Expanded(
-                  child: TextFormField(
+                  child: CustomTextField(
                     controller: timeController,
-                    decoration: InputDecoration(
-                      hintText: 'Time',
-                     /* suffixIcon: timeController.text.isNotEmpty
-                          ? IconButton(
-                        icon: Icon(Icons.close_rounded),
-                        onPressed: () => handleClearClick(timeController),
-                      )
-                          : null,*/
-                      prefixIcon: Icon(Icons.watch_later_outlined),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
+                    hintText: 'Time',
+                    prefixIcon: Icon(Icons.watch_later_outlined),
                     textInputAction: TextInputAction.next,
                     readOnly: true,
-                    onTap: () => _selectTime(),
+                    onTap: () => _selectTime(),  // Time picker function
+                    focusNode: FocusNode(),  // Create a new FocusNode if one isn't available
+                    onFieldSubmitted: (_) {
+                      FocusScope.of(context).nextFocus();  // Move to next field if required
+                    },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Pick time';
@@ -425,10 +413,23 @@ class _PostrequestState extends State<Postrequest> {
                   hintText:
                   'Tell driver a little bit more about you and why you\'re travelling.',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10.0),
                   ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(
+                        color: Colors.grey,
+                        width: 2
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15.0),
+                    borderSide: BorderSide(
+                        color: kPrimaryColor,
+                        width: 2
+                    ),
                 ),
-              ),
+              ),),
               SizedBox(height: 40,),
               Row(
                 children: <Widget>[

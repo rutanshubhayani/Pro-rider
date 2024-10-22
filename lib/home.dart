@@ -20,14 +20,16 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     const FindScreen(),
     const InboxList(),
     const FindRequests(),
-    const History(),
+    // const History(),
   ];
 
   late int _currentIndex;
   late PageController _pageController;
   late AnimationController _historyAnimationController;
-  late AnimationController _searchIconAnimationController;
-  late Animation<double> _mirrorAnimation;
+  late AnimationController _bikeAnimationController;
+  late AnimationController _passengerAnimationController;
+  late Animation<double> _bikeAnimation;
+  late Animation<double> _passengerAnimation;
 
   @override
   void initState() {
@@ -41,24 +43,35 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    _searchIconAnimationController = AnimationController(
+    _bikeAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
 
-    // Create a Tween animation to mirror the search icon
-    _mirrorAnimation = Tween<double>(begin: 1.0, end: -1.0)
-        .animate(_searchIconAnimationController)
+    _passengerAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    // Create a Tween animation for the bike icon
+    _bikeAnimation = Tween<double>(begin: 1.0, end: -1.0).animate(_bikeAnimationController)
       ..addListener(() {
         setState(() {});
       });
 
+    // Create a Tween animation for the passenger icon
+    _passengerAnimation = Tween<double>(begin: 1.0, end: -1.0).animate(_passengerAnimationController)
+      ..addListener(() {
+        setState(() {});
+      });
 
+    // Start the history animation if initialIndex is 3
     if (_currentIndex == 3) {
       _historyAnimationController.forward().then((_) {
         _historyAnimationController.reverse();
-      }
-      );
+      });
+    } else if (_currentIndex == 0) {
+      _passengerAnimationController.forward();
     }
   }
 
@@ -66,18 +79,20 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   void dispose() {
     _pageController.dispose();
     _historyAnimationController.dispose();
-    _searchIconAnimationController.dispose();
+    _bikeAnimationController.dispose();
+    _passengerAnimationController.dispose();
     super.dispose();
   }
 
   Future<bool> _onWillPop() async {
     if (_currentIndex != 0) {
       setState(() {
-        _currentIndex = 0;
-        _pageController.jumpToPage(0);
+        _currentIndex = 0; // Set current index to Passenger
+        _pageController.jumpTo(0); // Navigate to Passenger screen
       });
       return false; // Prevent the app from closing
     } else {
+      // Confirm exit logic
       final result = await CustomDialog.show(
         context,
         title: 'Exit App',
@@ -88,7 +103,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           SystemNavigator.pop(); // Close the app
         },
       );
-      return result;
+      return result; // Return the result of the dialog
     }
   }
 
@@ -101,6 +116,15 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         _historyAnimationController.forward().then((_) {
           _historyAnimationController.reverse();
         });
+      } else if (index == 2) { // For the Rider screen
+        _bikeAnimationController.forward();
+        _passengerAnimationController.reverse(); // Reset passenger animation
+      } else if (index == 0) { // For the Passenger screen
+        _passengerAnimationController.forward();
+        _bikeAnimationController.reverse(); // Reset bike animation
+      } else {
+        _bikeAnimationController.reverse();
+        _passengerAnimationController.reverse();
       }
     });
   }
@@ -122,9 +146,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   }
 
   void _onFindTapped() {
-    _searchIconAnimationController.forward().then((_) {
-      _searchIconAnimationController.reverse();
-    });
+    // Not used for the bike animation
   }
 
   @override
@@ -149,25 +171,21 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           elevation: 0,
           currentIndex: _currentIndex,
           onTap: (index) {
-            if (index == 0) {
-              // Check if we're already on the Find tab
-              if (_currentIndex != 0) {
-                setState(() {
-                  _currentIndex = 0;
-                  _pageController.jumpToPage(0);
-                });
+            setState(() {
+              _currentIndex = index;
+              _pageController.jumpToPage(index);
+              _historyAnimationController.reset(); // Reset history animation if navigating to another tab
+              if (index == 0) {
+                _passengerAnimationController.forward();
+              } else {
+                _passengerAnimationController.reverse();
               }
-              // Trigger the search icon animation even if already on the Find tab
-              _onFindTapped();
-            } else if (index == 3) {
-              _onHistoryTapped();
-            } else {
-              setState(() {
-                _currentIndex = index;
-                _pageController.jumpToPage(index);
-                _historyAnimationController.reset(); // Reset history animation if navigating to another tab
-              });
-            }
+              if (index == 2) {
+                _bikeAnimationController.forward();
+              } else {
+                _bikeAnimationController.reverse();
+              }
+            });
           },
           items: <BottomNavigationBarItem>[
             BottomNavigationBarItem(
@@ -178,17 +196,14 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   color: _currentIndex == 0 ? kPrimaryColor.withOpacity(0.2) : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: AnimatedBuilder(
-                  animation: _mirrorAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scaleX: _mirrorAnimation.value,
-                      child: const Icon(Icons.search),
-                    );
-                  },
+                child: Transform.scale(
+                  scaleX: _passengerAnimation.value,
+                  child: Icon(
+                    _currentIndex == 0 ? Icons.person : Icons.person_outline_outlined,
+                  ),
                 ),
               ),
-              label: 'Find',
+              label: 'Passenger',
             ),
             BottomNavigationBarItem(
               icon: Container(
@@ -212,31 +227,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   color: _currentIndex == 2 ? kPrimaryColor.withOpacity(0.2) : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Icon(
-                  _currentIndex == 2 ? Icons.person : Icons.person_outline_outlined,
+                child: Transform.scale(
+                  scaleX: _bikeAnimation.value,
+                  child: Icon(Icons.directions_car),
                 ),
               ),
-              label: 'Passenger',
-            ),
-            BottomNavigationBarItem(
-              icon: Container(
-                height: 30,
-                width: 55,
-                decoration: BoxDecoration(
-                  color: _currentIndex == 3 ? kPrimaryColor.withOpacity(0.2) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: AnimatedBuilder(
-                  animation: _historyAnimationController,
-                  builder: (context, child) {
-                    return Transform.rotate(
-                      angle: _historyAnimationController.value * 2 * 3.14159,
-                      child: const Icon(Icons.history),
-                    );
-                  },
-                ),
-              ),
-              label: 'History',
+              label: 'Rider',
             ),
           ],
         ),

@@ -8,11 +8,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travel/Find/Passenger/all_posted_requests.dart';
 import 'package:travel/Find/Passenger/postrequest.dart';
 import 'package:travel/Find/Passenger/requestresult.dart';
+import '../../UserProfile/License/verifylicenese.dart';
+import '../../UserProfile/vechiledetails.dart';
 import '../../api/api.dart';
 import '../../widget/City_search.dart';
 import '../../widget/HttpHandler.dart';
 import '../../widget/configure.dart';
 import '../../widget/internet.dart';
+import '../Driver/posttrip.dart';
 import '../SearchResult/searchresult.dart';
 import '../Trips/TripsHome.dart';
 
@@ -38,6 +41,8 @@ class _FindRequestsState extends State<FindRequests> {
   List<dynamic> destinationSuggestions = [];
   late TextEditingController
   activeController; // Keep track of the active controller
+  bool _isLoading = false; // Define a loading state
+
 
   List<String> recentSearches = []; // List to store recent searches
 
@@ -116,6 +121,105 @@ class _FindRequestsState extends State<FindRequests> {
           title: Text('Error'),
           content: Text(message),
           actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _checkTripPostConditions() async {
+    setState(() {
+      _isLoading = true; // Start loading
+    });
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token != null) {
+      try {
+        final vehicleResponse = await http.get(
+          Uri.parse('${API.api1}/get-vehicle-data'),
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        final licenseResponse = await http.get(
+          Uri.parse('${API.api1}/images'),
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        int? licenseStatus;
+        if (licenseResponse.statusCode == 200) {
+          final jsonResponse = json.decode(licenseResponse.body);
+          licenseStatus = int.tryParse(jsonResponse['status'].toString());
+        }
+
+        bool vehicleDataFound = vehicleResponse.statusCode == 200;
+
+        if (licenseStatus == 1 && vehicleDataFound) {
+          Get.to(() => PostTrip());
+        } else {
+          _showStatusDialog(context, licenseStatus, vehicleDataFound);
+        }
+      } catch (e) {
+        _showErrorDialog(
+            context, 'Please check your connection and try again.');
+      }
+    } else {
+      print('Auth token not found');
+    }
+    setState(() {
+      _isLoading = false; // Stop loading
+    });
+  }
+
+
+  void _showStatusDialog(
+      BuildContext context, int? licenseStatus, bool vehicleDataFound) {
+    String message = '';
+    bool showLicenseAlert = licenseStatus != 1;
+    bool showVehicleAlert = !vehicleDataFound;
+
+    if (showLicenseAlert) {
+      message += 'Your license is either not uploaded or under approval.\n';
+    }
+
+    if (showVehicleAlert) {
+      message +=
+      'You have not uploaded vehicle details. Please upload before posting a ride.\n';
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Status Alert'),
+          content: Text(message),
+          actions: [
+            if (showLicenseAlert)
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Get.to(() => VerifyLicense());
+                },
+                child: Text('Go to License'),
+              ),
+            if (showVehicleAlert)
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Get.to(() => VehicleDetails());
+                },
+                child: Text('Go to Vehicle Details'),
+              ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
@@ -430,7 +534,27 @@ class _FindRequestsState extends State<FindRequests> {
                 ),
               ],
             ),
-            buildDateTextField(),
+            CustomTextField(
+              controller: dateController,
+              focusNode: dateFocusNode,
+              textInputAction: TextInputAction.next,
+              onFieldSubmitted: (_) {
+                FocusScope.of(context).unfocus();  // Or move to next focus
+              },
+              hintText: 'Departure date',
+              prefixIcon: Icon(Icons.calendar_today),
+              readOnly: true,
+              onTap: () => _selectDate(context),  // Opens date picker
+              suffixIcon: dateController.text.isNotEmpty
+                  ? IconButton(
+                icon: Icon(FontAwesomeIcons.times),
+                onPressed: () {
+                  dateController.clear();  // Clear the date field
+                },
+              )
+                  : null,  // No suffix icon if text is empty
+            ),
+
             SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -618,7 +742,7 @@ class _FindRequestsState extends State<FindRequests> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-            Container(
+/*            Container(
               width: 165,
               child: ActionButton(
                 label: 'History',
@@ -630,10 +754,46 @@ class _FindRequestsState extends State<FindRequests> {
                   );
                 },
               ),
-            ),
-                SizedBox(height: 10,),
+            )*/
+                SizedBox(
+                  width: 165,
+                  height: 50,
+                  child: FloatingActionButton(
+                    backgroundColor: kPrimaryColor,
+                    onPressed: _checkTripPostConditions,
+                    child: Row(
+                      mainAxisAlignment:
+                      MainAxisAlignment.center, // Center the content
+                      children: [
+                        if (!_isLoading)
+                          Icon(
+                            Icons.add,
+                            color: Colors.white,
+                          ), // Show the icon only if not loading
+                        if (_isLoading)
+                          SizedBox(
+                              height: 30,
+                              width: 30,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 4,
+                              )), // Show loading indicator when loading
+                        if (!_isLoading) ...[
+                          // Only show text if not loading
+                          SizedBox(width: 5),
+                          Text(
+                            'Add ride',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                )
 
-                Container(
+                /* Container(
                   width: 165,
                   child: ActionButton(
                     label: 'Add Request',
@@ -645,7 +805,7 @@ class _FindRequestsState extends State<FindRequests> {
                       );
                     },
                   ),
-                ),
+                ),*/
               ],
             ),
           ),

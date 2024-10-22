@@ -5,13 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:travel/Find/Trips/TripsHome.dart';
-import 'package:travel/Find/find.dart';
-import 'package:travel/UserProfile/PostedRides/all_posted_rides.dart';
 import 'package:travel/api/api.dart';
-import 'package:travel/Find/SearchResult/searchresult.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../../home.dart';
 import '../../widget/City_search.dart';
 import '../../widget/configure.dart';
@@ -61,18 +56,18 @@ class _PostTripState extends State<PostTrip> {
     Icons.repeat,
   ];
   List<IconData> tripIcons = [
-    Icons.clear, // Represents no luggage
-    Icons.backpack, // Represents a backpack
-    Icons.luggage, // Represents a cabin bag
+    Icons.clear,       // Represents no luggage
+    Icons.backpack,    // Represents a backpack
+    Icons.cases_outlined,     // Represents a cabin bag (23kg)
+    Icons.luggage,    // Represents a cabin bag (46kg)
   ];
-  List<String> tripPreferences = ['No luggage', 'Backpack', 'Cabin bag (23kg)'];
+  List<String> tripPreferences = ['No luggage', 'Backpack', 'Cabin bag (23kg)', 'Cabin bag (46kg)'];
   final List<String> rideScheduleOptions = ['One-time trip', 'Recurring trip'];
-  List<bool> isSelected2 = [true, false, false];
+  List<bool> isSelected2 = [true, false, false, false];
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
   String _selectedRideSchedule = 'One-time trip';
   String _selectedTripPreference = 'No luggage';
-  int _selectedChoice = 1;
   int selectedSeats = 1;
   bool _isChecked = false;
 
@@ -140,6 +135,7 @@ class _PostTripState extends State<PostTrip> {
       final Map<String, dynamic> body = {
         'departure': departureController.text,
         'destination': destinationController.text,
+        'stops': stopsController.text,
         'price': dpriceController.text,
         'ride_schedule': _selectedRideSchedule,
         'leaving_date_time': '${dateController.text} ${timeController.text}',
@@ -154,12 +150,12 @@ class _PostTripState extends State<PostTrip> {
           .join(', '),*/
         'empty_seats': selectedSeats,
         'description': descriptionController.text,
-        'stops': stopsAndPrices
+     /*   'stops': stopsAndPrices
             .map((stopAndPrice) => {
                   'name': stopAndPrice['stop'],
                   'price': stopAndPrice['price'],
                 })
-            .toList(),
+            .toList(),*/
       };
 
       print('Sending data: $body');
@@ -445,99 +441,35 @@ class _PostTripState extends State<PostTrip> {
                           ),
                         ),
                       ),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: TextFormField(
-                              controller: destinationController,
-                              focusNode: destinationFocusNode,
-                              decoration: InputDecoration(
-                                prefixIcon: Icon(Icons.location_on),
-                                hintText: 'Destination Location',
-                                suffixIcon: destinationController
-                                        .text.isNotEmpty
-                                    ? IconButton(
-                                        icon: Icon(Icons.close_rounded),
-                                        onPressed: () => handleClearClick(
-                                            destinationController),
-                                      )
-                                    : null, // Only show the clear icon if there's text in the field
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              textInputAction: TextInputAction.next,
-                              onFieldSubmitted: (value) {
-                                FocusScope.of(context)
-                                    .requestFocus(dpriceFocusNode);
-                              },
-                              onChanged: (value) {
-                                _updateSuggestions(
-                                    value, destinationController);
-                              },
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter destination';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: TextFormField(
-                              focusNode: dpriceFocusNode,
-                              controller: dpriceController,
-                              decoration: InputDecoration(
-                                hintText: 'Enter price',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Enter price';
-                                }
-                                return null;
-                              },
-                              keyboardType: TextInputType.number,
-                              textInputAction: TextInputAction.next,
-                              onFieldSubmitted: (_) {
-                                FocusScope.of(context)
-                                    .requestFocus(stopsFocusNode);
-                              },
-                            ),
-                          ),
-                        ],
+                      CitySearchField(
+                        controller: destinationController,
+                        focusNode: destinationFocusNode,
+                        hintText: 'Destination Location',
+                        showSuggestions: showDestinationContainer,
+                        suggestions: destinationSuggestions,
+                        onChanged: (value) {
+                          activeController = destinationController;
+                          _updateSuggestions(value, destinationController);
+                        },
+                        onSubmitted: (value) {
+                          FocusScope.of(context)
+                              .requestFocus(stopsFocusNode);
+                        },
+                        onClear: () => handleClearClick(destinationController),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter destination';
+                          }
+                          return null;
+                        },
+                        onSuggestionTap: (suggestion) {
+                          destinationController.text =
+                          '${suggestion['city']}, ${suggestion['pname']}';
+                          setState(() {
+                            showDestinationContainer = false;
+                          });
+                        },
                       ),
-                      // Container for suggestions
-                      if (showDestinationContainer)
-                        Card(
-                          elevation: 4,
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            physics:
-                                NeverScrollableScrollPhysics(), // Prevent scrolling within the Container
-                            itemCount: destinationSuggestions.length,
-                            itemBuilder: (context, index) {
-                              final suggestion = destinationSuggestions[index];
-                              return ListTile(
-                                leading: Icon(Icons.location_on),
-                                title: Text(
-                                    '${suggestion['city']}, ${suggestion['pname']}'),
-                                onTap: () {
-                                  destinationController.text =
-                                      '${suggestion['city']}, ${suggestion['pname']}';
-                                  setState(() {
-                                    showDestinationContainer =
-                                        false; // Hide the suggestions after selection
-                                  });
-                                },
-                              );
-                            },
-                          ),
-                        ),
                       SizedBox(height: 20),
                       Divider(
                         height: 4,
@@ -558,87 +490,35 @@ class _PostTripState extends State<PostTrip> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: TextFormField(
-                                  controller: stopsController,
-                                  focusNode: stopsFocusNode,
-                                  decoration: InputDecoration(
-                                    prefixIcon:
-                                        Icon(Icons.add_location_alt_sharp),
-                                    hintText: 'Stops Location',
-                                    suffixIcon: stopsController.text.isNotEmpty
-                                        ? IconButton(
-                                            icon: Icon(Icons.close_rounded),
-                                            onPressed: () => handleClearClick(
-                                                stopsController),
-                                          )
-                                        : null, // Only show the clear icon if there's text in the field
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  textInputAction: TextInputAction.next,
-                                  onFieldSubmitted: (value) {
-                                    FocusScope.of(context)
-                                        .requestFocus(spriceFocusNode);
-                                  },
-                                  onChanged: (value) {
-                                    _updateSuggestions(value, stopsController);
-                                  },
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              /* Expanded(
-                                child: TextFormField(
-                                  focusNode: spriceFocusNode,
-                                  controller: spriceController,
-                                  decoration: InputDecoration(
-                                    filled: true,
-                                    hintText: 'Enter price',
-                                    border: OutlineInputBorder(
-                                      borderSide: BorderSide.none,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  textInputAction: TextInputAction.next,
-                                  onFieldSubmitted: (_) {
-                                    FocusScope.of(context)
-                                        .requestFocus(dateFocusNode);
-                                  },
-                                ),
-                              ),*/
-                            ],
+                          CitySearchField(
+                            controller: stopsController,
+                            focusNode: stopsFocusNode,
+                            hintText: 'Stops Location',
+                            showSuggestions: showStopsContainer,
+                            suggestions: stopsSuggestions,
+                            onChanged: (value) {
+                              activeController = stopsController;
+                              _updateSuggestions(value, stopsController);
+                            },
+                            onSubmitted: (value) {
+                              FocusScope.of(context)
+                                  .requestFocus(stopsFocusNode);
+                            },
+                            onClear: () => handleClearClick(stopsController),
+                            /*validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter stops';
+                              }
+                              return null;
+                            },*/
+                            onSuggestionTap: (suggestion) {
+                              stopsController.text =
+                              '${suggestion['city']}, ${suggestion['pname']}';
+                              setState(() {
+                                showStopsContainer = false;
+                              });
+                            },
                           ),
-                          // Container for suggestions
-                          if (showStopsContainer)
-                            Card(
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                physics:
-                                    NeverScrollableScrollPhysics(), // Prevent scrolling within the Container
-                                itemCount: stopsSuggestions.length,
-                                itemBuilder: (context, index) {
-                                  final suggestion = stopsSuggestions[index];
-                                  return ListTile(
-                                    leading: Icon(Icons.location_on),
-                                    title: Text(
-                                        '${suggestion['city']}, ${suggestion['pname']}'),
-                                    onTap: () {
-                                      stopsController.text =
-                                          '${suggestion['city']}, ${suggestion['pname']}';
-                                      setState(() {
-                                        showStopsContainer =
-                                            false; // Hide the suggestions after selection
-                                      });
-                                    },
-                                  );
-                                },
-                              ),
-                            ),
                           Padding(
                             padding: const EdgeInsets.all(10.0),
                             child: stopsController.text
@@ -689,14 +569,53 @@ class _PostTripState extends State<PostTrip> {
                           }).toList(),
                         ],
                       ),
+
+                      Divider(
+                        height: 4,
+                        thickness: 1,
+                        color: Colors.black26,
+                      ),
                       SizedBox(height: 20),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 3.0, bottom: 7),
+                        child: Text(
+                          'Price',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.5,
+                        child: CustomTextField(
+                          label: 'Price',
+                          controller: dpriceController,
+                          focusNode: dpriceFocusNode,
+                          keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) {
+                            FocusScope.of(context).requestFocus(stopsFocusNode);
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter price';
+                            }
+                            return null;
+                          },
+                          hintText: 'Enter price',
+                          prefixIcon: Icon(Icons.currency_exchange),
+                        ),
+
+                      ),
+                      SizedBox(height: 25),
                       Divider(
                         endIndent: 100,
                         height: 4,
                         thickness: 2,
                         color: Colors.black26,
                       ),
-                      SizedBox(height: 30),
+                      SizedBox(height: 10,),
 
                       Padding(
                         padding: EdgeInsets.only(left: 3, bottom: 15),
@@ -776,26 +695,14 @@ class _PostTripState extends State<PostTrip> {
                         children: [
                           Expanded(
                             flex: 2,
-                            child: TextFormField(
-                              focusNode: dateFocusNode,
+                            child: CustomTextField(
+                              label: 'Departure Date',
                               controller: dateController,
-                              decoration: InputDecoration(
-                                hintText: 'Departure date',
-                                prefixIcon: Icon(Icons.calendar_month),
-                                border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.blue),
-                                    borderRadius: BorderRadius.circular(10)),
-                              ),
-                              readOnly: true,
-                              onTap: () {
-                                _selectDate();
-                              },
+                              focusNode: dateFocusNode,
+                              keyboardType: TextInputType.none,  // Since it's a date picker
                               textInputAction: TextInputAction.next,
                               onFieldSubmitted: (_) {
-                                FocusScope.of(context)
-                                    .requestFocus(timeFocusNode);
+                                FocusScope.of(context).requestFocus(timeFocusNode);
                               },
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -803,7 +710,14 @@ class _PostTripState extends State<PostTrip> {
                                 }
                                 return null;
                               },
+                              hintText: 'Departure date',
+                              prefixIcon: Icon(Icons.calendar_month),
+                              readOnly: true,  // Makes it non-editable, only tappable
+                              onTap: () {
+                                _selectDate();  // Your method to open the date picker
+                              },
                             ),
+
                           ),
                           Padding(
                             padding: const EdgeInsets.all(10.0),
@@ -813,33 +727,26 @@ class _PostTripState extends State<PostTrip> {
                             ),
                           ), // Add some space between the two text fields
                           Expanded(
-                            child: TextFormField(
+                            child: CustomTextField(
+                              label: 'Time',
+                              controller: timeController,
                               focusNode: timeFocusNode,
-                              onTap: _selectTime,
-                              decoration: InputDecoration(
-                                hintText: 'Time',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.blue),
-                                    borderRadius: BorderRadius.circular(10)),
-                              ),
                               textInputAction: TextInputAction.next,
                               onFieldSubmitted: (_) {
-                                FocusScope.of(context)
-                                    .requestFocus(modelFocusNode);
+                                FocusScope.of(context).requestFocus(modelFocusNode);
                               },
-                              readOnly: true,
-                              controller: timeController,
-                              style: TextStyle(color: Colors.black54),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Pick time';
                                 }
                                 return null;
                               },
+                              hintText: 'Time',
+                              readOnly: true,  // Make it non-editable, so only tappable
+                              onTap: _selectTime,  // Opens the time picker
+                              textStyle: TextStyle(color: Colors.black54),
                             ),
+
                           ),
                         ],
                       ),
@@ -1164,9 +1071,22 @@ class _PostTripState extends State<PostTrip> {
                         inputFormatters: [NoEmojiInputFormatter()],
                         decoration: InputDecoration(
                             hintText: 'Add description',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            )),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                            borderSide: const BorderSide(
+                                color: Colors.grey,
+                                width: 2
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15.0),
+                            borderSide: const BorderSide(
+                                color: kPrimaryColor,
+                                width: 2
+                            ),),),
                       ),
                       SizedBox(
                         height: 30,
@@ -1455,7 +1375,7 @@ class _PostTripState extends State<PostTrip> {
           ),
         ),
       ),
-      floatingActionButton: AnimatedContainer(
+      /*floatingActionButton: AnimatedContainer(
         duration: Duration(milliseconds: 300),
         width: _isScrolled ? 56 : 100,
         child: FloatingActionButton(
@@ -1484,7 +1404,7 @@ class _PostTripState extends State<PostTrip> {
           ),
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,*/
     );
   }
 
