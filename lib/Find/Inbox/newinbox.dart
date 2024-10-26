@@ -25,16 +25,15 @@ class Message {
   final String content;
   final String type;
   final DateTime timestamp;
+  final bool read; // Add read status
 
-  Message(this.content, this.type, String formattedTime)
+  Message(this.content, this.type, String formattedTime, this.read)
       : timestamp = _parseFormattedTime(formattedTime);
 
   static DateTime _parseFormattedTime(String formattedTime) {
-    // Check if the format is ISO 8601
     if (formattedTime.contains('T')) {
       return DateTime.parse(formattedTime);
     } else {
-      // Otherwise, assume it's the other format
       return DateFormat('MM/dd/yyyy, hh:mm:ss a').parse(formattedTime);
     }
   }
@@ -151,8 +150,10 @@ class _ChatScreenState extends State<ChatScreen> {
           final content = msg['content'];
           final type = msg['type'];
           final formattedTime = msg['formatted_time'];
+          bool isRead = msg['read'] ?? false; // Set read status from the server response
+
           if (senderId == widget.recipientId || senderId == loggedInUserId) {
-            _messages.add(Message(content, type, formattedTime));
+            _messages.add(Message(content, type, formattedTime, isRead));
           }
         }
         _isLoading = false;
@@ -167,6 +168,7 @@ class _ChatScreenState extends State<ChatScreen> {
       final content = parsedMessage['content'];
       final formattedTime = parsedMessage['formatted_time'];
       final messageType = parsedMessage['type'];
+      bool isRead = parsedMessage['read'] ?? false; // Get read status for the new message
 
       // Reset no messages found flag when a message is received
       setState(() {
@@ -179,7 +181,7 @@ class _ChatScreenState extends State<ChatScreen> {
           receiverId.toString() == widget.recipientId &&
           messageType == 'sent') {
         setState(() {
-          _messages.add(Message(content, 'sent', formattedTime));
+          _messages.add(Message(content, 'sent', formattedTime, isRead));
           _isLoading = false; // Hide loading if a new message is received
         });
         _scrollToBottom();
@@ -187,7 +189,7 @@ class _ChatScreenState extends State<ChatScreen> {
           receiverId.toString() == loggedInUserId &&
           senderId.toString() == widget.recipientId) {
         setState(() {
-          _messages.add(Message(content, 'received', formattedTime));
+          _messages.add(Message(content, 'received', formattedTime, isRead));
           _isLoading = false; // Hide loading if a new message is received
         });
         _scrollToBottom();
@@ -317,56 +319,63 @@ class _ChatScreenState extends State<ChatScreen> {
                   : ListView.builder(
                 controller: _scrollController,
                       itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        final message = _messages[index];
-                        final isSentByMe = message.type == 'sent';
+                itemBuilder: (context, index) {
+                  final message = _messages[index];
+                  final isSentByMe = message.type == 'sent';
 
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 10),
-                          child: Align(
-                            alignment: isSentByMe
-                                ? Alignment.centerRight
-                                : Alignment.centerLeft,
-                            child: Column(
-                              crossAxisAlignment: isSentByMe
-                                  ? CrossAxisAlignment.end
-                                  : CrossAxisAlignment.start,
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                    child: Align(
+                      alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Column(
+                        crossAxisAlignment: isSentByMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            constraints: BoxConstraints(maxWidth: 250),
+                            padding: EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: isSentByMe ? kPrimaryColor : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Container(
-                                  constraints: BoxConstraints(maxWidth: 250),
-                                  padding: EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: isSentByMe
-                                        ? kPrimaryColor
-                                        : Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    message.content,
-                                    style: TextStyle(
-                                        color: isSentByMe
-                                            ? Colors.white
-                                            : Colors.black),
-                                  ),
-                                ),
-                                SizedBox(height: 4),
                                 Text(
-                                  DateFormat('hh:mm a')
-                                      .format(message.timestamp),
-                                  style: TextStyle(
-                                      fontSize: 10, color: Colors.grey),
+                                  message.content,
+                                  style: TextStyle(color: isSentByMe ? Colors.white : Colors.black),
                                 ),
                               ],
                             ),
                           ),
-                        );
-                      },
+                          SizedBox(height: 4),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                DateFormat('hh:mm a').format(message.timestamp),
+                                style: TextStyle(fontSize: 10, color: Colors.grey),
+                              ),
+                              if (isSentByMe) // Only show icon for sent messages
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 4), // Minimal left padding
+                                  child: Icon(
+                                    message.read ? Icons.check_circle : Icons.check,
+                                    color: message.read ? Colors.grey  : Colors.grey, // Different colors for read and unread
+                                    size: 16,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
                     ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(10.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

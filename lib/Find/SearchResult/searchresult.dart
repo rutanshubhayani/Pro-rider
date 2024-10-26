@@ -244,7 +244,7 @@ class _SearchResultState extends State<SearchResult> {
                 if (stopCount == 0) {
                   stopsText = 'No stops';
                 } else {
-                  stopsText = '$stopCount stop${stopCount != 1 ? 's' : ''} included';
+                  stopsText = '$stopCount stop${stopCount != 1 ? 's' : ''}';
                 }
 
                 return GestureDetector(

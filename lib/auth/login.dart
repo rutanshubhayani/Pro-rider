@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io'; // Import dart:io for connectivity checks
+import 'package:web_socket_channel/io.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -25,9 +26,13 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obsecureText = true; // For password visibility
   TextEditingController _emailicontroller = TextEditingController();
   TextEditingController _passwordcontroller = TextEditingController();
+  List<Map<String, dynamic>> _conversations = [];
+  IOWebSocketChannel? _channel;
 
   FocusNode _emailFocusNode = FocusNode();
   FocusNode _passwordFocusNode = FocusNode();
+
+  bool get isWebSocketConnected => _channel != null && _channel!.closeCode == null;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -60,6 +65,151 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+
+
+  void _connectToWebSocket() async {
+    String socketUrl = 'ws://202.21.32.153:8081/socket'; // Replace with your socket URL
+    _channel = IOWebSocketChannel.connect(socketUrl);
+
+    print('Attempting to connect to WebSocket...');
+
+    // Retrieve the token from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('authToken');
+
+    if (token != null) {
+      // Send the token to the server
+      _channel!.sink.add(jsonEncode({'token': token}));
+      print('Token sent: $token');
+    } else {
+      print('No token found, unable to send.');
+    }
+
+    _channel!.stream.listen(
+          (message) {
+        // print("Message received: $message");
+        _handleIncomingMessage(message);
+      },
+      onError: (error) {
+        print('WebSocket error: $error');
+      },
+      onDone: () {
+        print('WebSocket connection closed.');
+      },
+    );
+
+    Future.delayed(Duration(milliseconds: 100), () {
+      if (isWebSocketConnected) {
+        print('WebSocket is connected.');
+      } else {
+        print('WebSocket is not connected.');
+      }
+    });
+  }
+
+  void _handleIncomingMessage(String message) async {
+    print('Received message raw: $message');
+    try {
+      final parsedMessage = json.decode(message);
+      print('Parsed message: $parsedMessage');
+
+      // Retrieve the current user's ID from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      String? currentUserIdString = prefs.getString('userId');
+      int? currentUserId = int.tryParse(currentUserIdString ?? '');
+      if (currentUserId == null) {
+        print('Error: Unable to parse user ID from SharedPreferences');
+        return;
+      }
+
+      // Check if the incoming message has 'latest_messages'
+      if (parsedMessage != null && parsedMessage.containsKey('latest_messages')) {
+        List<dynamic> latestMessages = parsedMessage['latest_messages'];
+
+        for (var msg in latestMessages) {
+          int? senderId = int.tryParse(msg['from']?.toString() ?? '');
+          int? recipientId = int.tryParse(msg['to']?.toString() ?? '');
+
+          if (senderId != null && recipientId != null) {
+            int otherUserId = (senderId == currentUserId) ? recipientId : senderId;
+            _updateOrAddConversation(msg, otherUserId);
+          }
+        }
+
+        // Update the state with new conversations
+        setState(() {});
+      } else {
+        // Handle new direct messages
+        int? senderId = int.tryParse(parsedMessage['from']?.toString() ?? '');
+        int? recipientId = int.tryParse(parsedMessage['to']?.toString() ?? '');
+
+        if (senderId != null && recipientId != null) {
+          int otherUserId = (senderId == currentUserId) ? recipientId : senderId;
+          _updateOrAddConversation(parsedMessage, otherUserId);
+        }
+      }
+    } catch (e) {
+      print('Error parsing message: $e');
+    }
+  }
+
+  void _updateOrAddConversation(Map<String, dynamic> msg, int userId) async {
+    bool conversationExists = _conversations.any((conv) => conv['recipientId'] == userId);
+
+    if (conversationExists) {
+      for (var existingConversation in _conversations) {
+        if (existingConversation['recipientId'] == userId) {
+          setState(() {
+            // Update existing conversation with the latest message
+            existingConversation['lastMessage'] = msg['message'] ?? msg['content'];
+            existingConversation['lastMessageUnread'] = !(msg['read'] ?? true);
+            existingConversation['timestamp'] = msg['time'] ?? msg['formatted_time'];
+          });
+          break; // Break the loop after finding the conversation
+        }
+      }
+    } else {
+      Map<String, dynamic>? userDetails = await _fetchUserDetails(userId);
+      String recipientUserName = userDetails?['uname'] ?? 'User $userId';
+      String recipientUserImage = userDetails?['profile_photo'] ?? '';
+
+      setState(() {
+        // Add the new conversation to the list
+        _conversations.insert(0, {
+          'recipientId': userId,
+          'recipientUserName': recipientUserName,
+          'recipientUserImage': recipientUserImage,
+          'lastMessage': msg['message'] ?? msg['content'],
+          'lastMessageUnread': !(msg['read'] ?? true),
+          'timestamp': msg['time'] ?? msg['formatted_time'],
+        });
+      });
+    }
+
+  }
+
+  Future<Map<String, dynamic>?> _fetchUserDetails(int uid) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String baseUrl = '${API.api1}/user-details/$uid'; // Your API endpoint
+
+    try {
+      final response = await http.get(Uri.parse(baseUrl), headers: {
+        'Authorization': 'Bearer ${prefs.getString('authToken')}', // Assuming you are using token-based authentication
+      });
+
+      if (response.statusCode == 200) {
+        print('User details: ${response.body}');
+        return json.decode(response.body);
+      } else {
+        print('Failed to load user details: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching user details: $e');
+      return null;
+    }
+  }
+
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
@@ -129,6 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Get.snackbar('Success', 'Login successful',
               duration: Duration(seconds: 1),
               snackPosition: SnackPosition.BOTTOM);
+          _connectToWebSocket();
           Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (context) => MyHomePage()),

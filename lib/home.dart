@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:travel/Find/Inbox/receiveInbox.dart';
 import 'package:travel/Find/Passenger/findrequests.dart';
 import 'package:travel/Find/find.dart';
-import 'package:travel/Find/history.dart';
 import 'package:travel/widget/configure.dart';
+import 'package:web_socket_channel/web_socket_channel.dart'; // Import WebSocket package
 
 class MyHomePage extends StatefulWidget {
   final int initialIndex;
@@ -30,12 +30,23 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   late AnimationController _passengerAnimationController;
   late Animation<double> _bikeAnimation;
   late Animation<double> _passengerAnimation;
-
+  late WebSocketChannel _channel; // WebSocket channel
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _currentIndex);
+
+    // Initialize WebSocket connection
+    _channel = WebSocketChannel.connect(
+      Uri.parse('ws://202.21.32.153:8081'), // Replace with your WebSocket URL
+    );
+
+    _channel.stream.listen((data) {
+      // Handle incoming messages
+      print("Message received: $data");
+      // Process the message and update UI as needed
+    });
 
     // Initialize AnimationControllers
     _historyAnimationController = AnimationController(
@@ -80,6 +91,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     _pageController.dispose();
     _historyAnimationController.dispose();
     _bikeAnimationController.dispose();
+    _channel.sink.close(); // Close WebSocket connection
     _passengerAnimationController.dispose();
     super.dispose();
   }
@@ -229,9 +241,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                 ),
                 child: Transform.scale(
                   scaleX: _bikeAnimation.value,
-                  child: Icon(Icons.directions_car),
-                ),
-              ),
+                  child: Icon(
+                    _currentIndex == 2 ? Icons.directions_car : Icons.directions_car_outlined),
+              ),),
               label: 'Rider',
             ),
           ],
