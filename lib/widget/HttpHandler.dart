@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'internet.dart';
 
 class HttpHandler {
-  final BuildContext ctx;
+  final BuildContext contx;
 
-  HttpHandler({required this.ctx});
+  HttpHandler({required this.contx});
 
-  Future<bool> netconnection(bool showMessage) async {
+  Future<bool> InternetConnection(bool showMessage) async {
     try {
       final result = await InternetAddress.lookup('google.com');
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
@@ -16,8 +16,8 @@ class HttpHandler {
       }
     } on SocketException catch (_) {
       if (showMessage) {
-        Navigator.of(ctx).push(
-          MaterialPageRoute(builder: (context) => OnInternet()),
+        Navigator.of(contx).push(
+          MaterialPageRoute(builder: (context) => Internet()),
         );
       }
     }

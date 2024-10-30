@@ -10,14 +10,14 @@ import 'HttpHandler.dart';
 import 'Size.dart';
 import '../Find/find.dart';
 
-class OnInternet extends StatefulWidget {
-  const OnInternet({Key? key}) : super(key: key);
+class Internet extends StatefulWidget {
+  const Internet({Key? key}) : super(key: key);
 
   @override
-  State<OnInternet> createState() => _OnInternetState();
+  State<Internet> createState() => _InternetState();
 }
 
-class _OnInternetState extends State<OnInternet> {
+class _InternetState extends State<Internet> {
   late KSize k;
   late HttpHandler hs;
   bool btnEdit = false;
@@ -34,7 +34,7 @@ class _OnInternetState extends State<OnInternet> {
       ),
     );
     ThemeClass.setRotations();
-    hs = HttpHandler(ctx: context);
+    hs = HttpHandler(contx: context);
   }
 
   void chkDB() async {
@@ -90,8 +90,8 @@ class _OnInternetState extends State<OnInternet> {
               children: [
                 Image.asset(
                   'images/no_internet.png',
-                  width: k.w(100),
-                  height: k.w(80),
+                  width: k.w(80),
+                  height: k.w(70),
                   fit: BoxFit.fill,
                 ),
                 SizedBox(

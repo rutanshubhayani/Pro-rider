@@ -239,15 +239,15 @@ class _FindRequestsState extends State<FindRequests> {
     super.initState();
     departureController.addListener(updateEraseController);
     destinationController.addListener(updateEraseController);
-    hs = HttpHandler(ctx: context);
+    hs = HttpHandler(contx: context);
     chkDB();
   }
 
   void chkDB() async {
-    bool chki = await hs.netconnection(true);
+    bool chki = await hs.InternetConnection(true);
     if (chki == false) {
       final res = Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const OnInternet()),
+          MaterialPageRoute(builder: (context) => const Internet()),
               (Route<dynamic> route) => false);
 
       if (res != null && res.toString() == 'done') {

@@ -48,19 +48,19 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    hs = HttpHandler(ctx: context);
-    chkDB();
+    hs = HttpHandler(contx: context);
+    check();
   }
 
-  void chkDB() async {
-    bool chki = await hs.netconnection(true);
+  void check() async {
+    bool chki = await hs.InternetConnection(true);
     if (chki == false) {
       final res = Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const OnInternet()),
+          MaterialPageRoute(builder: (context) => const Internet()),
           (Route<dynamic> route) => false);
 
       if (res != null && res.toString() == 'done') {
-        chkDB();
+        check();
         return;
       }
     }
