@@ -28,7 +28,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   late AnimationController _historyAnimationController;
   late AnimationController _bikeAnimationController;
   late AnimationController _passengerAnimationController;
-  late Animation<double> _bikeAnimation;
+  late Animation<double> _carAnimation;
   late Animation<double> _passengerAnimation;
   late WebSocketChannel _channel; // WebSocket channel
   @override
@@ -65,7 +65,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     );
 
     // Create a Tween animation for the bike icon
-    _bikeAnimation = Tween<double>(begin: 1.0, end: -1.0).animate(_bikeAnimationController)
+    _carAnimation = Tween<double>(begin: 1.0, end: -1.0).animate(_bikeAnimationController)
       ..addListener(() {
         setState(() {});
       });
@@ -141,25 +141,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
   }
 
-  void _onHistoryTapped() {
-    if (_currentIndex != 3) {
-      setState(() {
-        _currentIndex = 3;
-        _historyAnimationController.forward().then((_) {
-          _historyAnimationController.reverse();
-        });
-      });
-      _pageController.jumpToPage(3);
-    } else {
-      _historyAnimationController.forward().then((_) {
-        _historyAnimationController.reverse();
-      });
-    }
-  }
-
-  void _onFindTapped() {
-    // Not used for the bike animation
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +221,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Transform.scale(
-                  scaleX: _bikeAnimation.value,
+                  scaleX: _carAnimation.value,
                   child: Icon(
                     _currentIndex == 2 ? Icons.directions_car : Icons.directions_car_outlined),
               ),),

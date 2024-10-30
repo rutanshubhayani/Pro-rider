@@ -9,6 +9,7 @@ import 'package:shimmer/shimmer.dart';
 import 'dart:convert';
 
 import 'package:travel/Find/find.dart';
+import 'package:travel/widget/configure.dart';
 
 import '../api/api.dart';
 import '../home.dart';
@@ -422,6 +423,7 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
               ),
+              hapticFeedbackTypes: HapticFeedbackTypes.medium,
               keyboardType: TextInputType.number,
               animationType: AnimationType.fade,
               pinTheme: PinTheme(
@@ -429,8 +431,8 @@ class _RideOTPVerifyState extends State<RideOTPVerify> {
                 borderRadius: BorderRadius.circular(5),
                 fieldHeight: 50,
                 fieldWidth: 40,
-                activeColor: Colors.blue,
-                selectedColor: Colors.blueAccent,
+                activeColor: kPrimaryColor,
+                selectedColor: kPrimaryColor.withOpacity(0.5),
                 inactiveColor: Colors.grey,
               ),
               onChanged: (value) {},

@@ -72,6 +72,7 @@ class _InboxListState extends State<InboxList> with TickerProviderStateMixin {
     _fetchConversations(); // Fetch conversations on init
   }
 
+
   Future<void> _fetchConversations() async {
     setState(() {
       _isLoading = true; // Start loading

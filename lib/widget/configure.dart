@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show TextInputFormatter, rootBundle;
 
 
-const String oneSingalAPPID = "3afcec9d-d025-4c1a-81fe-b46d71cf6959";
+// const String oneSingalAPPID = "3afcec9d-d025-4c1a-81fe-b46d71cf6959";
 const Color kbgColor = Color(0xFFFFFFFF);
 const Color kPrimaryColor = Color(0xFF3d5a80);
 // const Color kPrimaryColor = Color(0xFF3d5a80);  secondary color
