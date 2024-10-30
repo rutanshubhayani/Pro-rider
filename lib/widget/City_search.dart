@@ -39,22 +39,34 @@ class _CitySearchFieldState extends State<CitySearchField> {
   @override
   void initState() {
     super.initState();
+
     widget.controller.addListener(() {
       setState(() {
         showSuggestions = widget.controller.text.isNotEmpty;
       });
+    });
+
+    widget.focusNode.addListener(() {
+      if (!widget.focusNode.hasFocus) {
+        setState(() {
+          showSuggestions = false;
+        });
+      }
+    });
+  }
+
+  void _handleOutsideTap() {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      showSuggestions = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        setState(() {
-          showSuggestions = false; // Close suggestions when tapping outside
-        });
-      },
+      behavior: HitTestBehavior.opaque,
+      onTap: _handleOutsideTap, // Handle outside tap
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -67,7 +79,12 @@ class _CitySearchFieldState extends State<CitySearchField> {
               suffixIcon: widget.controller.text.isNotEmpty
                   ? IconButton(
                 icon: FaIcon(FontAwesomeIcons.times),
-                onPressed: widget.onClear,
+                onPressed: () {
+                  widget.onClear();
+                  setState(() {
+                    showSuggestions = false;
+                  });
+                },
               )
                   : null,
               border: OutlineInputBorder(
@@ -92,32 +109,24 @@ class _CitySearchFieldState extends State<CitySearchField> {
                 ),
               ),
             ),
-
             textInputAction: TextInputAction.next,
             onChanged: (value) {
               widget.onChanged(value);
               setState(() {
-                showSuggestions = value.isNotEmpty; // Update suggestion visibility
+                showSuggestions = value.isNotEmpty;
               });
             },
             onFieldSubmitted: widget.onSubmitted,
-            validator: (value) {
-              // Only call the external validator if it is provided
-              if (widget.validator != null) {
-                return widget.validator!(value);
-              }
-              // Allow empty values without an error if no validator is provided
-              return null;
-            },
+            validator: widget.validator,
           ),
-          if (widget.showSuggestions)
+          if (showSuggestions)
             SizedBox(height: 10),
-          if (widget.showSuggestions)
+          if (showSuggestions)
             Card(
               elevation: 4.0,
               child: Container(
                 constraints: BoxConstraints(
-                  maxHeight: 340,
+                  maxHeight: 280,
                 ),
                 child: Scrollbar(
                   child: ListView.builder(
@@ -131,6 +140,9 @@ class _CitySearchFieldState extends State<CitySearchField> {
                         title: Text('${suggestion['city']}, ${suggestion['pname']}'),
                         onTap: () {
                           widget.onSuggestionTap(suggestion);
+                          setState(() {
+                            showSuggestions = false;
+                          });
                         },
                       );
                     },
