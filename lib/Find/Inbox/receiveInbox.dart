@@ -464,7 +464,7 @@ class _InboxListState extends State<InboxList> with TickerProviderStateMixin {
         onTap: () {
           FocusScope.of(context).unfocus();
         },
-        child: _isLoadingg
+        child: _isLoading
             ? const Center(
           child: SingleChildScrollView(
             child: Column(
