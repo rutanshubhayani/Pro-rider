@@ -72,7 +72,6 @@ class _InboxListState extends State<InboxList> with TickerProviderStateMixin {
     _fetchConversations(); // Fetch conversations on init
   }
 
-
   Future<void> _fetchConversations() async {
     setState(() {
       _isLoading = true; // Start loading
@@ -465,98 +464,103 @@ class _InboxListState extends State<InboxList> with TickerProviderStateMixin {
         onTap: () {
           FocusScope.of(context).unfocus();
         },
-        child: _isLoading
-            ? Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 10),
-              Text('Loading..'),
-            ],
+        child: _isLoadingg
+            ? const Center(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 10),
+                Text('Loading..'),
+              ],
+            ),
           ),
-        ) // Loading indicator
+        )
             : _filteredConversations.isEmpty
-            ? const Center(child: Text('No conversations found.')) // No conversations message
+            ? const Center(child: Text('No conversations found.'))
             : RefreshIndicator(
-          onRefresh: _fetchConversations, // Call your fetch function
-          child: ListView.builder(
-            itemCount: _filteredConversations.length,
-            itemBuilder: (context, index) {
-              final conversation = _filteredConversations[index];
-              bool isSelected = _selectedIndices.contains(index);
-              bool isUnread = conversation['lastMessageUnread'] == true;
+          onRefresh: _fetchConversations,
+          child: Scrollbar(
+            thumbVisibility: true,
+            child: ListView.builder(
+              itemCount: _filteredConversations.length,
+              itemBuilder: (context, index) {
+                final conversation = _filteredConversations[index];
+                bool isSelected = _selectedIndices.contains(index);
+                bool isUnread = conversation['lastMessageUnread'] == true;
 
-              return Container(
-                color: isSelected ? Colors.grey[300] : Colors.transparent,
-                child: ListTile(
-                  key: _keys[conversation['recipientId']] ??= GlobalKey(),
-                  leading: GestureDetector(
-                    onTapDown: (details) {
-                      final renderBox = _keys[conversation['recipientId']]!.currentContext!.findRenderObject() as RenderBox;
-                      final tapPosition = renderBox.globalToLocal(details.globalPosition);
-                      _showProfilePhoto(conversation['recipientUserImage'], conversation['recipientUserName'], tapPosition);
-                    },
-                    child: CircleAvatar(
-                      radius: 30,
-                      backgroundImage: conversation['recipientUserImage'] != null && conversation['recipientUserImage'].isNotEmpty
-                          ? NetworkImage(conversation['recipientUserImage'])
-                          : const AssetImage('images/Userpfp.png') as ImageProvider,
+                return Container(
+                  color: isSelected ? Colors.grey[300] : Colors.transparent,
+                  child: ListTile(
+                    key: _keys[conversation['recipientId']] ??= GlobalKey(),
+                    leading: GestureDetector(
+                      onTapDown: (details) {
+                        final renderBox = _keys[conversation['recipientId']]!.currentContext!.findRenderObject() as RenderBox;
+                        final tapPosition = renderBox.globalToLocal(details.globalPosition);
+                        _showProfilePhoto(conversation['recipientUserImage'], conversation['recipientUserName'], tapPosition);
+                      },
+                      child: CircleAvatar(
+                        radius: 30,
+                        backgroundImage: conversation['recipientUserImage'] != null && conversation['recipientUserImage'].isNotEmpty
+                            ? NetworkImage(conversation['recipientUserImage'])
+                            : const AssetImage('images/Userpfp.png') as ImageProvider,
+                      ),
                     ),
-                  ),
-                  title: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          conversation['recipientUserName'],
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            conversation['recipientUserName'],
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  subtitle: Container(
-                    constraints: BoxConstraints(maxWidth: 200, maxHeight: 20),
-                    child: Text(
-                      conversation['type'] == 'sent' ? 'sent: ${conversation['lastMessage']}' : conversation['lastMessage'],
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                      ],
+                    ),
+                    subtitle: Container(
+                      constraints: BoxConstraints(maxWidth: 200, maxHeight: 20),
+                      child: Text(
+                        conversation['type'] == 'sent' ? 'sent: ${conversation['lastMessage']}' : conversation['lastMessage'],
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                        ),
                       ),
                     ),
+                    trailing: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(_formatDateAndTime(conversation['timestamp'])),
+                        Text(_formatTime(conversation['timestamp'])),
+                      ],
+                    ),
+                    onTap: () {
+                      if (_isMultiSelectMode) {
+                        _toggleSelection(index);
+                      } else {
+                        _navigateToChat(
+                          conversation['recipientId'].toString(),
+                          conversation['recipientUserName'],
+                          conversation['recipientUserImage'] ?? '',
+                        );
+                      }
+                    },
+                    onLongPress: () {
+                      setState(() {
+                        _isMultiSelectMode = true;
+                        _toggleSelection(index);
+                      });
+                    },
+                    selected: isSelected,
                   ),
-                  trailing: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_formatDateAndTime(conversation['timestamp'])),
-                      Text(_formatTime(conversation['timestamp'])),
-                    ],
-                  ),
-                  onTap: () {
-                    if (_isMultiSelectMode) {
-                      _toggleSelection(index);
-                    } else {
-                      _navigateToChat(
-                        conversation['recipientId'].toString(),
-                        conversation['recipientUserName'],
-                        conversation['recipientUserImage'] ?? '',
-                      );
-                    }
-                  },
-                  onLongPress: () {
-                    setState(() {
-                      _isMultiSelectMode = true;
-                      _toggleSelection(index);
-                    });
-                  },
-                  selected: isSelected,
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
