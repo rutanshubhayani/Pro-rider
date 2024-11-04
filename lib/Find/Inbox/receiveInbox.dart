@@ -479,6 +479,7 @@ class _InboxListState extends State<InboxList> with TickerProviderStateMixin {
             ),
           ),
         )
+
             : _filteredConversations.isEmpty
             ? const Center(child: Text('No conversations found.'))
             : RefreshIndicator(
