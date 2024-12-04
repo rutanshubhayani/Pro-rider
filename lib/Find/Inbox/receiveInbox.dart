@@ -430,7 +430,6 @@ class _InboxListState extends State<InboxList> with TickerProviderStateMixin {
                     onSubmitted: (_) {
                       FocusScope.of(context).unfocus();
                     },
-
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.search),
                       hintText: 'Search',
