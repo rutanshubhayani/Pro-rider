@@ -411,6 +411,7 @@ class _InboxListState extends State<InboxList> with TickerProviderStateMixin {
     });
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
